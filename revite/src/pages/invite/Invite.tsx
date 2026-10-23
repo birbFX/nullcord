@@ -54,7 +54,7 @@ export default function Invite() {
                         <div
                             className={styles.invite}
                             style={{
-                                backgroundImage: `url('https://autumn.revolt.chat/banners/yMurJiXf45VJpbal0X2zQkm4vaXsXGaRtoPUIcvPcH')`,
+                                background: "var(--secondary-background)",
                                 width: "100%",
                                 height: "100%",
                             }}>

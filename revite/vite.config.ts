@@ -118,6 +118,9 @@ export default defineConfig({
             preventAssignment: true,
         }) as any,
     ],
+    define: {
+        __CLL_REV: JSON.stringify("2026-10-23-2"),
+    },
     server: {
         headers: {
             "Cache-Control": "no-store",

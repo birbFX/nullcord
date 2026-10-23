@@ -39,7 +39,7 @@ interface Props {
     section: "client" | "renderer";
 }
 
-const ERROR_URL = "https://reporting.revolt.chat";
+const ERROR_URL = "https://github.com/birbFX/nullcord/issues/new";
 
 export function reportError(error: Error, section: string) {
     stackTrace.fromError(error).then((stackframes) =>

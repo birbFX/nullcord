@@ -333,16 +333,18 @@ export class WebSocketClient {
                         case "MessageReact": {
                             const msg = this.client.messages.get(packet.id);
                             if (msg) {
-                                if (msg.reactions.has(packet.emoji_id)) {
-                                    msg.reactions
-                                        .get(packet.emoji_id)!
-                                        .add(packet.user_id);
-                                } else {
-                                    msg.reactions.set(
-                                        packet.emoji_id,
-                                        new ObservableSet([packet.user_id]),
-                                    );
-                                }
+                                runInAction(() => {
+                                    if (msg.reactions.has(packet.emoji_id)) {
+                                        msg.reactions
+                                            .get(packet.emoji_id)!
+                                            .add(packet.user_id);
+                                    } else {
+                                        msg.reactions.set(
+                                            packet.emoji_id,
+                                            new ObservableSet([packet.user_id]),
+                                        );
+                                    }
+                                });
 
                                 this.client.emit(
                                     "message/updated",
@@ -361,10 +363,12 @@ export class WebSocketClient {
                                 );
 
                                 if (user_ids) {
-                                    user_ids.delete(packet.user_id);
-                                    if (user_ids.size === 0) {
-                                        msg.reactions.delete(packet.emoji_id);
-                                    }
+                                    runInAction(() => {
+                                        user_ids.delete(packet.user_id);
+                                        if (user_ids.size === 0) {
+                                            msg.reactions.delete(packet.emoji_id);
+                                        }
+                                    });
                                 }
 
                                 this.client.emit(
@@ -381,7 +385,9 @@ export class WebSocketClient {
                             const msg = this.client.messages.get(packet.id);
 
                             if (msg) {
-                                msg.reactions.delete(packet.emoji_id);
+                                runInAction(() =>
+                                    msg.reactions.delete(packet.emoji_id),
+                                );
 
                                 this.client.emit(
                                     "message/updated",

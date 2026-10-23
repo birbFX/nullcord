@@ -25,15 +25,9 @@ export const changelogEntries: Record<number, ChangelogPost> = {
         title: "Secure your account with 2FA",
         content: [
             "Two-factor authentication is now available to all users, you can now head over to settings to enable recovery codes and an authenticator app.",
-            {
-                type: "image",
-                src: "https://autumn.revolt.chat/attachments/E21kwmuJGcASgkVLiSIW0wV3ggcaOWjW0TQF7cdFNY/image.png",
-            },
+            
             "Once enabled, you will be prompted on login.",
-            {
-                type: "image",
-                src: "https://autumn.revolt.chat/attachments/LWRYoKR2tE1ggW_Lzm547P1pnrkNgmBaoCAfWvHE74/image.png",
-            },
+            
             "Other authentication methods coming later, stay tuned!",
         ],
     },
@@ -42,11 +36,7 @@ export const changelogEntries: Record<number, ChangelogPost> = {
         title: "In-App Reporting Is Here",
         content: [
             "You can now report any user, server, or message directly from the app.",
-            {
-                type: "image",
-                src: "https://autumn.revolt.chat/attachments/ZuDVIjGiCl61Pk9XGk5qfc8-idN9EnFAk55DUQp713/the.png",
-                shadow: true,
-            },
+            
             "If you want to learn more about how we're making NullCord safer for you, check out our latest updates.",
         ],
     },

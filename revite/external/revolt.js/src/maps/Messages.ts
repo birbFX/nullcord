@@ -312,7 +312,7 @@ export class Message {
         return await this.client.api.put(
             `/channels/${this.channel_id as ""}/messages/${
                 this._id as ""
-            }/reactions/${emoji as ""}`,
+            }/reactions/${encodeURIComponent(emoji)}`,
         );
     }
 
@@ -324,7 +324,7 @@ export class Message {
         return await this.client.api.delete(
             `/channels/${this.channel_id as ""}/messages/${
                 this._id as ""
-            }/reactions/${emoji as ""}`,
+            }/reactions/${encodeURIComponent(emoji)}`,
         );
     }
 }

@@ -140,7 +140,7 @@ const Message = observer(
                                 url={message.generateMasqAvatarURL()}
                                 override={
                                     message.webhook?.avatar
-                                        ? `https://autumn.revolt.chat/avatars/${message.webhook.avatar}`
+                                        ? `${channel.client.configuration?.features.autumn.url}/avatars/${message.webhook.avatar}`
                                         : undefined
                                 }
                                 target={user}

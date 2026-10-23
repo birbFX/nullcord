@@ -176,10 +176,8 @@ export function EmbedInvite({ code }: Props) {
 
 const INVITE_PATHS = [
     `${location.hostname}/invite`,
-    "app.revolt.chat/invite",
-    "nightly.revolt.chat/invite",
-    "local.revolt.chat/invite",
-    "rvlt.gg",
+    "nullcord.canyonlakelabs.com/invite",
+    "canyonlakelabs.com/invite",
 ];
 
 const RE_INVITE = new RegExp(

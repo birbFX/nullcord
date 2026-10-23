@@ -91,13 +91,24 @@ class VoiceStateReference {
         this.connecting = true;
         this.status = VoiceStatus.CONNECTING;
 
+        const features = channel.client.configuration?.features as any;
+        if (!features?.voso?.ws) {
+            // This backend uses LiveKit; the legacy Vortex voice client cannot
+            // speak to it. Fail cleanly instead of throwing on every click.
+            console.warn(
+                "Voice is unavailable: backend uses LiveKit, client uses Vortex.",
+            );
+            runInAction(() => {
+                this.status = VoiceStatus.UNAVAILABLE;
+                this.connecting = false;
+            });
+            return channel;
+        }
+
         try {
             const call = await channel.joinCall();
 
-            await this.client.connect(
-                channel.client.configuration!.features.voso.ws,
-                channel._id,
-            );
+            await this.client.connect(features.voso.ws, channel._id);
 
             runInAction(() => {
                 this.status = VoiceStatus.AUTHENTICATING;

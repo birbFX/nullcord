@@ -16,6 +16,7 @@ import Open from "./Open";
 import Channel from "./channels/Channel";
 import DeveloperRoute from "./developer/DeveloperRoute";
 import Discover from "./discover/Discover";
+import Nitro from "./nitro/Nitro";
 import Friends from "./friends/Friends";
 import Home from "./home/Home";
 import InviteBot from "./invite/InviteBot";
@@ -214,6 +215,7 @@ export default function App() {
                             <Route path="/settings" component={Settings} />
 
                             <Route path="/discover" component={Discover} />
+                            <Route path="/nitro" component={Nitro} />
 
                             <Route path="/dev" component={DeveloperRoute} />
                             <Route path="/friends" component={Friends} />

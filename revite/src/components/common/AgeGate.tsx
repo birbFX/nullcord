@@ -45,31 +45,16 @@ type Props = {
     channel: Channel;
 };
 
-let geoBlock:
-    | undefined
-    | {
-          countryCode: string;
-          isAgeRestrictedGeo: true;
-      };
+// Self-hosted instances don't ship the geo service; default to unrestricted.
+const geoBlock = {
+    countryCode: "US",
+    isAgeRestrictedGeo: false as boolean,
+};
 
 export default observer((props: Props) => {
     const history = useHistory();
     const layout = useApplicationState().layout;
-    const [geoLoaded, setGeoLoaded] = useState(typeof geoBlock !== "undefined");
     const [ageGate, setAgeGate] = useState(false);
-
-    useEffect(() => {
-        if (!geoLoaded) {
-            fetch("https://geo.revolt.chat")
-                .then((res) => res.json())
-                .then((data) => {
-                    geoBlock = data;
-                    setGeoLoaded(true);
-                });
-        }
-    }, []);
-
-    if (!geoBlock) return <Preloader type="spinner" />;
 
     if ((ageGate && !geoBlock.isAgeRestrictedGeo) || !props.gated) {
         return <>{props.children}</>;
@@ -85,11 +70,7 @@ export default observer((props: Props) => {
 
     return (
         <Base>
-            <img
-                loading="eager"
-                src={"https://static.revolt.chat/emoji/mutant/26a0.svg"}
-                draggable={false}
-            />
+            <span style={{ fontSize: 48, lineHeight: 1 }}>⚠️</span>
             <h2>{props.channel.name}</h2>
             <span className="subtext">
                 <Text id={`app.main.channel.nsfw.${props.type}.marked`} />{" "}

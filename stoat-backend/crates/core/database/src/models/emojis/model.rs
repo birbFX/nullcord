@@ -11,8 +11,9 @@ use crate::Database;
 
 static PERMISSIBLE_EMOJIS: Lazy<HashSet<String>> = Lazy::new(|| {
     include_str!("unicode_emoji.txt")
-        .split('\n')
-        .map(|x| x.replace('\u{FE0F}', ""))
+        .lines()
+        .map(|x| x.trim().replace('\u{FE0F}', ""))
+        .filter(|x| !x.is_empty())
         .collect()
 });
 

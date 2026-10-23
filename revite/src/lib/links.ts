@@ -14,10 +14,8 @@ type LinkType =
  */
 const ALLOWED_ORIGINS = [
     location.hostname,
-    "app.revolt.chat",
-    "nightly.revolt.chat",
-    "local.revolt.chat",
-    "rolt.chat",
+    "canyonlakelabs.com",
+    "www.canyonlakelabs.com",
 ];
 
 /**
