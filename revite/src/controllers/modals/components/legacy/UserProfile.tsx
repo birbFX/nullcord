@@ -102,7 +102,6 @@ export const UserProfile = observer(
                     setMutual({ users: [], servers: [], channels: [] });
                     return;
                 }
-                setMutual(null);
                 user.fetchMutual().then((value) => {
                     if (!cancelled) setMutual(value);
                 });
@@ -116,8 +115,6 @@ export const UserProfile = observer(
             let cancelled = false;
             if (isPlaceholder) return;
             if (session.state === "Online" && typeof profile === "undefined") {
-                setProfile(null);
-
                 if (user.permission & UserPermission.ViewProfile) {
                     user.fetchProfile()
                         .then((value) => {
