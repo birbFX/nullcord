@@ -37,6 +37,7 @@ import {
     clientController,
 } from "../../controllers/client/ClientController";
 import RequiresOnline from "../../controllers/client/jsx/RequiresOnline";
+import { displayDiscriminator } from "../../lib/owner";
 import { modalController } from "../../controllers/modals/ModalController";
 import { GenericSettings } from "./GenericSettings";
 import { Account } from "./panes/Account";
