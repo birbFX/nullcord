@@ -24,12 +24,14 @@ export const Appearance = observer(() => {
 
     const resetTheme = () => {
         const userId = client.user?._id;
+        state.settings.theme.setBase("dark");
         state.settings.theme.reset();
         if (userId) {
             localStorage.removeItem(`nullcord:gradient:${userId}`);
             localStorage.removeItem(`nullcord:gradient-prev:${userId}`);
         }
         setUiMode("combined");
+        setTimeout(() => window.location.reload(), 150);
     };
 
     return (
