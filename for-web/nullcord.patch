@@ -1,5 +1,5 @@
 diff --git a/packages/client/components/app/interface/settings/UserSettings.tsx b/packages/client/components/app/interface/settings/UserSettings.tsx
-index 75a5d7f..40f0ba3 100644
+index 75a5d7f..86b5aca 100644
 --- a/packages/client/components/app/interface/settings/UserSettings.tsx
 +++ b/packages/client/components/app/interface/settings/UserSettings.tsx
 @@ -8,11 +8,11 @@ import { useClient, useClientLifecycle } from "@revolt/client";
@@ -23,16 +23,20 @@ index 75a5d7f..40f0ba3 100644
  import { MyBots, ViewBot } from "./user/bots";
  import { Feedback } from "./user/Feedback";
  import { LanguageSettings } from "./user/Language";
-@@ -80,6 +81,8 @@ const Config: SettingsConfiguration<{ server: Server }> = {
+@@ -80,6 +81,12 @@ const Config: SettingsConfiguration<{ server: Server }> = {
          return <MyAccount onClose={props.onClose} />;
        case "appearance":
          return <AppearanceMenu />;
 +      case "nullcord":
 +        return <NullCordPage />;
++      case "nullcord-tags":
++        return <NullCordPage only="tags" />;
++      case "nullcord-plugins":
++        return <NullCordPage only="plugins" />;
        case "advanced":
          return <AdvancedSettings />;
        case "profile":
-@@ -248,6 +251,16 @@ const Config: SettingsConfiguration<{ server: Server }> = {
+@@ -248,6 +255,26 @@ const Config: SettingsConfiguration<{ server: Server }> = {
              },
            ],
          },
@@ -44,12 +48,22 @@ index 75a5d7f..40f0ba3 100644
 +              icon: <MdAutoAwesome {...iconSize(20)} />,
 +              title: "NullCord",
 +            },
++            {
++              id: "nullcord-tags",
++              icon: <MdAutoAwesome {...iconSize(20)} />,
++              title: "Server Tags",
++            },
++            {
++              id: "nullcord-plugins",
++              icon: <MdAutoAwesome {...iconSize(20)} />,
++              title: "Plugins",
++            },
 +          ],
 +        },
          {
            title: <Trans>Client Settings</Trans>,
            entries: [
-@@ -318,17 +331,9 @@ const Config: SettingsConfiguration<{ server: Server }> = {
+@@ -318,17 +345,9 @@ const Config: SettingsConfiguration<{ server: Server }> = {
          },
          {
            entries: [
@@ -69,7 +83,7 @@ index 75a5d7f..40f0ba3 100644
                icon: <MdMemory {...iconSize(20)} />,
                title: <Trans>Source Code</Trans>,
              },
-@@ -337,11 +342,7 @@ const Config: SettingsConfiguration<{ server: Server }> = {
+@@ -337,11 +356,7 @@ const Config: SettingsConfiguration<{ server: Server }> = {
                icon: <MdScience {...iconSize(20)} />,
                title: <Trans>Advanced</Trans>,
              },
@@ -378,7 +392,7 @@ index 063d6c1..6c90512 100644
                disconnected={isDisconnected()}
                style={{ "flex-grow": 1, "min-height": 0 }}
 diff --git a/packages/client/src/index.tsx b/packages/client/src/index.tsx
-index 635f248..e399fcb 100644
+index 635f248..f8313a5 100644
 --- a/packages/client/src/index.tsx
 +++ b/packages/client/src/index.tsx
 @@ -47,6 +47,7 @@ import { DevelopmentPage } from "./interface/Development";
@@ -389,15 +403,17 @@ index 635f248..e399fcb 100644
  import { ServerHome } from "./interface/ServerHome";
  import { ChannelPage } from "./interface/channels/ChannelPage";
  import "./serviceWorkerInterface";
-@@ -163,6 +164,7 @@ const routes = () => (
+@@ -163,6 +164,9 @@ const routes = () => (
        <Route path="/invite/:code" component={InviteRedirect} />
        <Route path="/bot/:code" component={BotRedirect} />
        <Route path="/friends" component={Friends} />
++      <Route path="/nullcord/nitro" component={() => <NullCordPage initialTab="nitro" />} />
++      <Route path="/nullcord/dev" component={() => <NullCordPage initialTab="dev" />} />
 +      <Route path="/nullcord" component={NullCordPage} />
        <Route path="/server/:server/*">
          <Route path="/channel/:channel/*" component={ChannelPage} />
          <Route path="/*" component={ServerHome} />
-@@ -198,7 +200,7 @@ if (!escapeSelfEmbed())
+@@ -198,7 +202,7 @@ if (!escapeSelfEmbed())
        <DeviceContext>
          <I18nProvider>
            <SnackbarProvider controller={snackbarCtrl}>
@@ -464,16 +480,17 @@ index 43e6da7..a3bbdb3 100644
              <Show when={instance.isStoat}>
 diff --git a/packages/client/src/interface/NullCord.tsx b/packages/client/src/interface/NullCord.tsx
 new file mode 100644
-index 0000000..4a2b1f1
+index 0000000..6eca9aa
 --- /dev/null
 +++ b/packages/client/src/interface/NullCord.tsx
-@@ -0,0 +1,364 @@
+@@ -0,0 +1,437 @@
 +import { For, Show, createSignal, onCleanup, onMount } from "solid-js";
 +import { useClient, useUser } from "@revolt/client";
 +import { useNavigate } from "@revolt/routing";
 +import { useState } from "@revolt/state";
 +
 +import questData from "./nullcord/quests.json";
++import "./nullcord.css";
 +
 +type Quest = {
 +  id: string;
@@ -652,12 +669,25 @@ index 0000000..4a2b1f1
 +  return null;
 +}
 +
-+export function NullCordPage() {
++type NullCordPageProps = {
++  initialTab?: Tab;
++  only?: Tab;
++};
++
++export function NullCordPage(props: NullCordPageProps) {
 +  const client = useClient();
 +  const user = useUser();
 +  const navigate = useNavigate();
 +  const state = useState();
-+  const [tab, setTab] = createSignal<Tab>("quests");
++  const [tab, setTab] = createSignal<Tab>(
++    props.initialTab === "dev" && !isDev(user())
++      ? "quests"
++      : (props.initialTab ?? props.only ?? "quests"),
++  );
++  const visibleTabs = () =>
++    props.only
++      ? [props.only]
++      : (["quests", "nitro", ...(isDev(user()) ? ["dev"] : [])] as Tab[]);
 +  const [tick, setTick] = createSignal(0);
 +  const refresh = () => setTick((v) => v + 1);
 +
@@ -710,9 +740,6 @@ index 0000000..4a2b1f1
 +    refresh();
 +  };
 +
-+  const panel = { padding: 18, borderRadius: 18, minWidth: 0, overflow: "hidden", background: "var(--md-sys-color-surface-container)", border: "1px solid var(--md-sys-color-outline-variant)", overflowWrap: "anywhere" } as const;
-+  const btn = { border: 0, borderRadius: 999, padding: "9px 14px", fontWeight: 700, cursor: "pointer", background: "var(--md-sys-color-primary)", color: "var(--md-sys-color-on-primary)" } as const;
-+
 +  const orbLabel = () => {
 +    if (admin()) return "∞ Orbs";
 +    const value = getOrbs(userId());
@@ -720,39 +747,50 @@ index 0000000..4a2b1f1
 +  };
 +
 +  return (
-+    <div style={{ boxSizing: "border-box", height: "100%", width: "100%", overflowY: "auto", padding: "28px 34px", color: "var(--md-sys-color-on-surface)", background: "var(--md-sys-color-surface)" }}>
-+      <div style={{ "max-width": "980px", width: "100%", margin: "0 auto" }}>
-+        <div style={{ display: "flex", "align-items": "center", gap: 16, "margin-bottom": 18, "flex-wrap": "wrap" }}>
-+          <h1 style={{ margin: 0, "font-size": 32 }}>NullCord</h1>
-+          <span style={{ opacity: 0.65 }}>{orbLabel()}</span>
++    <div class="nc-page">
++      <div class="nc-wrap">
++        <div class="nc-head">
++          <h1>NullCord</h1>
++          <span class="nc-orbs">{orbLabel()}</span>
 +        </div>
 +
-+        <div style={{ display: "flex", gap: 8, "flex-wrap": "wrap", "margin-bottom": 20 }}>
-+          <For each={["quests", "nitro", "tags", "plugins", ...(isDev(user()) ? ["dev"] : [])] as Tab[]}>
-+            {(id) => (
-+              <button onClick={() => setTab(id)} style={{ ...btn, background: tab() === id ? "var(--md-sys-color-primary)" : "var(--md-sys-color-surface-container-high)", color: tab() === id ? "var(--md-sys-color-on-primary)" : "var(--md-sys-color-on-surface)" }}>
-+                {id === "dev" ? "Dev" : id[0].toUpperCase() + id.slice(1)}
-+              </button>
-+            )}
-+          </For>
-+        </div>
++        <Show when={!props.only}>
++          <div class="nc-tabs">
++            <For each={visibleTabs()}>
++              {(id) => (
++                <button
++                  class={"nc-tab" + (tab() === id ? " active" : "")}
++                  onClick={() => setTab(id)}
++                >
++                  {id === "dev" ? "Dev" : id[0].toUpperCase() + id.slice(1)}
++                </button>
++              )}
++            </For>
++          </div>
++        </Show>
 +
 +        <Show when={tab() === "quests"}>
-+          <div style={{ display: "grid", "grid-template-columns": "repeat(auto-fill, minmax(min(280px, 100%), 1fr))", gap: 12 }}>
++          <div class="nc-grid">
 +            <For each={dailyQuests(userId())}>
 +              {(quest) => {
 +                tick();
 +                const p = progress(userId(), quest);
 +                const claimed = done(userId(), quest);
 +                return (
-+                  <div style={{ ...panel, opacity: p.verified || claimed ? 1 : 0.6 }}>
-+                    <div style={{ "font-weight": 800, "font-size": 16 }}>{quest.title}</div>
-+                    <p style={{ opacity: 0.72, "font-size": 13, "line-height": 1.5 }}>{quest.description}</p>
-+                    <div style={{ display: "flex", "justify-content": "space-between", "align-items": "center" }}>
-+                      <span style={{ color: "var(--md-sys-color-primary)" }}>+{quest.reward} Orbs</span>
-+                      <span style={{ "font-size": 11, opacity: 0.65 }}>{claimed ? "✓ Claimed" : p.verified ? "✓ Verified" : `${p.current}/${p.target}`}</span>
++                  <div class={"nc-card" + (p.verified || claimed ? "" : " nc-locked")}>
++                    <h2>{quest.title}</h2>
++                    <p>{quest.description}</p>
++                    <div class="nc-meta">
++                      <span class="nc-reward">+{quest.reward} Orbs</span>
++                      <span>{claimed ? "✓ Claimed" : p.verified ? "✓ Verified" : `${p.current}/${p.target}`}</span>
 +                    </div>
-+                    <button disabled={claimed || !p.verified} onClick={() => { if (claim(userId(), quest)) refresh(); }} style={{ ...btn, marginTop: 12, opacity: claimed || !p.verified ? 0.5 : 1 }}>
++                    <button
++                      class="nc-btn"
++                      disabled={claimed || !p.verified}
++                      onClick={() => {
++                        if (claim(userId(), quest)) refresh();
++                      }}
++                    >
 +                      {claimed ? "Claimed today" : p.verified ? "Claim" : "Verify first"}
 +                    </button>
 +                  </div>
@@ -763,80 +801,131 @@ index 0000000..4a2b1f1
 +        </Show>
 +
 +        <Show when={tab() === "nitro"}>
-+          <div style={{ display: "grid", "grid-template-columns": "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
-+            <div style={panel}>
-+              <h2 style={{ margin: "0 0 6px" }}>Nitro Basic</h2>
-+              <p style={{ opacity: 0.72 }}>300 Orbs · basic badge and perks. No boosts or custom themes.</p>
-+              <button disabled={!!nitroTier(user())} onClick={() => buyNitro("basic")} style={btn}>{nitroTier(user()) === "basic" ? "Active" : nitroTier(user()) === "nitro" ? "Included in Nitro" : "Redeem · 300 Orbs"}</button>
++          <div class="nc-grid">
++            <div class="nc-card">
++              <h2>Nitro Basic</h2>
++              <p>300 Orbs · basic badge and perks. No boosts or custom themes.</p>
++              <button
++                class="nc-btn"
++                disabled={!!nitroTier(user())}
++                onClick={() => buyNitro("basic")}
++              >
++                {nitroTier(user()) === "basic"
++                  ? "Active"
++                  : nitroTier(user()) === "nitro"
++                    ? "Included in Nitro"
++                    : "Redeem · 300 Orbs"}
++              </button>
 +            </div>
-+            <div style={{ ...panel, borderColor: "var(--md-sys-color-primary)" }}>
-+              <h2 style={{ margin: "0 0 6px" }}>Nitro</h2>
-+              <p style={{ opacity: 0.72 }}>900 Orbs · 2 boosts, full themes and gradients.</p>
-+              <button disabled={nitroTier(user()) === "nitro"} onClick={() => buyNitro("nitro")} style={btn}>{nitroTier(user()) === "nitro" ? "Active" : nitroTier(user()) === "basic" ? "Upgrade · 600 Orbs" : "Redeem · 900 Orbs"}</button>
++            <div class="nc-card nc-featured">
++              <h2>Nitro</h2>
++              <p>900 Orbs · 2 boosts, full themes and gradients.</p>
++              <button
++                class="nc-btn"
++                disabled={nitroTier(user()) === "nitro"}
++                onClick={() => buyNitro("nitro")}
++              >
++                {nitroTier(user()) === "nitro"
++                  ? "Active"
++                  : nitroTier(user()) === "basic"
++                    ? "Upgrade · 600 Orbs"
++                    : "Redeem · 900 Orbs"}
++              </button>
 +            </div>
 +          </div>
-+          <p style={{ opacity: 0.65, "font-size": 12, "margin-top": 14 }}>Same Orbs and tier as the NullCord client; changes sync through this browser.</p>
++          <p class="nc-note">Same Orbs and tier as the NullCord client; changes sync through this browser.</p>
 +        </Show>
 +
 +        <Show when={tab() === "tags"}>
-+          <For each={client()?.servers.toList() ?? []}>
-+            {(server: any) => {
-+              tick();
-+              const tag = serverTag(server.id);
-+              const equipped = localStorage.getItem(`nullcord:equipped-tag:${userId()}`) === server.id;
-+              return (
-+                <div style={{ ...panel, display: "flex", "align-items": "center", gap: 12, "margin-bottom": 8, opacity: tag ? 1 : 0.5 }}>
-+                  <div style={{ flex: 1 }}><b>{server.name}</b><div style={{ "font-size": 11, opacity: 0.65 }}>{tag ? `◆ ${tag}` : "No tag set"}</div></div>
-+                  <button disabled={!tag || equipped} onClick={() => equipTag(server.id)} style={{ ...btn, opacity: !tag || equipped ? 0.5 : 1 }}>{equipped ? "Equipped" : "Equip"}</button>
-+                </div>
-+              );
-+            }}
-+          </For>
++          <div class="nc-stack">
++            <For each={client()?.servers.toList() ?? []}>
++              {(server: any) => {
++                tick();
++                const tag = serverTag(server.id);
++                const equipped =
++                  localStorage.getItem(`nullcord:equipped-tag:${userId()}`) === server.id;
++                return (
++                  <div class="nc-row" style={{ opacity: tag ? 1 : 0.5 }}>
++                    <div class="grow">
++                      <b>{server.name}</b>
++                      <div><small>{tag ? `◆ ${tag}` : "No tag set"}</small></div>
++                    </div>
++                    <button
++                      class="nc-btn"
++                      disabled={!tag || equipped}
++                      onClick={() => equipTag(server.id)}
++                    >
++                      {equipped ? "Equipped" : tag ? "Equip" : "Locked"}
++                    </button>
++                  </div>
++                );
++              }}
++            </For>
++          </div>
 +        </Show>
 +
 +        <Show when={tab() === "plugins"}>
-+          <For each={PLUGINS}>
-+            {(plugin) => {
-+              tick();
-+              const states = readJson<Record<string, boolean>>("nullcord:plugins", {});
-+              const enabled = states[plugin.id] ?? true;
-+              return (
-+                <div style={{ ...panel, display: "flex", "align-items": "center", gap: 12, "margin-bottom": 8 }}>
-+                  <div style={{ flex: 1 }}><b>{plugin.name}</b><div style={{ "font-size": 12, opacity: 0.65 }}>{plugin.description}</div></div>
-+                  <button onClick={() => togglePlugin(plugin.id)} style={{ ...btn, background: enabled ? "var(--md-sys-color-primary)" : "var(--md-sys-color-surface-container-high)", color: enabled ? "var(--md-sys-color-on-primary)" : "var(--md-sys-color-on-surface)" }}>{enabled ? "Enabled" : "Disabled"}</button>
-+                </div>
-+              );
-+            }}
-+          </For>
++          <div class="nc-stack">
++            <For each={PLUGINS}>
++              {(plugin) => {
++                tick();
++                const states = readJson<Record<string, boolean>>("nullcord:plugins", {});
++                const enabled = states[plugin.id] ?? true;
++                return (
++                  <div class="nc-row">
++                    <div class="grow">
++                      <b>{plugin.name}</b>
++                      <div><small>{plugin.description}</small></div>
++                    </div>
++                    <button
++                      class={"nc-btn" + (enabled ? "" : " secondary")}
++                      onClick={() => togglePlugin(plugin.id)}
++                    >
++                      {enabled ? "Enabled" : "Disabled"}
++                    </button>
++                  </div>
++                );
++              }}
++            </For>
++          </div>
 +        </Show>
 +
 +        <Show when={tab() === "dev"}>
-+          <div style={panel}>
-+            <h2 style={{ marginTop: 0 }}>Developer</h2>
-+            <p style={{ opacity: 0.7 }}>NullCord developer tools are available to owners, admins and Developer-badge holders.</p>
-+            <p style={{ "font-size": 13 }}>User: {user()?.username ?? user()?.id}<br />Client: Stoat for Web / NullCord<br />API: {client()?.configuration?.api ?? "connected"}</p>
-+            <button onClick={() => navigate("/dev")} style={btn}>Open client dev tools</button>
++          <div class="nc-card">
++            <h2>Developer</h2>
++            <p>NullCord developer tools are available to owners, admins and Developer-badge holders.</p>
++            <p>
++              User: {user()?.username ?? user()?.id}
++              <br />Client: Stoat for Web / NullCord
++              <br />API: {client()?.configuration?.api ?? "connected"}
++            </p>
++            <button class="nc-btn" onClick={() => navigate("/dev")}>
++              Open client dev tools
++            </button>
 +          </div>
 +        </Show>
 +
-+        <div style={{ ...panel, "margin-top": 20 }}>
-+          <b>UI</b>
-+          <p style={{ opacity: 0.65, "font-size": 12 }}>Switch clients with automatic handoff.</p>
-+          <div style={{ display: "flex", gap: 8, "flex-wrap": "wrap" }}>
-+            <button onClick={() => switchUi("regular")} style={btn}>Regular</button>
-+            <button onClick={() => switchUi("combined")} style={btn}>Combined</button>
-+            <button onClick={() => {}} style={{ ...btn, opacity: 0.6 }}>Full NullCord UI</button>
++        <Show when={!props.only}>
++          <div class="nc-card">
++            <h2>UI</h2>
++            <p>Switch clients with automatic handoff.</p>
++            <div style={{ display: "flex", gap: 8, "flex-wrap": "wrap" }}>
++              <button class="nc-btn" onClick={() => switchUi("regular")}>Regular</button>
++              <button class="nc-btn secondary" onClick={() => switchUi("combined")}>Combined</button>
++              <button class="nc-btn secondary" disabled>Full NullCord UI</button>
++            </div>
 +          </div>
-+        </div>
++        </Show>
 +      </div>
 +    </div>
 +  );
++
 +}
 diff --git a/packages/client/src/interface/navigation/channels/HomeSidebar.tsx b/packages/client/src/interface/navigation/channels/HomeSidebar.tsx
-index 33ad4ec..1f19d86 100644
+index 33ad4ec..86ef2ed 100644
 --- a/packages/client/src/interface/navigation/channels/HomeSidebar.tsx
 +++ b/packages/client/src/interface/navigation/channels/HomeSidebar.tsx
-@@ -90,6 +90,19 @@ export const HomeSidebar = (props: Props) => {
+@@ -90,6 +90,57 @@ export const HomeSidebar = (props: Props) => {
  
            <div style={{ height: "5px" }} />
  
@@ -850,12 +939,92 @@ index 33ad4ec..1f19d86 100644
 +                : "normal"
 +            }
 +          >
-+            <ButtonTitle>NullCord</ButtonTitle>
++            <ButtonTitle>Quests</ButtonTitle>
 +          </MenuButton>
++
++          <MenuButton
++            href="/nullcord/nitro"
++            size="normal"
++            icon={<Symbol>workspace_premium</Symbol>}
++            attention={
++              Instance.relPath(location.pathname) === "/nullcord/nitro"
++                ? "selected"
++                : "normal"
++            }
++          >
++            <ButtonTitle>Nitro</ButtonTitle>
++          </MenuButton>
++
++          <Show
++            when={(() => {
++              const u = client().user;
++              return (
++                !!u &&
++                (u.privileged ||
++                  u.id === "01M5KCFRPDZZHPADH5BKJT19VG" ||
++                  ((u as any).badges & 1) !== 0)
++              );
++            })()}
++          >
++            <MenuButton
++              href="/nullcord/dev"
++              size="normal"
++              icon={<Symbol>code</Symbol>}
++              attention={
++                Instance.relPath(location.pathname) === "/nullcord/dev"
++                  ? "selected"
++                  : "normal"
++              }
++            >
++              <ButtonTitle>Dev</ButtonTitle>
++            </MenuButton>
++          </Show>
 +
            <MenuButton
              href="/friends"
              size="normal"
+diff --git a/packages/client/src/interface/nullcord.css b/packages/client/src/interface/nullcord.css
+new file mode 100644
+index 0000000..be75361
+--- /dev/null
++++ b/packages/client/src/interface/nullcord.css
+@@ -0,0 +1,36 @@
++.nc-page {
++  box-sizing: border-box;
++  width: 100%;
++  height: 100%;
++  overflow-y: auto;
++  padding: 28px 34px;
++  color: var(--md-sys-color-on-surface);
++  background:
++    radial-gradient(900px 420px at 18% -10%, color-mix(in srgb, var(--md-sys-color-primary) 14%, transparent), transparent 65%),
++    var(--md-sys-color-surface);
++}
++.nc-wrap { width: 100%; max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
++.nc-head { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
++.nc-head h1 { margin: 0; font-size: clamp(28px, 4vw, 38px); letter-spacing: -0.03em; }
++.nc-orbs { color: var(--md-sys-color-on-surface-variant); font-weight: 700; }
++.nc-tabs { display: flex; gap: 6px; flex-wrap: wrap; padding: 5px; width: fit-content; max-width: 100%; border-radius: 999px; background: var(--md-sys-color-surface-container); border: 1px solid var(--md-sys-color-outline-variant); }
++.nc-tab { border: 0; border-radius: 999px; padding: 8px 17px; cursor: pointer; font: inherit; font-weight: 700; color: var(--md-sys-color-on-surface-variant); background: transparent; transition: background .15s ease, color .15s ease, transform .15s ease; }
++.nc-tab:hover { background: var(--md-sys-color-surface-container-high); }
++.nc-tab.active { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); box-shadow: 0 4px 18px color-mix(in srgb, var(--md-sys-color-primary) 45%, transparent); }
++.nc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr)); gap: 14px; align-items: start; }
++.nc-card { min-width: 0; padding: 20px; border-radius: 24px; background: linear-gradient(145deg, var(--md-sys-color-surface-container), color-mix(in srgb, var(--md-sys-color-surface-container) 80%, var(--md-sys-color-primary) 20%)); border: 1px solid var(--md-sys-color-outline-variant); box-shadow: 0 6px 28px color-mix(in srgb, #000 18%, transparent); overflow-wrap: anywhere; display: flex; flex-direction: column; gap: 10px; }
++.nc-card h2, .nc-card h3 { margin: 0; font-size: 19px; }
++.nc-card p { margin: 0; color: var(--md-sys-color-on-surface-variant); font-size: 13px; line-height: 1.55; }
++.nc-locked { opacity: .58; filter: saturate(.55); }
++.nc-featured { border-color: var(--md-sys-color-primary); box-shadow: 0 0 0 1px color-mix(in srgb, var(--md-sys-color-primary) 55%, transparent), 0 14px 38px color-mix(in srgb, var(--md-sys-color-primary) 18%, transparent); }
++.nc-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--md-sys-color-on-surface-variant); font-size: 12px; }
++.nc-reward { color: var(--md-sys-color-primary); font-weight: 800; }
++.nc-btn { align-self: flex-start; border: 0; border-radius: 999px; padding: 10px 18px; font: inherit; font-weight: 800; cursor: pointer; color: var(--md-sys-color-on-primary); background: var(--md-sys-color-primary); transition: transform .15s ease, filter .15s ease; }
++.nc-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
++.nc-btn.secondary { color: var(--md-sys-color-on-surface); background: var(--md-sys-color-surface-container-high); }
++.nc-btn:disabled { opacity: .48; cursor: default; transform: none; filter: none; }
++.nc-row { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 20px; background: var(--md-sys-color-surface-container); border: 1px solid var(--md-sys-color-outline-variant); }
++.nc-row .grow { flex: 1; min-width: 0; }
++.nc-row small { color: var(--md-sys-color-on-surface-variant); font-size: 11px; }
++.nc-stack { display: flex; flex-direction: column; gap: 8px; }
++.nc-note { color: var(--md-sys-color-on-surface-variant); font-size: 12px; line-height: 1.5; }
 diff --git a/packages/client/src/interface/nullcord/quests.json b/packages/client/src/interface/nullcord/quests.json
 new file mode 100644
 index 0000000..943fd71
