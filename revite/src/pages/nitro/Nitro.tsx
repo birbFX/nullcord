@@ -1,5 +1,5 @@
 import { Star } from "@styled-icons/boxicons-solid";
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { Link } from "react-router-dom";
 import styled from "styled-components/macro";
 
@@ -7,7 +7,11 @@ import { Header } from "@revoltchat/ui";
 
 import GradientTheme from "../../components/settings/appearance/GradientTheme";
 
-import { isNitro } from "../../lib/owner";
+import {
+    getNitroTier,
+    setNitroTier,
+    type NitroTier,
+} from "../../lib/owner";
 import { useClient } from "../../controllers/client/ClientController";
 import { useApplicationState } from "../../mobx/State";
 import {
@@ -178,9 +182,23 @@ export default function Nitro() {
     const theme = state.settings.theme;
     const userId = client.user?._id;
     const admin = isAdminUser(client.user);
-    const [active, setActive] = useState(() => isNitro(client.user));
+    const [tier, setTier] = useState<NitroTier | null>(() =>
+        getNitroTier(client.user),
+    );
+    const active = tier !== null;
+    const full = tier === "nitro";
     const [orbs, setOrbs] = useState(() => getOrbs(userId));
     const [note, setNote] = useState<{ plan: string; text: string }>();
+
+    useEffect(() => {
+        const refresh = () => {
+            setTier(getNitroTier(client.user));
+            setOrbs(getOrbs(userId));
+        };
+        window.addEventListener("nullcord:nitro-changed", refresh);
+        return () =>
+            window.removeEventListener("nullcord:nitro-changed", refresh);
+    }, [client.user, userId]);
     const themeColours = [
         ["accent", "Accent"],
         ["background", "Background"],
@@ -206,8 +224,14 @@ export default function Nitro() {
     );
     const [css, setCss] = useState(() => theme.getCSS() ?? "");
 
-    const redeem = (plan: string, cost: number) => {
-        if (active || !userId) return;
+    const asColour = (value?: string) =>
+        /^#[0-9a-f]{6}$/i.test(value ?? "") ? value! : "#000000";
+
+    const redeem = (plan: "basic" | "nitro", cost: number) => {
+        if (!userId) return;
+        if (plan === "basic" && active) return;
+        if (plan === "nitro" && full) return;
+
         if (!admin && !spendOrbs(userId, cost)) {
             setNote({
                 plan,
@@ -215,10 +239,19 @@ export default function Nitro() {
             });
             return;
         }
-        localStorage.setItem(`nullcord:nitro:${userId}`, "1");
-        setActive(true);
+
+        setNitroTier(userId, plan);
+        setTier(plan);
         setOrbs(getOrbs(userId));
-        setNote({ plan, text: `${plan} unlocked with Orbs.` });
+        setNote({
+            plan,
+            text:
+                plan === "basic"
+                    ? "Nitro Basic unlocked with Orbs."
+                    : tier === "basic"
+                      ? "Upgraded to full Nitro."
+                      : "Nitro unlocked with Orbs.",
+        });
     };
 
     return (
@@ -232,7 +265,12 @@ export default function Nitro() {
             <Inner>
                 <Hero>
                     <span className="badge">
-                        <Star size={14} /> {active ? "NITRO ACTIVE" : "NITRO"}
+                        <Star size={14} />{" "}
+                        {full
+                            ? "NITRO ACTIVE"
+                            : tier === "basic"
+                              ? "NITRO BASIC ACTIVE"
+                              : "NITRO"}
                     </span>
                     <h1>Make NullCord yours.</h1>
                     <p>
@@ -262,11 +300,15 @@ export default function Nitro() {
                         </ul>
                         <button
                             disabled={active}
-                            onClick={() => redeem("Nitro Basic", 300)}>
-                            {active ? "Active" : "Redeem · 300 Orbs"}
+                            onClick={() => redeem("basic", 300)}>
+                            {tier === "basic"
+                                ? "Active"
+                                : full
+                                  ? "Included in Nitro"
+                                  : "Redeem · 300 Orbs"}
                         </button>
                         <div className="note">
-                            {note?.plan === "Nitro Basic" ? note.text : ""}
+                            {note?.plan === "basic" ? note.text : ""}
                         </div>
                     </Plan>
 
@@ -289,12 +331,21 @@ export default function Nitro() {
                             <li>Xbox Game Pass Starter + hardware discounts</li>
                         </ul>
                         <button
-                            disabled={active}
-                            onClick={() => redeem("Nitro", 900)}>
-                            {active ? "Active" : "Redeem · 900 Orbs"}
+                            disabled={full}
+                            onClick={() =>
+                                redeem(
+                                    "nitro",
+                                    tier === "basic" ? 600 : 900,
+                                )
+                            }>
+                            {full
+                                ? "Active"
+                                : tier === "basic"
+                                  ? "Upgrade · 600 Orbs"
+                                  : "Redeem · 900 Orbs"}
                         </button>
                         <div className="note">
-                            {note?.plan === "Nitro" ? note.text : ""}
+                            {note?.plan === "nitro" ? note.text : ""}
                         </div>
                     </Plan>
                 </Plans>
@@ -348,7 +399,7 @@ export default function Nitro() {
                         this device.
                     </p>
 
-                    {active ? (
+                    {full ? (
                         <>
                             <GradientTheme
                                 onApplied={() =>
@@ -383,7 +434,7 @@ export default function Nitro() {
                                         }}>
                                         <input
                                             type="color"
-                                            value={colors[key] ?? "#000000"}
+                                            value={asColour(colors[key])}
                                             onChange={(e) =>
                                                 setColors((c) => ({
                                                     ...c,
@@ -490,6 +541,11 @@ export default function Nitro() {
                                 {note?.plan === "theme" ? note.text : ""}
                             </div>
                         </>
+                    ) : tier === "basic" ? (
+                        <p style={{ margin: 0, color: "var(--secondary-foreground)", fontSize: 13 }}>
+                            Custom themes and gradients are included with full
+                            Nitro. Upgrade for 600 Orbs to unlock them.
+                        </p>
                     ) : (
                         <p style={{ margin: 0, color: "var(--secondary-foreground)", fontSize: 13 }}>
                             Redeem Nitro with Orbs above to unlock the custom

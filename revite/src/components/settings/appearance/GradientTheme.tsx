@@ -5,18 +5,39 @@ import { Button } from "@revoltchat/ui";
 
 import { useClient } from "../../../controllers/client/ClientController";
 import { useApplicationState } from "../../../mobx/State";
-import { customGradient, GRADIENT_PRESETS } from "../../../lib/gradients";
-import { isNitro } from "../../../lib/owner";
+import {
+    customGradient,
+    gradientSolid,
+    gradientText,
+    GRADIENT_PRESETS,
+} from "../../../lib/gradients";
+import { isNitroFull } from "../../../lib/owner";
 import { recordQuestEvent } from "../../../lib/quests";
 
 export default function GradientTheme({ onApplied }: { onApplied?: () => void }) {
     const client = useClient();
     const theme = useApplicationState().settings.theme;
     const userId = client.user?._id;
-    const nitro = isNitro(client.user);
+    const nitro = isNitroFull(client.user);
 
     const selectedKey = `nullcord:gradient:${userId ?? "guest"}`;
     const prevKey = `nullcord:gradient-prev:${userId ?? "guest"}`;
+    const surfaceVars = [
+        "background",
+        "primary-background",
+        "primary-header",
+        "secondary-background",
+        "secondary-header",
+        "tertiary-background",
+        "block",
+        "message-box",
+    ];
+    const textVars = [
+        "foreground",
+        "secondary-foreground",
+        "tertiary-foreground",
+    ];
+    const allVars = [...surfaceVars, ...textVars, "accent"];
 
     const [selected, setSelected] = useState(
         () => localStorage.getItem(selectedKey) ?? "",
@@ -39,14 +60,26 @@ export default function GradientTheme({ onApplied }: { onApplied?: () => void })
             if (!localStorage.getItem(prevKey)) {
                 localStorage.setItem(
                     prevKey,
-                    JSON.stringify({
-                        background: theme.getVariable("background"),
-                        primary: theme.getVariable("primary-background"),
-                    }),
+                    JSON.stringify(
+                        Object.fromEntries(
+                            allVars.map((key) => [
+                                key,
+                                theme.getVariable(key as any),
+                            ]),
+                        ),
+                    ),
                 );
             }
-            theme.setVariable("background", css);
-            theme.setVariable("primary-background", css);
+
+            const solid = gradientSolid(css);
+            const text = gradientText(css);
+            for (const key of surfaceVars) {
+                theme.setVariable(key as any, css);
+            }
+            for (const key of textVars) {
+                theme.setVariable(key as any, text);
+            }
+            theme.setVariable("accent", solid);
             localStorage.setItem(selectedKey, css);
             setSelected(css);
             recordQuestEvent(userId, "gradient_applied");
@@ -62,17 +95,27 @@ export default function GradientTheme({ onApplied }: { onApplied?: () => void })
             const raw = localStorage.getItem(prevKey);
             if (raw) {
                 const prev = JSON.parse(raw);
-                theme.setVariable("background", prev.background);
-                theme.setVariable("primary-background", prev.primary);
+                for (const key of allVars) {
+                    const value =
+                        prev[key] ??
+                        (key === "background" || key === "primary-background"
+                            ? prev.primary
+                            : undefined);
+                    if (value) theme.setVariable(key as any, value);
+                }
             } else {
-                theme.setVariable(
-                    "background",
-                    theme.getBase() === "light" ? "#ffffff" : "#191919",
-                );
-                theme.setVariable(
-                    "primary-background",
-                    theme.getBase() === "light" ? "#ffffff" : "#191919",
-                );
+                const fallback =
+                    theme.getBase() === "light" ? "#ffffff" : "#191919";
+                for (const key of surfaceVars) {
+                    theme.setVariable(key as any, fallback);
+                }
+                for (const key of textVars) {
+                    theme.setVariable(
+                        key as any,
+                        theme.getBase() === "light" ? "#111111" : "#ffffff",
+                    );
+                }
+                theme.setVariable("accent", "#5865f2");
             }
             localStorage.removeItem(prevKey);
             localStorage.removeItem(selectedKey);

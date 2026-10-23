@@ -35,13 +35,36 @@ export function isDeveloper(
 /** Accounts with Nitro enabled by default (UI only; billing is not implemented). */
 export const NITRO_IDS = new Set<string>([OWNER_ID]);
 
-function hasLocalNitro(id?: string | null): boolean {
-    if (!id || typeof localStorage === "undefined") return false;
-    try {
-        return localStorage.getItem(`nullcord:nitro:${id}`) === "1";
-    } catch {
-        return false;
+export type NitroTier = "basic" | "nitro";
+
+function nitroKey(id: string) {
+    return `nullcord:nitro:${id}`;
+}
+
+export function getNitroTier(
+    userOrId?:
+        | string
+        | { _id?: string | null; privileged?: boolean }
+        | null,
+): NitroTier | null {
+    if (!userOrId) return null;
+
+    if (typeof userOrId === "string") {
+        if (NITRO_IDS.has(userOrId) || userOrId === OWNER_ID) return "nitro";
+        if (typeof localStorage === "undefined") return null;
+        try {
+            const raw = localStorage.getItem(nitroKey(userOrId));
+            if (raw === "basic") return "basic";
+            if (raw === "nitro" || raw === "1") return "nitro";
+        } catch {
+            return null;
+        }
+        return null;
     }
+
+    if (userOrId.privileged) return "nitro";
+    const id = userOrId._id ?? undefined;
+    return id ? getNitroTier(id) : null;
 }
 
 export function isNitro(
@@ -50,15 +73,25 @@ export function isNitro(
         | { _id?: string | null; privileged?: boolean }
         | null,
 ): boolean {
-    if (!userOrId) return false;
-    if (typeof userOrId === "string") {
-        return (
-            NITRO_IDS.has(userOrId) ||
-            userOrId === OWNER_ID ||
-            hasLocalNitro(userOrId)
-        );
+    return getNitroTier(userOrId) !== null;
+}
+
+/** Full Nitro only; Nitro Basic does not include themes or boosts. */
+export function isNitroFull(
+    userOrId?:
+        | string
+        | { _id?: string | null; privileged?: boolean }
+        | null,
+): boolean {
+    return getNitroTier(userOrId) === "nitro";
+}
+
+export function setNitroTier(userId: string, tier: NitroTier | null) {
+    if (typeof localStorage === "undefined") return;
+    try {
+        if (tier) localStorage.setItem(nitroKey(userId), tier);
+        else localStorage.removeItem(nitroKey(userId));
+    } catch {
+        // ignore storage failures
     }
-    if (userOrId.privileged) return true;
-    const id = userOrId._id ?? undefined;
-    return !!id && (NITRO_IDS.has(id) || id === OWNER_ID || hasLocalNitro(id));
 }

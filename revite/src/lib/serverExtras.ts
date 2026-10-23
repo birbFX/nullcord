@@ -1,7 +1,7 @@
 import { useEffect, useState } from "preact/hooks";
 
 import { CLL_SERVER_ID } from "./constants";
-import { isNitro } from "./owner";
+import { isNitroFull } from "./owner";
 import { recordQuestEvent } from "./quests";
 
 export const SERVER_EXTRAS_EVENT = "nullcord:server-extras";
@@ -85,7 +85,7 @@ export function hasInfiniteBoosts(
 export function boostCapacity(
     user?: { _id?: string | null; privileged?: boolean } | null,
 ): number {
-    if (isNitro(user)) return 2;
+    if (isNitroFull(user)) return 2;
     return 0;
 }
 

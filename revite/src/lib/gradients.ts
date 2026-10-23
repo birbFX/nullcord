@@ -26,3 +26,46 @@ export const GRADIENT_PRESETS: GradientPreset[] = [
 export function customGradient(colourA: string, colourB: string, angle: number) {
     return `linear-gradient(${angle}deg, ${colourA} 0%, ${colourB} 100%)`;
 }
+
+/** Average the hex colours in a gradient to get a usable solid accent. */
+export function gradientSolid(css: string, fallback = "#5865f2"): string {
+    const colours = css.match(/#[0-9a-f]{3,8}\b/gi) ?? [];
+    if (colours.length === 0) return fallback;
+
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    let count = 0;
+
+    for (const value of colours) {
+        let hex = value.slice(1);
+        if (hex.length === 3) {
+            hex = hex
+                .split("")
+                .map((x) => x + x)
+                .join("");
+        }
+        if (hex.length < 6) continue;
+        r += parseInt(hex.slice(0, 2), 16);
+        g += parseInt(hex.slice(2, 4), 16);
+        b += parseInt(hex.slice(4, 6), 16);
+        count++;
+    }
+
+    if (!count) return fallback;
+    const to = (value: number) =>
+        Math.round(value / count)
+            .toString(16)
+            .padStart(2, "0");
+    return `#${to(r)}${to(g)}${to(b)}`;
+}
+
+/** Pick readable text for a gradient's average colour. */
+export function gradientText(css: string): string {
+    const solid = gradientSolid(css, "#191919").slice(1);
+    const r = parseInt(solid.slice(0, 2), 16);
+    const g = parseInt(solid.slice(2, 4), 16);
+    const b = parseInt(solid.slice(4, 6), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.55 ? "#111111" : "#ffffff";
+}

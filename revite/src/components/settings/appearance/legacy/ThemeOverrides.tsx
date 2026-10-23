@@ -75,6 +75,9 @@ const Container = styled.div`
     }
 `;
 
+const asColour = (value: string) =>
+    /^#[0-9a-f]{6}$/i.test(value) ? value : "#000000";
+
 export default observer(() => {
     const theme = useApplicationState().settings.theme;
     const setVariable = useDebounceCallback(
@@ -123,7 +126,7 @@ export default observer(() => {
                     <div className="input">
                         <input
                             type="color"
-                            value={theme.getVariable(key)}
+                            value={asColour(theme.getVariable(key))}
                             onChange={(el) =>
                                 setVariable({
                                     key,

@@ -2,6 +2,7 @@ import { useEffect } from "preact/hooks";
 import { useLocation } from "react-router-dom";
 
 import { useClient } from "../controllers/client/ClientController";
+import { runOneTimeMigrations } from "../lib/migrations";
 import {
     recordMessageSent,
     recordQuestEvent,
@@ -16,6 +17,11 @@ export default function QuestTracker() {
     const client = useClient();
     const { pathname } = useLocation();
     const userId = client.user?._id;
+
+    useEffect(() => {
+        if (!userId) return;
+        runOneTimeMigrations(client.user);
+    }, [client.user, userId]);
 
     useEffect(() => {
         if (!userId) return;

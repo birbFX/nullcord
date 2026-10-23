@@ -12,11 +12,11 @@ import GradientTheme from "../../../components/settings/appearance/GradientTheme
 import ThemeOverrides from "../../../components/settings/appearance/ThemeOverrides";
 import ThemeSelection from "../../../components/settings/appearance/ThemeSelection";
 import { useClient } from "../../../controllers/client/ClientController";
-import { isNitro } from "../../../lib/owner";
+import { isNitroFull } from "../../../lib/owner";
 
 export const Appearance = observer(() => {
     const client = useClient();
-    const nitro = isNitro(client.user);
+    const nitro = isNitroFull(client.user);
 
     return (
         <div className={styles.appearance}>

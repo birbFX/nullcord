@@ -3,7 +3,7 @@ import styled from "styled-components/macro";
 
 import { Text } from "preact-i18n";
 
-import { isNitro, isOwner } from "../../../lib/owner";
+import { getNitroTier, isOwner } from "../../../lib/owner";
 
 import Tooltip from "../Tooltip";
 import OwnerBadge from "./OwnerBadge";
@@ -70,13 +70,18 @@ export default function UserBadges({
         });
     }
 
-    if (isNitro({ _id: uid, privileged })) {
+    const nitroTier = getNitroTier({ _id: uid, privileged });
+    if (nitroTier) {
+        const label = nitroTier === "basic" ? "Nitro Basic" : "Nitro";
         items.push({
             key: "nitro",
-            title: "Nitro",
+            title: label,
             node: (
-                <Tooltip content="Nitro">
-                    <img src="/assets/badges/nitro-gift.svg" alt="Nitro" />
+                <Tooltip content={label}>
+                    <img
+                        src="/assets/badges/nitro-gift.svg"
+                        alt={label}
+                    />
                 </Tooltip>
             ),
         });
