@@ -6,6 +6,8 @@ import { Text } from "preact-i18n";
 import { getNitroTier, isDeveloper, isOwner } from "../../../lib/owner";
 import { CLL_SERVER_ID } from "../../../lib/constants";
 import { useClient } from "../../../controllers/client/ClientController";
+import earlyMemberIcon from "../../../assets/badges/early_member.svg";
+import developerWrenchIcon from "../../../assets/badges/developer_wrench.svg";
 
 import Tooltip from "../Tooltip";
 import OwnerBadge from "./OwnerBadge";
@@ -81,7 +83,7 @@ export default function UserBadges({
             node: (
                 <Tooltip content="Early Member · before 1,000 members">
                     <img
-                        src="/assets/badges/early_member.svg"
+                        src={earlyMemberIcon}
                         alt="Early Member"
                     />
                 </Tooltip>
@@ -159,7 +161,7 @@ export default function UserBadges({
             node: (
                 <Tooltip content="NullCord Developer">
                     <img
-                        src="/assets/badges/developer_wrench.svg"
+                        src={developerWrenchIcon}
                         alt="NullCord Developer"
                     />
                 </Tooltip>
