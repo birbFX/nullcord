@@ -29,9 +29,13 @@ export const Appearance = observer(() => {
             <ChatOptions />
             <hr />
             <CollapsibleSection
-                defaultValue={false}
+                defaultValue={true}
                 id="settings_overrides"
-                summary={nitro ? "Nitro theme overrides" : "Nitro theme overrides 🔒"}>
+                summary={
+                    nitro
+                        ? "Custom theme colors (Nitro)"
+                        : "Custom theme colors 🔒"
+                }>
                 {nitro ? (
                     <ThemeOverrides />
                 ) : (

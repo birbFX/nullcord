@@ -69,7 +69,7 @@ export function boostLevel(count: number): 0 | 1 | 2 | 3 {
     return 0;
 }
 
-/** Only Canyon Lake Labs has permanent infinite boosts. */
+/** Servers that always count as fully boosted. */
 export function serverHasInfiniteBoosts(serverId?: string | null): boolean {
     return serverId === CLL_SERVER_ID;
 }

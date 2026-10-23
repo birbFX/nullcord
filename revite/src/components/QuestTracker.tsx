@@ -2,7 +2,11 @@ import { useEffect } from "preact/hooks";
 import { useLocation } from "react-router-dom";
 
 import { useClient } from "../controllers/client/ClientController";
-import { recordQuestEvent, recordServerMemberJoin } from "../lib/quests";
+import {
+    recordMessageSent,
+    recordQuestEvent,
+    recordServerMemberJoin,
+} from "../lib/quests";
 
 /**
  * Watches real client activity for quest verification. It returns nothing;
@@ -22,8 +26,41 @@ export default function QuestTracker() {
             }
         };
 
+        const onMessage = (message: any) => {
+            if (message?.author_id !== userId) return;
+            const channel = client.channels.get(message.channel_id);
+            const hasImage = (message.attachments ?? []).some((attachment: any) => {
+                const type =
+                    attachment?.metadata?.type ??
+                    attachment?.content_type ??
+                    "";
+                if (typeof type === "string" && type.startsWith("image/")) {
+                    return true;
+                }
+                const name =
+                    attachment?.filename ?? attachment?.metadata?.name ?? "";
+                return /\.(png|jpe?g|gif|webp|avif)$/i.test(name);
+            });
+            recordMessageSent(userId, channel?.server_id, hasImage);
+        };
+
+        const onUpdated = (message: any, packet: any) => {
+            if (
+                packet?.type === "MessageReact" &&
+                packet.user_id === userId
+            ) {
+                recordQuestEvent(userId, "reaction");
+            }
+        };
+
         client.on("packet", listener);
-        return () => client.removeListener("packet", listener);
+        client.on("message", onMessage);
+        client.on("message/updated", onUpdated);
+        return () => {
+            client.removeListener("packet", listener);
+            client.removeListener("message", onMessage);
+            client.removeListener("message/updated", onUpdated);
+        };
     }, [client, userId]);
 
     useEffect(() => {

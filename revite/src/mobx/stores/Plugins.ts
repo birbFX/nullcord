@@ -138,7 +138,6 @@ export default class Plugins implements Store, Persistent<Data> {
      * Initialise all plugins
      */
     init() {
-        if (!this.state.experiments.isEnabled("plugins")) return;
         this.plugins.forEach(
             ({ namespace, id, enabled }) => enabled && this.load(namespace, id),
         );
@@ -149,9 +148,6 @@ export default class Plugins implements Store, Persistent<Data> {
      * @param plugin Plugin Manifest
      */
     add(plugin: Plugin) {
-        if (!this.state.experiments.isEnabled("plugins"))
-            return console.error("Enable plugins in experiments!");
-
         const loaded = this.getInstance(plugin);
         if (loaded) {
             this.unload(plugin.namespace, plugin.id);

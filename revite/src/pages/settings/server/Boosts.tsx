@@ -43,8 +43,7 @@ export const Boosts = observer(({ server }: Props) => {
             <h3>Boost Server</h3>
             <p style={{ marginTop: -6, color: "var(--secondary-foreground)" }}>
                 Boosts unlock perks for everyone in {server.name}. Nitro
-                includes 2 boosts. Canyon Lake Labs has permanent infinite
-                boosts; every other server needs real boosts.
+                includes 2 boosts; more boosts raise the server level.
             </p>
 
             <div

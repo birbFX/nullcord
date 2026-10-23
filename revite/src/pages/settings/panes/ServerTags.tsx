@@ -143,8 +143,8 @@ export const ServerTags = observer(() => {
             </div>
 
             <p style={{ fontSize: 11, color: "var(--secondary-foreground)" }}>
-                Canyon Lake Labs has the default <b>CLL</b> tag and permanent
-                infinite boosts. Every other server needs boosts.
+                Canyon Lake Labs has the default <b>CLL</b> tag. Tags are
+                shown next to the names of members who equip them.
             </p>
         </div>
     );

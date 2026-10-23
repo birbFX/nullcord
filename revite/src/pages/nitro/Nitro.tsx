@@ -181,12 +181,29 @@ export default function Nitro() {
     const [active, setActive] = useState(() => isNitro(client.user));
     const [orbs, setOrbs] = useState(() => getOrbs(userId));
     const [note, setNote] = useState<{ plan: string; text: string }>();
-    const [colors, setColors] = useState(() => ({
-        accent: theme.getVariable("accent") as string,
-        background: theme.getVariable("background") as string,
-        "primary-background": theme.getVariable("primary-background") as string,
-        foreground: theme.getVariable("foreground") as string,
-    }));
+    const themeColours = [
+        ["accent", "Accent"],
+        ["background", "Background"],
+        ["foreground", "Foreground"],
+        ["primary-background", "Primary background"],
+        ["primary-header", "Primary header"],
+        ["secondary-background", "Secondary background"],
+        ["secondary-foreground", "Secondary foreground"],
+        ["secondary-header", "Secondary header"],
+        ["tertiary-background", "Tertiary background"],
+        ["tertiary-foreground", "Tertiary foreground"],
+        ["block", "Block"],
+        ["message-box", "Message box"],
+    ] as const;
+
+    const [colors, setColors] = useState<Record<string, string>>(() =>
+        Object.fromEntries(
+            themeColours.map(([key]) => [
+                key,
+                (theme.getVariable(key) as string) ?? "#000000",
+            ]),
+        ),
+    );
     const [css, setCss] = useState(() => theme.getCSS() ?? "");
 
     const redeem = (plan: string, cost: number) => {
@@ -342,27 +359,31 @@ export default function Nitro() {
                                 }
                             />
                             <hr />
-                            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
-                                {(
-                                    [
-                                        ["accent", "Accent"],
-                                        ["background", "Background"],
-                                        ["primary-background", "Panels"],
-                                        ["foreground", "Text"],
-                                    ] as const
-                                ).map(([key, label]) => (
+                            <div
+                                style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                        "repeat(auto-fill, minmax(170px, 1fr))",
+                                    gap: 10,
+                                    marginBottom: 14,
+                                }}>
+                                {themeColours.map(([key, label]) => (
                                     <label
                                         key={key}
                                         style={{
                                             display: "flex",
                                             alignItems: "center",
                                             gap: 8,
+                                            padding: "8px 10px",
+                                            borderRadius: 8,
                                             fontSize: 12,
                                             color: "var(--secondary-foreground)",
+                                            background:
+                                                "var(--secondary-background)",
                                         }}>
                                         <input
                                             type="color"
-                                            value={colors[key]}
+                                            value={colors[key] ?? "#000000"}
                                             onChange={(e) =>
                                                 setColors((c) => ({
                                                     ...c,

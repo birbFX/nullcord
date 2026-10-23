@@ -142,7 +142,7 @@ export const Invites = ({ server }: Props) => {
                         color: "var(--secondary-foreground)",
                     }}>
                     {unlimited
-                        ? "Canyon Lake Labs has permanent Level 3 boosts."
+                        ? "Level 3 boosts are active for this server."
                         : allowed
                           ? "Level 3 unlocked — set a vanity invite code."
                           : `Level 3 requires 14 boosts. This server has ${boosts}/14.`}

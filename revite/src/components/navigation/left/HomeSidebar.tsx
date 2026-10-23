@@ -167,7 +167,7 @@ export default observer(() => {
                         Today: {questsDone}/{quests.length} verified
                     </div>
                 )}
-                {import.meta.env.DEV && isDeveloper(client.user) && (
+                {isDeveloper(client.user) && (
                     <Link to="/dev">
                         <ButtonItem active={pathname === "/dev"}>
                             <Wrench size={20} />
