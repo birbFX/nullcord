@@ -10,7 +10,7 @@ const MODES: { id: UiMode; name: string; description: string }[] = [
     },
     {
         id: "stoat",
-        name: "Stoat (not combined)",
+        name: "Stoat for Web (full UI)",
         description:
             "Material 3 colours, rounded panels and the Stoat navigation rail.",
     },
@@ -77,8 +77,18 @@ export default function UiModePicker() {
                             palette={
                                 mode === entry.id ? "primary" : "secondary"
                             }
-                            onClick={() => setUiMode(entry.id)}>
-                            {mode === entry.id ? "Active" : "Use"}
+                            onClick={() => {
+                                if (entry.id === "stoat") {
+                                    window.location.href = "/stoat/";
+                                    return;
+                                }
+                                setUiMode(entry.id);
+                            }}>
+                            {mode === entry.id
+                                ? "Active"
+                                : entry.id === "stoat"
+                                  ? "Open"
+                                  : "Use"}
                         </Button>
                     </div>
                 ))}

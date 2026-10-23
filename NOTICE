@@ -17,3 +17,13 @@ tree was not copied.
 
 NullCord itself is distributed under AGPL-3.0. See LICENSE.
 Source: https://github.com/birbFX/nullcord
+
+
+Bundled Stoat for Web UI
+------------------------
+The full Stoat for Web client is built separately and served at /stoat/.
+Upstream: https://github.com/stoatchat/for-web
+Commit: 70c0dd614f23e1007d6b4741baa771ea1fc086bc
+Licence: AGPL-3.0
+Local patch and build instructions: for-web/README.md, for-web/nullcord.patch,
+for-web/build.sh. The built dist/ is a build artifact and is not committed.

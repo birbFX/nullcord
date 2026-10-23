@@ -68,3 +68,9 @@ The Material 3 surface palette and visual tokens in
 [Stoat for Web](https://github.com/stoatchat/for-web), licensed AGPL-3.0.
 The upstream client is Solid.js; only the portable visual token layer was
 adapted, not its component tree. See `NOTICE`.
+
+## Stoat for Web UI
+
+The full Stoat for Web client is built from upstream commit
+`70c0dd614f23e1007d6b4741baa771ea1fc086bc` and served at `/stoat/`.
+Local modifications, build steps and the AGPL-3.0 notice are in `for-web/`.

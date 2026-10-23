@@ -6,11 +6,13 @@
  * no-cache for the app shell, with SPA history fallback. This replaces the
  * slow Vite dev server for normal use.
  */
+const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const sirv = require(path.join(__dirname, "revite", "node_modules", "sirv"));
 
 const DIST = path.join(__dirname, "revite", "dist");
+const FORWEB_DIST = path.join(__dirname, "for-web", "dist");
 const PORT = Number(process.env.CLIENT_PORT || 5173);
 
 function headers(res, pathname) {
@@ -26,14 +28,21 @@ function headers(res, pathname) {
     }
 }
 
-const handler = sirv(DIST, {
-    single: true,
-    etag: true,
-    // Read from disk on every request so newly built hashed bundles are
-    // picked up without restarting the server.
-    dev: true,
-    setHeaders: headers,
-});
+function createHandler(root) {
+    return sirv(root, {
+        single: true,
+        etag: true,
+        // Read from disk on every request so newly built hashed bundles are
+        // picked up without restarting the server.
+        dev: true,
+        setHeaders: headers,
+    });
+}
+
+const handler = createHandler(DIST);
+const forwebHandler = fs.existsSync(path.join(FORWEB_DIST, "index.html"))
+    ? createHandler(FORWEB_DIST)
+    : null;
 
 const server = http.createServer((req, res) => {
     // Health check without touching disk.
@@ -42,6 +51,19 @@ const server = http.createServer((req, res) => {
         res.end("ok\n");
         return;
     }
+    if (req.url === "/stoat") {
+        res.writeHead(302, { Location: "/stoat/" });
+        res.end();
+        return;
+    }
+
+    if (forwebHandler && req.url.startsWith("/stoat/")) {
+        const [pathname, query] = req.url.slice("/stoat".length).split("?");
+        req.url = (pathname || "/") + (query ? `?${query}` : "");
+        forwebHandler(req, res);
+        return;
+    }
+
     handler(req, res);
 });
 
