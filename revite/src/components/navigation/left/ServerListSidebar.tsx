@@ -28,15 +28,17 @@ export default observer(() => {
     );
 
     return (
-        <ServerList
-            client={client}
-            active={server_id}
-            createServer={createServer}
-            permit={state.notifications}
-            home={state.layout.getLastHomePath}
-            servers={state.ordering.orderedServers}
-            reorder={state.ordering.reorderServer}
-            showDiscovery={IS_REVOLT}
-        />
+        <div className="for-web-server-rail">
+            <ServerList
+                client={client}
+                active={server_id}
+                createServer={createServer}
+                permit={state.notifications}
+                home={state.layout.getLastHomePath}
+                servers={state.ordering.orderedServers}
+                reorder={state.ordering.reorderServer}
+                showDiscovery={IS_REVOLT}
+            />
+        </div>
     );
 });

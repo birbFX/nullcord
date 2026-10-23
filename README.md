@@ -60,3 +60,11 @@ If you run a modified version as a network service, you must offer its
 corresponding source — that is exactly what this repository is for.
 
 Source: <https://github.com/birbFX/nullcord>
+
+## UI attribution
+
+The Material 3 surface palette and visual tokens in
+`revite/src/styles/_for-web.scss` / `ForWebTheme.tsx` are adapted from
+[Stoat for Web](https://github.com/stoatchat/for-web), licensed AGPL-3.0.
+The upstream client is Solid.js; only the portable visual token layer was
+adapted, not its component tree. See `NOTICE`.

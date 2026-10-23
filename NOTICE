@@ -1,0 +1,19 @@
+NullCord — third-party notices
+================================
+
+UI / visual design attribution
+------------------------------
+The Material 3 colour palette, surface tokens, border-radius scale and
+navigation-rail proportions in revite/src/styles/_for-web.scss and
+revite/src/components/settings/appearance/ForWebTheme.tsx are adapted from:
+
+  Stoat for Web — https://github.com/stoatchat/for-web
+  Copyright the Stoat for Web contributors
+  Licensed under the GNU Affero General Public License v3.0
+
+The original client is built with Solid.js. NullCord is a Preact client, so
+only the portable visual token layer was adapted; the upstream component
+tree was not copied.
+
+NullCord itself is distributed under AGPL-3.0. See LICENSE.
+Source: https://github.com/birbFX/nullcord

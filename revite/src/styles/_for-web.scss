@@ -1,0 +1,55 @@
+/*
+ * Material 3 visual tokens adapted from Stoat for Web
+ * https://github.com/stoatchat/for-web (AGPL-3.0)
+ *
+ * Only the visual token/spacing layer is ported; the original is SolidJS.
+ */
+
+:root {
+    --fw-radius-xs: 4px;
+    --fw-radius-sm: 8px;
+    --fw-radius-md: 12px;
+    --fw-radius-lg: 16px;
+    --fw-radius-xl: 28px;
+    --fw-gap-xs: 2px;
+    --fw-gap-sm: 4px;
+    --fw-gap-md: 8px;
+    --fw-gap-lg: 15px;
+    --fw-gap-xl: 32px;
+    --fw-transition-fast: 0.1s ease-in-out;
+    --fw-transition-medium: 0.2s ease;
+}
+
+/* Material 3 navigation rail proportions for the server rail. */
+.for-web-server-rail {
+    width: 56px;
+    height: 100%;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 0;
+    background: transparent;
+}
+
+.for-web-server-rail > div {
+    width: 56px;
+    height: 100%;
+    flex: 1;
+    min-height: 0;
+}
+
+.for-web-server-rail a {
+    border-radius: var(--fw-radius-lg);
+    transition: border-radius var(--fw-transition-fast);
+}
+
+/* Material 3 visible keyboard focus. */
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+::selection {
+    color: #141218;
+    background: var(--accent);
+}
