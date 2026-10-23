@@ -302,6 +302,24 @@ export default class State {
         // Dump stores back to disk.
         await this.save();
 
+        // One-time clean-up for stale split-colour themes. Some old themes
+        // recoloured only headers/sidebars and left app backgrounds behind.
+        try {
+            const themeFix = "nullcord:theme-reset-split-colours-v1";
+            if (!localStorage.getItem(themeFix)) {
+                this.settings.theme.setBase("dark");
+                this.settings.theme.reset();
+                for (const key of Object.keys(localStorage)) {
+                    if (key.startsWith("nullcord:gradient")) {
+                        localStorage.removeItem(key);
+                    }
+                }
+                localStorage.setItem(themeFix, "1");
+            }
+        } catch {
+            // ignore storage failures
+        }
+
         // Auto-login when arriving from the Stoat UI.
         const handoff = consumeHandoff("nullcord");
         if (handoff) {
