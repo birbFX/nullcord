@@ -6,8 +6,9 @@ NullCord serves the full Stoat for Web client at **`/stoat/`** as the
 - Upstream: https://github.com/stoatchat/for-web
 - Upstream commit: `70c0dd614f23e1007d6b4741baa771ea1fc086bc`
 - Upstream licence: AGPL-3.0
-- Local modifications: `nullcord.patch` (title/manifest, Router base, NullCord
-  return link). Apply it to a clean upstream checkout.
+- Local modifications: `nullcord.patch` (NullCord branding, base-aware
+  SPA navigation, short-lived client handoff, UI switch and speed fixes).
+  Apply it to a clean upstream checkout.
 
 ## Build
 

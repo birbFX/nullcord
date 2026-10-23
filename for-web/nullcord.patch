@@ -241,10 +241,10 @@ index 51901bc..572e120 100644
      const policy = controller.lifecycle.policyAttentionRequired();
      if (policy) {
 diff --git a/packages/client/index.html b/packages/client/index.html
-index c0708b7..d1d45de 100644
+index c0708b7..0a87e01 100644
 --- a/packages/client/index.html
 +++ b/packages/client/index.html
-@@ -10,14 +10,79 @@
+@@ -10,14 +10,78 @@
    <meta name="theme-color" content="#000" media="(prefers-color-scheme: dark)">
    <meta http-equiv="cache-control" content="no-cache">
    <link rel="shortcut icon" type="image/png" href="./public/assets/web/icon.ico">
@@ -264,19 +264,18 @@ index c0708b7..d1d45de 100644
 +  history.pushState = function (state, title, url) { return push.call(this, state, title, fix(url)); };
 +  var replace = history.replaceState;
 +  history.replaceState = function (state, title, url) { return replace.call(this, state, title, fix(url)); };
++  // Link clicks stay inside the for-web router.
++
 +  document.addEventListener("click", function (event) {
 +    if (event.defaultPrevented || event.button !== 0) return;
 +    var anchor = event.target && event.target.closest && event.target.closest("a");
-+    if (!anchor || anchor.classList.contains("nullcord-return")) return;
++    if (!anchor) return;
 +    var href = anchor.getAttribute("href");
 +    if (!href || href.charAt(0) !== "/" || href === BASE || href.indexOf(BASE + "/") === 0 || href.indexOf(BASE + "?") === 0) return;
 +    event.preventDefault();
 +    var target = BASE + href;
-+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-+      window.open(target, anchor.getAttribute("target") || "_blank");
-+    } else {
-+      window.location.href = target;
-+    }
++    history.pushState({}, "", target);
++    window.dispatchEvent(new PopStateEvent("popstate"));
 +  }, true);
 +})();
 +</script>
