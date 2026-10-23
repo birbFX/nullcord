@@ -86,6 +86,8 @@ export default function UiModePicker() {
                                     if (account) {
                                         writeHandoff(account, "stoat");
                                     }
+                                    document.cookie =
+                                        "nullcord_client=stoat; path=/; SameSite=Lax";
                                     window.location.href = "/stoat/";
                                     return;
                                 }

@@ -162,6 +162,54 @@
     toast("NullCord data removed.");
   }
 
+
+  async function securityScan() {
+    const out = document.getElementById("nc-hack-scan-output");
+    const findings = [];
+    const add = (level, text) => findings.push(`[${level}] ${text}`);
+
+    if (location.protocol !== "https:" && location.hostname !== "localhost") {
+      add("HIGH", "Page is not HTTPS.");
+    }
+    const tokenKeys = Object.keys(localStorage).filter((k) => {
+      const v = localStorage.getItem(k) || "";
+      return /^[A-Za-z0-9_-]{40,}$/.test(v);
+    });
+    if (tokenKeys.length) add("HIGH", `Token-like values in localStorage: ${tokenKeys.join(", ")}`);
+    if (localStorage.getItem("nullcord:handoff")) add("MEDIUM", "Active 2-minute handoff token is present.");
+    if (localStorage.getItem("nullcord:nitro:" + (session.userId || ""))) add("INFO", "Nitro tier is stored client-side and editable.");
+    if (localStorage.getItem("nullcord:orbs:" + (session.userId || ""))) add("INFO", "Orbs are stored client-side and editable.");
+
+    try {
+      const res = await fetch(location.href, { method: "HEAD" });
+      const csp = res.headers.get("content-security-policy");
+      const frame = res.headers.get("x-frame-options");
+      add(csp ? "INFO" : "MEDIUM", csp ? "CSP header present." : "No Content-Security-Policy header.");
+      add(frame ? "INFO" : "MEDIUM", frame ? `X-Frame-Options: ${frame}` : "No X-Frame-Options header.");
+    } catch (e) {
+      add("INFO", "Could not inspect response headers.");
+    }
+
+    const externalScripts = [...document.scripts].filter(
+      (s) => s.src && !s.src.startsWith(location.origin) && !s.integrity,
+    );
+    if (externalScripts.length) add("HIGH", `${externalScripts.length} external script(s) without SRI.`);
+
+    const mixed = performance.getEntriesByType("resource").filter((r) => r.name.startsWith("http://"));
+    if (mixed.length) add("HIGH", `${mixed.length} mixed-content resource(s) loaded over HTTP.`);
+
+    add("INFO", "Session tokens live in browser storage and are readable by same-origin JavaScript (expected for this client).");
+    add("INFO", "Login lockout is disabled server-side; repeated wrong passwords fail immediately.");
+    add("INFO", "Hack client is served at /hack-client.js and is owner-gated in this UI.");
+
+    out.textContent = findings.join("\n") || "No findings.";
+  }
+
+  function clearHandoff() {
+    localStorage.removeItem("nullcord:handoff");
+    toast("Handoff cleared.");
+  }
+
   function refresh() {
     const uid = currentUserId();
     const orbs = localStorage.getItem(KEY(`orbs:${uid}`));
@@ -185,17 +233,17 @@
   function style() {
     const css = document.createElement("style");
     css.textContent = `
-      #nc-hack-fab{position:fixed;left:14px;bottom:14px;z-index:2147483646;border:1px solid #6ee7ff;background:#101823;color:#e6edf7;border-radius:999px;padding:10px 14px;font:700 12px Inter,sans-serif;cursor:pointer;box-shadow:0 8px 30px #0008}
-      #nc-hack-panel{position:fixed;left:14px;bottom:64px;width:min(560px,calc(100vw - 28px));max-height:calc(100vh - 90px);overflow:auto;z-index:2147483647;background:#101823f7;color:#e6edf7;border:1px solid #334155;border-radius:18px;box-shadow:0 20px 80px #000c;font:13px/1.45 Inter,sans-serif;backdrop-filter:blur(18px)}
+      #nc-hack-fab{position:fixed;left:14px;bottom:14px;z-index:2147483646;border:1px solid #6ee7ff;background:linear-gradient(135deg,#0f172a,#172554);color:#e6edf7;border-radius:999px;padding:10px 14px;font:700 12px Inter,sans-serif;cursor:pointer;box-shadow:0 8px 30px #0008}
+      #nc-hack-panel{position:fixed;left:14px;bottom:64px;width:min(560px,calc(100vw - 28px));max-height:calc(100vh - 90px);overflow:auto;z-index:2147483647;background:#101823f7;color:#e6edf7;border:1px solid #334155;border-radius:28px;box-shadow:0 30px 100px #000d;background-image:radial-gradient(circle at 10% 0%,#1d4ed855,transparent 45%),radial-gradient(circle at 95% 10%,#7c3aed44,transparent 45%);font:13px/1.45 Inter,sans-serif;backdrop-filter:blur(18px)}
       #nc-hack-panel *{box-sizing:border-box}
       #nc-hack-panel .hd{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid #263244;font-weight:800;font-size:16px}
       #nc-hack-panel .bd{padding:16px 18px;display:grid;gap:14px}
-      #nc-hack-panel section{border:1px solid #263244;border-radius:12px;padding:12px;display:grid;gap:8px;background:#0b1220}
+      #nc-hack-panel section{border:1px solid #33415588;border-radius:20px;padding:14px;display:grid;gap:9px;background:linear-gradient(145deg,#0b1220dd,#111c31cc);backdrop-filter:blur(14px)}
       #nc-hack-panel h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#8ea3bd}
       #nc-hack-panel label{display:grid;gap:4px;font-size:11px;color:#9fb0c7}
-      #nc-hack-panel input,#nc-hack-panel select,#nc-hack-panel textarea{width:100%;background:#08101c;color:#e6edf7;border:1px solid #334155;border-radius:8px;padding:8px 10px;font:12px/1.4 ui-monospace,monospace}
+      #nc-hack-panel input,#nc-hack-panel select,#nc-hack-panel textarea{width:100%;background:#08101cdd;color:#e6edf7;border:1px solid #334155;border-radius:14px;padding:9px 12px;font:12px/1.4 ui-monospace,monospace}
       #nc-hack-panel textarea{min-height:90px;resize:vertical}
-      #nc-hack-panel button{border:0;border-radius:8px;padding:8px 11px;font-weight:700;background:#7dd3fc;color:#07202e;cursor:pointer}
+      #nc-hack-panel button{border:0;border-radius:999px;padding:9px 14px;font-weight:700;background:linear-gradient(135deg,#7dd3fc,#818cf8);color:#061426;cursor:pointer;box-shadow:0 4px 18px #38bdf833}
       #nc-hack-panel .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
       #nc-hack-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483647;background:#0b1220ee;color:#e6edf7;border:1px solid #334155;border-radius:999px;padding:8px 14px;opacity:0;transition:.2s;font:600 12px Inter,sans-serif;pointer-events:none}
       #nc-hack-panel .muted{font-size:11px;color:#8ea3bd}
@@ -248,6 +296,12 @@
           <div class="row"><button id="nc-hack-set-ui">Set UI mode</button></div>
         </section>
         <section>
+          <h3>Security scan</h3>
+          <div class="muted">Authorized local checks for this browser only — no attacks on other users.</div>
+          <div class="row"><button id="nc-hack-scan">Run scan</button><button id="nc-hack-clear-handoff" style="background:#fbbf24">Clear handoff</button></div>
+          <pre id="nc-hack-scan-output" style="white-space:pre-wrap;font:11px/1.45 ui-monospace,monospace;color:#9fd4ff;max-height:220px;overflow:auto;margin:0"></pre>
+        </section>
+        <section>
           <h3>Storage</h3>
           <textarea id="nc-hack-dump" readonly></textarea>
           <div class="row"><button id="nc-hack-refresh" style="background:#334155;color:#fff">Refresh</button><button id="nc-hack-wipe" style="background:#ef4444;color:#fff">Wipe nullcord:*</button></div>
@@ -272,13 +326,23 @@
     on("nc-hack-set-ui", setUiMode);
     on("nc-hack-refresh", refresh);
     on("nc-hack-wipe", wipeNullCord);
+    on("nc-hack-scan", securityScan);
+    on("nc-hack-clear-handoff", clearHandoff);
     for (const id of ["server-tags", "quest-helper", "no-snow"]) {
       document
         .getElementById(`nc-hack-plugin-${id}`)
         .addEventListener("change", (e) => togglePlugin(id, e.target.checked));
     }
 
-    detectSession().then(refresh);
+    detectSession().then(() => {
+      const owner = "01M5KCFRPDZZHPADH5BKJT19VG";
+      const bd = panel.querySelector(".bd");
+      if (session.userId && session.userId !== owner) {
+        bd.innerHTML = '<section><h3>Owner only</h3><div class="muted">This hack client is restricted to the NullCord owner account.</div></section>';
+        return;
+      }
+      refresh();
+    });
   }
 
   if (document.readyState === "loading") {

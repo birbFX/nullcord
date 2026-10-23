@@ -31,6 +31,11 @@ export function setUiMode(mode: UiMode) {
         // ignore
     }
     applyUiMode(mode);
+    try {
+        document.cookie = `nullcord_client=${mode === "stoat" ? "stoat" : "nullcord"}; path=/; SameSite=Lax`;
+    } catch {
+        // ignore
+    }
     window.dispatchEvent(new Event(UI_MODE_EVENT));
 }
 

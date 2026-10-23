@@ -1,8 +1,8 @@
 diff --git a/packages/client/components/app/interface/settings/UserSettings.tsx b/packages/client/components/app/interface/settings/UserSettings.tsx
-index 75a5d7f..2c68cee 100644
+index 75a5d7f..40f0ba3 100644
 --- a/packages/client/components/app/interface/settings/UserSettings.tsx
 +++ b/packages/client/components/app/interface/settings/UserSettings.tsx
-@@ -8,7 +8,6 @@ import { useClient, useClientLifecycle } from "@revolt/client";
+@@ -8,11 +8,11 @@ import { useClient, useClientLifecycle } from "@revolt/client";
  import { useInstance } from "@revolt/instance";
  import { useUser } from "@revolt/markdown/users";
  import { useModals } from "@revolt/modal";
@@ -10,7 +10,46 @@ index 75a5d7f..2c68cee 100644
  import { ColouredText, Column, Text, iconSize } from "@revolt/ui";
  import { Symbol } from "@revolt/ui/components/utils/Symbol";
  
-@@ -318,17 +317,9 @@ const Config: SettingsConfiguration<{ server: Server }> = {
+ import MdAccountCircle from "@material-design-icons/svg/outlined/account_circle.svg?component-solid";
++import MdAutoAwesome from "@material-design-icons/svg/outlined/auto_awesome.svg?component-solid";
+ import MdCampaign from "@material-design-icons/svg/outlined/campaign.svg?component-solid";
+ import MdCoffee from "@material-design-icons/svg/outlined/coffee.svg?component-solid";
+ import MdLanguage from "@material-design-icons/svg/outlined/language.svg?component-solid";
+@@ -34,6 +34,7 @@ import { AccountCard, BackCard } from "./user/_AccountCard";
+ import { MyAccount } from "./user/Account";
+ import AdvancedSettings from "./user/Advanced";
+ import { AppearanceMenu } from "./user/appearance";
++import { NullCordPage } from "../../../../src/interface/NullCord";
+ import { MyBots, ViewBot } from "./user/bots";
+ import { Feedback } from "./user/Feedback";
+ import { LanguageSettings } from "./user/Language";
+@@ -80,6 +81,8 @@ const Config: SettingsConfiguration<{ server: Server }> = {
+         return <MyAccount onClose={props.onClose} />;
+       case "appearance":
+         return <AppearanceMenu />;
++      case "nullcord":
++        return <NullCordPage />;
+       case "advanced":
+         return <AdvancedSettings />;
+       case "profile":
+@@ -248,6 +251,16 @@ const Config: SettingsConfiguration<{ server: Server }> = {
+             },
+           ],
+         },
++        {
++          title: "NullCord",
++          entries: [
++            {
++              id: "nullcord",
++              icon: <MdAutoAwesome {...iconSize(20)} />,
++              title: "NullCord",
++            },
++          ],
++        },
+         {
+           title: <Trans>Client Settings</Trans>,
+           entries: [
+@@ -318,17 +331,9 @@ const Config: SettingsConfiguration<{ server: Server }> = {
          },
          {
            entries: [
@@ -30,7 +69,7 @@ index 75a5d7f..2c68cee 100644
                icon: <MdMemory {...iconSize(20)} />,
                title: <Trans>Source Code</Trans>,
              },
-@@ -337,11 +328,7 @@ const Config: SettingsConfiguration<{ server: Server }> = {
+@@ -337,11 +342,7 @@ const Config: SettingsConfiguration<{ server: Server }> = {
                icon: <MdScience {...iconSize(20)} />,
                title: <Trans>Advanced</Trans>,
              },
@@ -44,7 +83,7 @@ index 75a5d7f..2c68cee 100644
                id: "logout",
                icon: (
 diff --git a/packages/client/components/app/interface/settings/user/appearance/AppearanceMenu.tsx b/packages/client/components/app/interface/settings/user/appearance/AppearanceMenu.tsx
-index 89790ec..4c673c8 100644
+index 89790ec..49f1171 100644
 --- a/packages/client/components/app/interface/settings/user/appearance/AppearanceMenu.tsx
 +++ b/packages/client/components/app/interface/settings/user/appearance/AppearanceMenu.tsx
 @@ -4,7 +4,7 @@ import { Trans, useLingui } from "@lingui/solid/macro";
@@ -109,129 +148,10 @@ index 89790ec..4c673c8 100644
  
    function loadFonts() {
      for (const f in FONTS) FONTS[f as Fonts].load();
-@@ -63,6 +106,127 @@ export function AppearanceMenu() {
+@@ -63,6 +106,8 @@ export function AppearanceMenu() {
          </Text>
        </MessagePreview>
  
-+      <Column>
-+        <Text class="title" size="small">NullCord UI</Text>
-+        <Text>
-+          Switch between the default client styles. Quest, tag, plugin and
-+          Nitro pages open in the NullCord client.
-+        </Text>
-+        <Row gap="xs" justify="stretch" wrap>
-+          <Button
-+            group="connected-start"
-+            onPress={() => {
-+              const session = state.auth.getSession();
-+              if (session) {
-+                localStorage.setItem(
-+                  "nullcord:handoff",
-+                  JSON.stringify({
-+                    token: session.token,
-+                    userId: session.userId,
-+                    sessionId: session._id,
-+                    expires: Date.now() + 120000,
-+                    target: "nullcord",
-+                  }),
-+                );
-+              }
-+              localStorage.setItem("nullcord:ui-mode", "regular");
-+              location.href = "/";
-+            }}
-+          >
-+            Regular
-+          </Button>
-+          <Button
-+            group="connected"
-+            onPress={() => {
-+              const session = state.auth.getSession();
-+              if (session) {
-+                localStorage.setItem(
-+                  "nullcord:handoff",
-+                  JSON.stringify({
-+                    token: session.token,
-+                    userId: session.userId,
-+                    sessionId: session._id,
-+                    expires: Date.now() + 120000,
-+                    target: "nullcord",
-+                  }),
-+                );
-+              }
-+              localStorage.setItem("nullcord:ui-mode", "combined");
-+              location.href = "/";
-+            }}
-+          >
-+            Combined
-+          </Button>
-+          <Button group="connected-end" groupActive onPress={() => {}}>
-+            Full NullCord UI
-+          </Button>
-+        </Row>
-+        <Row gap="xs" justify="stretch" wrap>
-+          <Button onPress={() => window.open("/quests", "_blank")}>
-+            Quests & Orbs
-+          </Button>
-+          <Button onPress={() => window.open("/settings/server-tags", "_blank")}>
-+            Server Tags
-+          </Button>
-+          <Button onPress={() => window.open("/settings/plugins", "_blank")}>
-+            Plugins
-+          </Button>
-+          <Button onPress={() => window.open("/nitro", "_blank")}>
-+            Nitro
-+          </Button>
-+        </Row>
-+      </Column>
-+
-+      <Column>
-+        <Text class="title" size="small">Server Tags</Text>
-+        <Text>Equip a tag to represent a server. Servers without tags are locked.</Text>
-+        <For each={client().servers.toList()}>
-+          {(server) => {
-+            tagsTick();
-+            const tag = tagFor(server.id);
-+            const active = equippedTag() === server.id;
-+            return (
-+              <Row justify="stretch" align gap="sm">
-+                <Text>{server.name} {tag ? `◆ ${tag}` : "— no tag"}</Text>
-+                <Button
-+                  disabled={!tag || active}
-+                  groupActive={active}
-+                  onPress={() => equipTag(server.id, tag)}
-+                >
-+                  {active ? "Equipped" : tag ? "Equip" : "Locked"}
-+                </Button>
-+              </Row>
-+            );
-+          }}
-+        </For>
-+      </Column>
-+
-+      <Column>
-+        <Text class="title" size="small">Plugins</Text>
-+        <Text>Built-in NullCord plugins. Changes apply immediately.</Text>
-+        <For each={plugins}>
-+          {([id, name, description]) => {
-+            pluginsTick();
-+            const enabled = pluginEnabled(id);
-+            return (
-+              <Row justify="stretch" align gap="sm">
-+                <Column gap="none">
-+                  <Text>{name}</Text>
-+                  <Text size="small">{description}</Text>
-+                </Column>
-+                <Button
-+                  groupActive={enabled}
-+                  onPress={() => togglePlugin(id)}
-+                >
-+                  {enabled ? "Enabled" : "Disabled"}
-+                </Button>
-+              </Row>
-+            );
-+          }}
-+        </For>
-+      </Column>
 +
 +
        <Column>
@@ -352,10 +272,10 @@ index 51901bc..572e120 100644
      const policy = controller.lifecycle.policyAttentionRequired();
      if (policy) {
 diff --git a/packages/client/index.html b/packages/client/index.html
-index c0708b7..0a87e01 100644
+index c0708b7..7e3bb8c 100644
 --- a/packages/client/index.html
 +++ b/packages/client/index.html
-@@ -10,14 +10,78 @@
+@@ -10,14 +10,79 @@
    <meta name="theme-color" content="#000" media="(prefers-color-scheme: dark)">
    <meta http-equiv="cache-control" content="no-cache">
    <link rel="shortcut icon" type="image/png" href="./public/assets/web/icon.ico">
@@ -366,6 +286,7 @@ index c0708b7..0a87e01 100644
 +<script>
 +(function () {
 +  var BASE = "/stoat";
++  document.cookie = "nullcord_client=stoat; path=/; SameSite=Lax";
 +  function fix(url) {
 +    if (typeof url !== "string" || url.charAt(0) !== "/") return url;
 +    if (url === BASE || url.indexOf(BASE + "/") === 0 || url.indexOf(BASE + "?") === 0) return url;
@@ -543,10 +464,10 @@ index 43e6da7..a3bbdb3 100644
              <Show when={instance.isStoat}>
 diff --git a/packages/client/src/interface/NullCord.tsx b/packages/client/src/interface/NullCord.tsx
 new file mode 100644
-index 0000000..614683f
+index 0000000..4a2b1f1
 --- /dev/null
 +++ b/packages/client/src/interface/NullCord.tsx
-@@ -0,0 +1,363 @@
+@@ -0,0 +1,364 @@
 +import { For, Show, createSignal, onCleanup, onMount } from "solid-js";
 +import { useClient, useUser } from "@revolt/client";
 +import { useNavigate } from "@revolt/routing";
@@ -757,6 +678,7 @@ index 0000000..614683f
 +        }),
 +      );
 +    }
++    document.cookie = "nullcord_client=nullcord; path=/; SameSite=Lax";
 +    localStorage.setItem("nullcord:ui-mode", mode);
 +    location.href = "/";
 +  };
@@ -788,7 +710,7 @@ index 0000000..614683f
 +    refresh();
 +  };
 +
-+  const panel = { padding: 18, borderRadius: 16, background: "var(--md-sys-color-surface-container)", border: "1px solid var(--md-sys-color-outline-variant)" } as const;
++  const panel = { padding: 18, borderRadius: 18, minWidth: 0, overflow: "hidden", background: "var(--md-sys-color-surface-container)", border: "1px solid var(--md-sys-color-outline-variant)", overflowWrap: "anywhere" } as const;
 +  const btn = { border: 0, borderRadius: 999, padding: "9px 14px", fontWeight: 700, cursor: "pointer", background: "var(--md-sys-color-primary)", color: "var(--md-sys-color-on-primary)" } as const;
 +
 +  const orbLabel = () => {
@@ -806,7 +728,7 @@ index 0000000..614683f
 +        </div>
 +
 +        <div style={{ display: "flex", gap: 8, "flex-wrap": "wrap", "margin-bottom": 20 }}>
-+          <For each={["quests", "nitro", ...(isDev(user()) ? ["dev"] : [])] as Tab[]}>
++          <For each={["quests", "nitro", "tags", "plugins", ...(isDev(user()) ? ["dev"] : [])] as Tab[]}>
 +            {(id) => (
 +              <button onClick={() => setTab(id)} style={{ ...btn, background: tab() === id ? "var(--md-sys-color-primary)" : "var(--md-sys-color-surface-container-high)", color: tab() === id ? "var(--md-sys-color-on-primary)" : "var(--md-sys-color-on-surface)" }}>
 +                {id === "dev" ? "Dev" : id[0].toUpperCase() + id.slice(1)}
@@ -816,7 +738,7 @@ index 0000000..614683f
 +        </div>
 +
 +        <Show when={tab() === "quests"}>
-+          <div style={{ display: "grid", "grid-template-columns": "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
++          <div style={{ display: "grid", "grid-template-columns": "repeat(auto-fill, minmax(min(280px, 100%), 1fr))", gap: 12 }}>
 +            <For each={dailyQuests(userId())}>
 +              {(quest) => {
 +                tick();

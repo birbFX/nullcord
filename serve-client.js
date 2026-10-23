@@ -50,6 +50,21 @@ const forwebHandler = fs.existsSync(path.join(FORWEB_DIST, "index.html"))
 
 const server = http.createServer((req, res) => {
     // Health check without touching disk.
+    const cookies = req.headers.cookie || "";
+    const stoatMode = /(?:^|;\s*)nullcord_client=stoat(?:;|$)/.test(cookies);
+    const wantsHtml = !!(req.headers.accept || "").includes("text/html");
+    if (
+        stoatMode &&
+        wantsHtml &&
+        req.url !== "/hack-client.js" &&
+        req.url !== "/healthz" &&
+        !req.url.startsWith("/stoat")
+    ) {
+        res.writeHead(302, { Location: "/stoat" + req.url });
+        res.end();
+        return;
+    }
+
     if (req.url === "/hack-client.js") {
         res.writeHead(200, {
             "Content-Type": "application/javascript; charset=utf-8",
