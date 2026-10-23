@@ -4,6 +4,7 @@ import localforage from "localforage";
 import { action, makeAutoObservable, reaction, runInAction } from "mobx";
 import { Client, ClientboundNotification } from "revolt.js";
 
+import { consumeHandoff } from "../lib/handoff";
 import { reportError } from "../lib/ErrorBoundary";
 import { injectWindow } from "../lib/window";
 
@@ -300,6 +301,17 @@ export default class State {
 
         // Dump stores back to disk.
         await this.save();
+
+        // Auto-login when arriving from the Stoat UI.
+        const handoff = consumeHandoff("nullcord");
+        if (handoff) {
+            this.auth.setSession({
+                _id: handoff.sessionId,
+                user_id: handoff.userId,
+                token: handoff.token,
+                name: "NullCord handoff",
+            } as never);
+        }
 
         // Post-hydration, init plugins.
         this.plugins.init();

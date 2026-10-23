@@ -44,10 +44,10 @@ index 75a5d7f..2c68cee 100644
                id: "logout",
                icon: (
 diff --git a/packages/client/components/app/interface/settings/user/appearance/AppearanceMenu.tsx b/packages/client/components/app/interface/settings/user/appearance/AppearanceMenu.tsx
-index 89790ec..d8f2664 100644
+index 89790ec..ca0ba01 100644
 --- a/packages/client/components/app/interface/settings/user/appearance/AppearanceMenu.tsx
 +++ b/packages/client/components/app/interface/settings/user/appearance/AppearanceMenu.tsx
-@@ -63,6 +63,52 @@ export function AppearanceMenu() {
+@@ -63,6 +63,78 @@ export function AppearanceMenu() {
          </Text>
        </MessagePreview>
  
@@ -61,6 +61,19 @@ index 89790ec..d8f2664 100644
 +          <Button
 +            group="connected-start"
 +            onPress={() => {
++              const session = state.auth.getSession();
++              if (session) {
++                localStorage.setItem(
++                  "nullcord:handoff",
++                  JSON.stringify({
++                    token: session.token,
++                    userId: session.userId,
++                    sessionId: session._id,
++                    expires: Date.now() + 120000,
++                    target: "nullcord",
++                  }),
++                );
++              }
 +              localStorage.setItem("nullcord:ui-mode", "regular");
 +              location.href = "/";
 +            }}
@@ -70,6 +83,19 @@ index 89790ec..d8f2664 100644
 +          <Button
 +            group="connected"
 +            onPress={() => {
++              const session = state.auth.getSession();
++              if (session) {
++                localStorage.setItem(
++                  "nullcord:handoff",
++                  JSON.stringify({
++                    token: session.token,
++                    userId: session.userId,
++                    sessionId: session._id,
++                    expires: Date.now() + 120000,
++                    target: "nullcord",
++                  }),
++                );
++              }
 +              localStorage.setItem("nullcord:ui-mode", "combined");
 +              location.href = "/";
 +            }}
@@ -139,6 +165,44 @@ index dbd8225..6bc9b94 100644
                      </span>
                      <A href="/login/create">
                        <Trans>Create account</Trans>
+diff --git a/packages/client/components/client/Controller.ts b/packages/client/components/client/Controller.ts
+index 5730077..a33bfc5 100644
+--- a/packages/client/components/client/Controller.ts
++++ b/packages/client/components/client/Controller.ts
+@@ -446,6 +446,33 @@ export default class ClientController {
+ 
+     this.lifecycle = new Lifecycle(this);
+ 
++    // Consume a one-shot NullCord handoff token. It is removed immediately
++    // and is only accepted for two minutes.
++    try {
++      const raw = localStorage.getItem("nullcord:handoff");
++      if (raw) {
++        const handoff = JSON.parse(raw);
++        if (handoff.target === "stoat") {
++          localStorage.removeItem("nullcord:handoff");
++          if (
++            handoff.expires > Date.now() &&
++            handoff.token &&
++            handoff.userId &&
++            !this.state.auth.getSession()
++          ) {
++            this.state.auth.addSession({
++              _id: handoff.sessionId || handoff.userId,
++              token: handoff.token,
++              userId: handoff.userId,
++              valid: true,
++            });
++          }
++        }
++      }
++    } catch (err) {
++      console.warn("NullCord handoff failed", err);
++    }
++
+     //A memo to prevent isLoggedIn from bouncing when reconnecting
+     this.isLoggedIn = createMemo(() =>
+       [
 diff --git a/packages/client/components/client/index.tsx b/packages/client/components/client/index.tsx
 index 51901bc..572e120 100644
 --- a/packages/client/components/client/index.tsx

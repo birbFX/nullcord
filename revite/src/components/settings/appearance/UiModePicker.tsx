@@ -1,6 +1,8 @@
 import { Button } from "@revoltchat/ui";
 
 import { setUiMode, useUiMode, type UiMode } from "../../../lib/uiMode";
+import { writeHandoff } from "../../../lib/handoff";
+import { state } from "../../../mobx/State";
 
 const MODES: { id: UiMode; name: string; description: string }[] = [
     {
@@ -79,6 +81,11 @@ export default function UiModePicker() {
                             }
                             onClick={() => {
                                 if (entry.id === "stoat") {
+                                    const account =
+                                        state.auth.getAccounts()[0]?.session;
+                                    if (account) {
+                                        writeHandoff(account, "stoat");
+                                    }
                                     window.location.href = "/stoat/";
                                     return;
                                 }
