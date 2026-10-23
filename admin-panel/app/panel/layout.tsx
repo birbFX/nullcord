@@ -12,8 +12,10 @@ import { Flex } from "@radix-ui/themes";
 
 import styles from "./layout.module.css";
 
-const HR_EXISTS = existsSync("app/panel/hr");
-const MOD_EXISTS = existsSync("app/panel/mod");
+// Only advertise sections whose pages actually exist (the private modules
+// are not checked out in this deployment).
+const HR_EXISTS = existsSync("app/panel/hr/team/page.tsx");
+const MOD_EXISTS = existsSync("app/panel/mod/legacy/page.tsx");
 
 export default async function Layout({
   children,

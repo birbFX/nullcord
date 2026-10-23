@@ -50,7 +50,7 @@ channel create/delete, and every moderation/ticket action.
 
 ## Music
 
-`/play <query>` queues a YouTube result via `yt-dlp` (install it to `bot/bin/yt-dlp`, or anywhere on `PATH`).
+`/play <query>` queues a YouTube result via `yt-dlp` (bundled in `bin/`).
 **Bots cannot stream audio into Stoat voice channels yet**, so the queue posts
 links instead of playing audio. `queue`, `nowplaying`, `skip`, `stop` manage it.
 

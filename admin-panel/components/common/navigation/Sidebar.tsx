@@ -17,7 +17,7 @@ import {
   PersonIcon,
   ReaderIcon,
 } from "@radix-ui/react-icons";
-import { Badge, Button, Flex, Heading } from "@radix-ui/themes";
+import { Badge, Button, Flex, Heading, Text } from "@radix-ui/themes";
 
 import { AuthorisedUserCard } from "./AuthorisedUserCard";
 
@@ -55,6 +55,42 @@ export function Sidebar({
         >
           <Link href="/panel">
             <HomeIcon /> Home
+          </Link>
+        </Button>
+        <Button
+          variant={pathname === "/panel/users" ? "solid" : "surface"}
+          className="!justify-start"
+          asChild
+        >
+          <Link href="/panel/users">
+            <PersonIcon /> Users
+          </Link>
+        </Button>
+        <Button
+          variant={pathname === "/panel/servers" ? "solid" : "surface"}
+          className="!justify-start"
+          asChild
+        >
+          <Link href="/panel/servers">
+            <GlobeIcon /> Servers
+          </Link>
+        </Button>
+        <Button
+          variant={pathname === "/panel/messages" ? "solid" : "surface"}
+          className="!justify-start"
+          asChild
+        >
+          <Link href="/panel/messages">
+            <ReaderIcon /> Messages
+          </Link>
+        </Button>
+        <Button
+          variant={pathname.startsWith("/panel/revolt/inspect") ? "solid" : "surface"}
+          className="!justify-start"
+          asChild
+        >
+          <Link href="/panel/revolt/inspect">
+            <MagnifyingGlassIcon /> Search &amp; inspect
           </Link>
         </Button>
         {/* <Button
@@ -131,18 +167,7 @@ export function Sidebar({
                 </Link>
               </Button>
             )}
-            <Button
-              variant={
-                pathname === "/panel/revolt/inspect" ? "solid" : "surface"
-              }
-              className="!justify-start"
-              asChild
-            >
-              <Link href="/panel/revolt/inspect">
-                <MagnifyingGlassIcon />
-                Search by ID <Badge color="orange">🚧 WIP</Badge>
-              </Link>
-            </Button>
+
             {modules.advancedPanel && (
               <>
                 <Button
@@ -193,6 +218,11 @@ export function Sidebar({
             )}
           </>
         )}
+        <Text size="1" color="gray" className="pt-4">
+          <a href="https://github.com/birbFX/nullcord" target="_blank">
+            Source code · AGPL-3.0
+          </a>
+        </Text>
       </Flex>
     </div>
   );

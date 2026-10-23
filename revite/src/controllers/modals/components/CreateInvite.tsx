@@ -10,7 +10,6 @@ import { noopAsync } from "../../../lib/js";
 import { takeError } from "../../client/jsx/error";
 import { modalController } from "../ModalController";
 import { ModalProps } from "../types";
-import { IS_REVOLT } from "../../../version";
 
 /**
  * Code block which displays invite
@@ -26,6 +25,13 @@ const Invite = styled.div`
         text-align: center;
         font-family: var(--monospace-font);
     }
+
+    .error {
+        color: var(--error);
+        padding: 1em;
+        text-align: center;
+        user-select: text;
+    }
 `;
 
 /**
@@ -35,21 +41,29 @@ export default function CreateInvite({
     target,
     ...props
 }: ModalProps<"create_invite">) {
-    const [processing, setProcessing] = useState(false);
-    const [code, setCode] = useState("abcdef");
+    const [processing, setProcessing] = useState(true);
+    const [code, setCode] = useState<string>();
+    const [error, setError] = useState<string>();
 
-    // Generate an invite code
-    useEffect(() => {
+    const generate = () => {
         setProcessing(true);
+        setError(undefined);
+        setCode(undefined);
 
         target
             .createInvite()
             .then(({ _id }) => setCode(_id))
-            .catch((err) =>
-                modalController.push({ type: "error", error: takeError(err) }),
-            )
+            .catch((err) => setError(String(takeError(err))))
             .finally(() => setProcessing(false));
-    }, [target]);
+    };
+
+    // Generate an invite code
+    useEffect(generate, [target]);
+
+    const copyLink = () => {
+        if (!code) return;
+        modalController.writeText(`${window.location.origin}/invite/${code}`);
+    };
 
     return (
         <ModalForm
@@ -62,6 +76,12 @@ export default function CreateInvite({
                 message: {
                     element: processing ? (
                         <Text id="app.special.modals.prompt.create_invite_generate" />
+                    ) : error ? (
+                        <Invite>
+                            <div className="error">
+                                Could not create invite: {error}
+                            </div>
+                        </Invite>
                     ) : (
                         <Invite>
                             <Text id="app.special.modals.prompt.create_invite_created" />
@@ -75,13 +95,24 @@ export default function CreateInvite({
                 children: <Text id="app.special.modals.actions.ok" />,
             }}
             actions={[
-                {
-                    children: <Text id="app.context_menu.copy_link" />,
-                    onClick: () =>
-                        modalController.writeText(
-                            IS_REVOLT ? `https://rvlt.gg/${code}` : `${window.location.host}/invite/${code}`
-                        ),
-                },
+                ...(error
+                    ? [
+                          {
+                              children: "Retry",
+                              onClick: generate,
+                          },
+                      ]
+                    : []),
+                ...(code
+                    ? [
+                          {
+                              children: (
+                                  <Text id="app.context_menu.copy_link" />
+                              ),
+                              onClick: copyLink,
+                          },
+                      ]
+                    : []),
             ]}
         />
     );
