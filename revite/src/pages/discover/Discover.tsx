@@ -101,20 +101,25 @@ const Card = styled.div`
         align-items: center;
     }
 
-    a.button {
+    a.button,
+    button.button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         padding: 8px 14px;
+        border: 0;
         border-radius: 8px;
         background: #5865f2;
         color: white;
+        font-family: inherit;
         font-weight: 600;
         font-size: 13px;
         text-decoration: none;
+        cursor: pointer;
     }
 
-    a.button.secondary {
+    a.button.secondary,
+    button.button.secondary {
         background: var(--tertiary-background);
         color: var(--foreground);
     }

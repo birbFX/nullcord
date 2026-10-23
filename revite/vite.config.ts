@@ -53,6 +53,7 @@ export default defineConfig({
             srcDir: "src",
             filename: "sw.ts",
             strategies: "injectManifest",
+            registerType: "autoUpdate",
             manifest: {
                 id: "/",
                 name: "NullCord",
@@ -119,7 +120,7 @@ export default defineConfig({
         }) as any,
     ],
     define: {
-        __CLL_REV: JSON.stringify("2026-10-23-6"),
+        __CLL_REV: JSON.stringify("2026-10-23-7"),
     },
     server: {
         headers: {
