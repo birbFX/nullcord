@@ -1,11 +1,17 @@
 import { Star } from "@styled-icons/boxicons-solid";
 import { useState } from "preact/hooks";
+import { Link } from "react-router-dom";
 import styled from "styled-components/macro";
 
 import { Header } from "@revoltchat/ui";
 
 import { isNitro } from "../../lib/owner";
 import { useClient } from "../../controllers/client/ClientController";
+import {
+    getOrbs,
+    isAdminUser,
+    spendOrbs,
+} from "../../lib/orbs";
 import { isTouchscreenDevice } from "../../lib/isTouchscreenDevice";
 import { SOURCE_URL } from "../../lib/source";
 
@@ -165,14 +171,26 @@ const Footer = styled.p`
 
 export default function Nitro() {
     const client = useClient();
-    const active = isNitro(client.user?._id);
+    const userId = client.user?._id;
+    const admin = isAdminUser(client.user);
+    const [active, setActive] = useState(() => isNitro(client.user));
+    const [orbs, setOrbs] = useState(() => getOrbs(userId));
     const [note, setNote] = useState<{ plan: string; text: string }>();
 
-    const subscribe = (plan: string) =>
-        setNote({
-            plan,
-            text: `${plan} billing is not enabled on this instance yet — Nitro here is a preview.`,
-        });
+    const redeem = (plan: string, cost: number) => {
+        if (active || !userId) return;
+        if (!admin && !spendOrbs(userId, cost)) {
+            setNote({
+                plan,
+                text: `Not enough Orbs — you have ${orbs.toLocaleString()}. Earn more in Quests.`,
+            });
+            return;
+        }
+        localStorage.setItem(`nullcord:nitro:${userId}`, "1");
+        setActive(true);
+        setOrbs(getOrbs(userId));
+        setNote({ plan, text: `${plan} unlocked with Orbs.` });
+    };
 
     return (
         <Container>
@@ -189,8 +207,13 @@ export default function Nitro() {
                     </span>
                     <h1>Make NullCord yours.</h1>
                     <p>
-                        Bigger uploads, better profiles, more expression — pick
-                        the tier that fits.
+                        Bigger uploads, better profiles, more expression — pay
+                        with Orbs earned from quests.
+                    </p>
+                    <p style={{ marginTop: 8, fontWeight: 700 }}>
+                        {admin ? "∞" : orbs.toLocaleString()} Orbs ·{" "}
+                        <Link to="/quests">earn more →</Link>
+                        {admin ? " (admin: unlimited)" : ""}
                     </p>
                 </Hero>
 
@@ -198,7 +221,7 @@ export default function Nitro() {
                     <Plan>
                         <h2>Nitro Basic</h2>
                         <div className="price">
-                            $2.99 <small>/ month · or $29.99 / year</small>
+                            300 Orbs <small>/ month · or 2,500 / year</small>
                         </div>
                         <ul>
                             <li>Custom and animated emoji &amp; stickers anywhere</li>
@@ -210,8 +233,8 @@ export default function Nitro() {
                         </ul>
                         <button
                             disabled={active}
-                            onClick={() => subscribe("Nitro Basic")}>
-                            {active ? "Active" : "Subscribe"}
+                            onClick={() => redeem("Nitro Basic", 300)}>
+                            {active ? "Active" : "Redeem · 300 Orbs"}
                         </button>
                         <div className="note">
                             {note?.plan === "Nitro Basic" ? note.text : ""}
@@ -221,7 +244,7 @@ export default function Nitro() {
                     <Plan $featured>
                         <h2>Nitro</h2>
                         <div className="price">
-                            $9.99 <small>/ month · or $99.99 / year</small>
+                            900 Orbs <small>/ month · or 8,000 / year</small>
                         </div>
                         <ul>
                             <li>Everything in Basic, plus:</li>
@@ -238,8 +261,8 @@ export default function Nitro() {
                         </ul>
                         <button
                             disabled={active}
-                            onClick={() => subscribe("Nitro")}>
-                            {active ? "Active" : "Subscribe"}
+                            onClick={() => redeem("Nitro", 900)}>
+                            {active ? "Active" : "Redeem · 900 Orbs"}
                         </button>
                         <div className="note">
                             {note?.plan === "Nitro" ? note.text : ""}
@@ -267,8 +290,8 @@ export default function Nitro() {
                 </Perks>
 
                 <Footer>
-                    Nitro is a feature preview on this instance; payments are
-                    not enabled.{" "}
+                    Nitro is paid with Orbs, not money. Orbs and unlocks are
+                    stored on this device; admins get Nitro automatically.{" "}
                     <a href={SOURCE_URL} target="_blank" rel="noreferrer">
                         Source code
                     </a>

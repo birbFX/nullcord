@@ -35,6 +35,30 @@ export function isDeveloper(
 /** Accounts with Nitro enabled by default (UI only; billing is not implemented). */
 export const NITRO_IDS = new Set<string>([OWNER_ID]);
 
-export function isNitro(id?: string | null): boolean {
-    return !!id && NITRO_IDS.has(id);
+function hasLocalNitro(id?: string | null): boolean {
+    if (!id || typeof localStorage === "undefined") return false;
+    try {
+        return localStorage.getItem(`nullcord:nitro:${id}`) === "1";
+    } catch {
+        return false;
+    }
+}
+
+export function isNitro(
+    userOrId?:
+        | string
+        | { _id?: string | null; privileged?: boolean }
+        | null,
+): boolean {
+    if (!userOrId) return false;
+    if (typeof userOrId === "string") {
+        return (
+            NITRO_IDS.has(userOrId) ||
+            userOrId === OWNER_ID ||
+            hasLocalNitro(userOrId)
+        );
+    }
+    if (userOrId.privileged) return true;
+    const id = userOrId._id ?? undefined;
+    return !!id && (NITRO_IDS.has(id) || id === OWNER_ID || hasLocalNitro(id));
 }

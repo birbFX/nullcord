@@ -14,7 +14,7 @@ import { OWNER_COLOUR, isNitro, isOwner } from "../../../lib/owner";
 
 import { modalController } from "../../../controllers/modals/ModalController";
 import Tooltip from "../Tooltip";
-import OwnerCrown from "./OwnerCrown";
+import OwnerBadge from "./OwnerBadge";
 import UserStatus from "./UserStatus";
 
 const HeaderBase = styled.div`
@@ -80,8 +80,8 @@ export default observer(({ user }: Props) => {
                     className="new-name"
                     style={owner ? { color: OWNER_COLOUR } : undefined}>
                     {user.display_name ?? user.username}
-                    {owner && <OwnerCrown size={16} />}
-                    {isNitro(user._id) && (
+                    {owner && <OwnerBadge size={16} />}
+                    {isNitro(user) && (
                         <span className="nitro-pill">NITRO</span>
                     )}
                 </div>

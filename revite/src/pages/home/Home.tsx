@@ -140,27 +140,23 @@ export default observer(() => {
                             </Link>
 
                             {client.servers.get(
-                                "01F7ZSBSFHQ8TA81725KQCSDDP",
+                                "01M5KCHRW16JAS02MQN2SWRNX8",
                             ) ? (
-                                <Link to="/server/01F7ZSBSFHQ8TA81725KQCSDDP">
+                                <Link to="/server/01M5KCHRW16JAS02MQN2SWRNX8">
                                     <CategoryButton
                                         action="chevron"
                                         icon={<RightArrowCircle size={32} />}
-                                        description={
-                                            <Text id="app.home.goto-testers_desc" />
-                                        }>
-                                        <Text id="app.home.goto-testers" />
+                                        description="The official Canyon Lake Labs community">
+                                        Canyon Lake Labs Official Server
                                     </CategoryButton>
                                 </Link>
                             ) : (
-                                <Link to="/invite/Testers">
+                                <Link to="/invite/canyonlake">
                                     <CategoryButton
                                         action="chevron"
                                         icon={<Group size={32} />}
-                                        description={
-                                            <Text id="app.home.join-testers_desc" />
-                                        }>
-                                        <Text id="app.home.join-testers" />
+                                        description="The official Canyon Lake Labs community">
+                                        Canyon Lake Labs Official Server
                                     </CategoryButton>
                                 </Link>
                             )}

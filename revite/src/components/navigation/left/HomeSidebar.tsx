@@ -6,6 +6,7 @@ import {
     Notepad,
     Star,
     Compass,
+    Gift,
 } from "@styled-icons/boxicons-solid";
 import { observer } from "mobx-react-lite";
 import { Link, useLocation, useParams } from "react-router-dom";
@@ -130,6 +131,14 @@ export default observer(() => {
                     <ButtonItem active={pathname.startsWith("/discover")}>
                         <Compass size={20} />
                         <span>Discover</span>
+                    </ButtonItem>
+                </ConditionalLink>
+                <ConditionalLink
+                    active={pathname === "/quests"}
+                    to="/quests">
+                    <ButtonItem active={pathname === "/quests"}>
+                        <Gift size={20} />
+                        <span>Quests</span>
                     </ButtonItem>
                 </ConditionalLink>
                 {import.meta.env.DEV && isDeveloper(client.user) && (
