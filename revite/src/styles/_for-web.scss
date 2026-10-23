@@ -2,7 +2,8 @@
  * Material 3 visual tokens adapted from Stoat for Web
  * https://github.com/stoatchat/for-web (AGPL-3.0)
  *
- * Only the visual token/spacing layer is ported; the original is SolidJS.
+ * Only the visual token/spacing/palette layer is ported; the upstream client
+ * is SolidJS and its component tree is not copied.
  */
 
 :root {
@@ -20,8 +21,21 @@
     --fw-transition-medium: 0.2s ease;
 }
 
-/* Material 3 navigation rail proportions for the server rail. */
+/* Regular keeps the original layout. */
 .for-web-server-rail {
+    display: contents;
+}
+
+:root[data-ui="stoat"],
+:root[data-ui="combined"] {
+    --border-radius: 12px;
+    --transitions-fast: 0.1s ease-in-out;
+    --transitions-medium: 0.2s ease;
+    --effects-blur-md: blur(20px);
+}
+
+:root[data-ui="stoat"] .for-web-server-rail,
+:root[data-ui="combined"] .for-web-server-rail {
     width: 56px;
     height: 100%;
     flex-shrink: 0;
@@ -31,16 +45,51 @@
     background: transparent;
 }
 
-.for-web-server-rail > div {
+:root[data-ui="stoat"] .for-web-server-rail > div,
+:root[data-ui="combined"] .for-web-server-rail > div {
     width: 56px;
     height: 100%;
     flex: 1;
     min-height: 0;
 }
 
-.for-web-server-rail a {
+:root[data-ui="stoat"] .for-web-server-rail a,
+:root[data-ui="combined"] .for-web-server-rail a {
     border-radius: var(--fw-radius-lg);
     transition: border-radius var(--fw-transition-fast);
+}
+
+/* Stoat-only mode uses the Material 3 dark surface palette. */
+:root[data-ui="stoat"] {
+    --accent: #d0bcff;
+    --accent-rgb: 208, 188, 255;
+    --background: #141218;
+    --background-rgb: 20, 18, 24;
+    --primary-background: #1d1b20;
+    --primary-background-rgb: 29, 27, 32;
+    --secondary-background: #211f26;
+    --secondary-background-rgb: 33, 31, 38;
+    --tertiary-background: #2b2930;
+    --tertiary-background-rgb: 43, 41, 48;
+    --foreground: #e6e0e9;
+    --foreground-rgb: 230, 224, 233;
+    --secondary-foreground: #cac4d0;
+    --secondary-foreground-rgb: 202, 196, 208;
+    --tertiary-foreground: #938f99;
+    --tertiary-foreground-rgb: 147, 143, 153;
+    --primary-header: #2b2930;
+    --primary-header-rgb: 43, 41, 48;
+    --secondary-header: #36343b;
+    --secondary-header-rgb: 54, 52, 59;
+    --block: #1d1b20;
+    --block-rgb: 29, 27, 32;
+    --message-box: #2b2930;
+    --message-box-rgb: 43, 41, 48;
+    --mention: #4f378b;
+    --mention-rgb: 79, 55, 139;
+    --hover: rgba(208, 188, 255, 0.08);
+    --tooltip: #36343b;
+    --tooltip-rgb: 54, 52, 59;
 }
 
 /* Material 3 visible keyboard focus. */

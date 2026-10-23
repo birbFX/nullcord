@@ -104,7 +104,7 @@ export default observer(() => {
                     </PageHeader>
                     <div className={styles.homeScreen}>
                         <h3>
-                            <Text id="app.special.modals.onboarding.welcome" />
+                            Welcome.
                             <br />
                             <img
                                 src={wideSVG}

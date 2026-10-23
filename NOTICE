@@ -5,7 +5,7 @@ UI / visual design attribution
 ------------------------------
 The Material 3 colour palette, surface tokens, border-radius scale and
 navigation-rail proportions in revite/src/styles/_for-web.scss and
-revite/src/components/settings/appearance/ForWebTheme.tsx are adapted from:
+revite/src/components/settings/appearance/UiModePicker.tsx are adapted from:
 
   Stoat for Web — https://github.com/stoatchat/for-web
   Copyright the Stoat for Web contributors
