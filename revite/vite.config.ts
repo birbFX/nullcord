@@ -135,6 +135,7 @@ export default defineConfig({
         },
     },
     optimizeDeps: {
+        include: ["preact/debug"],
         exclude: [
             "revolt.js",
             "preact-context-menu",

@@ -6,6 +6,7 @@ import { Header } from "@revoltchat/ui";
 
 import { isTouchscreenDevice } from "../../lib/isTouchscreenDevice";
 import { SOURCE_URL } from "../../lib/source";
+import { modalController } from "../../controllers/modals/ModalController";
 
 const Container = styled.div`
     flex-grow: 1;
@@ -331,9 +332,15 @@ export default function Discover() {
                             emoji.
                         </p>
                         <div className="actions">
-                            <Link className="button secondary" to="/">
-                                Go to your servers
-                            </Link>
+                            <button
+                                className="button secondary"
+                                onClick={() =>
+                                    modalController.push({
+                                        type: "create_server",
+                                    })
+                                }>
+                                Add a server
+                            </button>
                         </div>
                     </Card>
                 </Grid>

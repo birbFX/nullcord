@@ -17,7 +17,21 @@ precacheAndRoute(
     self.__WB_MANIFEST.filter((entry) => {
         try {
             const url = typeof entry === "string" ? entry : entry.url;
+
+            // Never precache code bundles: the service worker downloading
+            // every chunk (15+ MB) on first visit made the app crawl.
+            if (
+                url.endsWith(".js") ||
+                url.endsWith(".css") ||
+                url.endsWith(".map")
+            ) {
+                return false;
+            }
+
             if (url.includes("-legacy")) return false;
+            if (url.startsWith("assets/emoji")) return false;
+            if (url.startsWith("assets_default/")) return false;
+            if (url.startsWith("assets/raw")) return false;
 
             const fn = url.split("/").pop();
             if (fn) {

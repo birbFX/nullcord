@@ -1,4 +1,4 @@
-import { ListUl } from "@styled-icons/boxicons-regular";
+import { ListUl, Tag } from "@styled-icons/boxicons-regular";
 import {
     InfoCircle,
     Group,
@@ -7,6 +7,7 @@ import {
     UserX,
     Trash,
     HappyBeaming,
+    Rocket,
 } from "@styled-icons/boxicons-solid";
 import { observer } from "mobx-react-lite";
 import { Route, Switch, useHistory, useParams } from "react-router-dom";
@@ -24,12 +25,14 @@ import RequiresOnline from "../../controllers/client/jsx/RequiresOnline";
 import { modalController } from "../../controllers/modals/ModalController";
 import { GenericSettings } from "./GenericSettings";
 import { Bans } from "./server/Bans";
+import { Boosts } from "./server/Boosts";
 import { Categories } from "./server/Categories";
 import { Emojis } from "./server/Emojis";
 import { Invites } from "./server/Invites";
 import { Members } from "./server/Members";
 import { Overview } from "./server/Overview";
 import { Roles } from "./server/Roles";
+import { ServerTags } from "./server/ServerTags";
 
 export default observer(() => {
     const { server: sid } = useParams<{ server: string }>();
@@ -79,6 +82,16 @@ export default observer(() => {
                     id: "emojis",
                     icon: <HappyBeaming size={20} />,
                     title: <Text id="app.settings.server_pages.emojis.title" />,
+                },
+                {
+                    id: "tags",
+                    icon: <Tag size={20} />,
+                    title: "Server Tags",
+                },
+                {
+                    id: "boosts",
+                    icon: <Rocket size={20} />,
+                    title: "Boost Server",
                 },
                 {
                     category: (
@@ -132,6 +145,12 @@ export default observer(() => {
                         <RequiresOnline>
                             <Emojis server={server} />
                         </RequiresOnline>
+                    </Route>
+                    <Route path="/server/:server/settings/tags">
+                        <ServerTags server={server} />
+                    </Route>
+                    <Route path="/server/:server/settings/boosts">
+                        <Boosts server={server} />
                     </Route>
                     <Route>
                         <Overview server={server} />

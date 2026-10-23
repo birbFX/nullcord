@@ -89,6 +89,13 @@ export default observer(() => {
                         </span>
                     </ButtonItem>
                 </ConditionalLink>
+                <ButtonItem
+                    onClick={() =>
+                        modalController.push({ type: "create_server" })
+                    }>
+                    <Plus size={20} />
+                    <span>Add a server</span>
+                </ButtonItem>
                 {!isTouchscreenDevice && (
                     <>
                         <ConditionalLink
