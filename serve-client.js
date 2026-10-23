@@ -18,7 +18,11 @@ const PORT = Number(process.env.CLIENT_PORT || 5173);
 function headers(res, pathname) {
     res.setHeader("X-Content-Type-Options", "nosniff");
 
-    if (/\/assets\/[^/]+\.[0-9a-f]{8,}\.(js|css|woff2?|png|jpe?g|gif|webp|svg|json)$/.test(pathname)) {
+    if (
+        /\/assets\/[^/]+[.-][A-Za-z0-9_-]{6,}\.(js|css|woff2?|png|jpe?g|gif|webp|svg|json|ico)$/.test(
+            pathname,
+        )
+    ) {
         res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
     } else if (pathname.includes("/assets/icons/")) {
         res.setHeader("Cache-Control", "public, max-age=86400");

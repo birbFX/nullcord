@@ -1,3 +1,105 @@
+diff --git a/packages/client/components/app/interface/settings/UserSettings.tsx b/packages/client/components/app/interface/settings/UserSettings.tsx
+index 75a5d7f..2c68cee 100644
+--- a/packages/client/components/app/interface/settings/UserSettings.tsx
++++ b/packages/client/components/app/interface/settings/UserSettings.tsx
+@@ -8,7 +8,6 @@ import { useClient, useClientLifecycle } from "@revolt/client";
+ import { useInstance } from "@revolt/instance";
+ import { useUser } from "@revolt/markdown/users";
+ import { useModals } from "@revolt/modal";
+-import { fetchLatestChangelog } from "@revolt/modal/modals/Changelog";
+ import { ColouredText, Column, Text, iconSize } from "@revolt/ui";
+ import { Symbol } from "@revolt/ui/components/utils/Symbol";
+ 
+@@ -318,17 +317,9 @@ const Config: SettingsConfiguration<{ server: Server }> = {
+         },
+         {
+           entries: [
++
+             {
+-              onClick: async () => {
+-                const changelog = await fetchLatestChangelog();
+-                if (!changelog) return;
+-                openModal({ type: "changelog", changelog });
+-              },
+-              icon: <MdCampaign {...iconSize(20)} />,
+-              title: <Trans>What's New</Trans>,
+-            },
+-            {
+-              href: "https://github.com/stoatchat",
++              href: "https://github.com/birbFX/nullcord",
+               icon: <MdMemory {...iconSize(20)} />,
+               title: <Trans>Source Code</Trans>,
+             },
+@@ -337,11 +328,7 @@ const Config: SettingsConfiguration<{ server: Server }> = {
+               icon: <MdScience {...iconSize(20)} />,
+               title: <Trans>Advanced</Trans>,
+             },
+-            {
+-              href: "https://ko-fi.com/stoatchat",
+-              icon: <MdCoffee {...iconSize(20)} />,
+-              title: <Trans>Donate</Trans>,
+-            },
++
+             {
+               id: "logout",
+               icon: (
+diff --git a/packages/client/components/app/interface/settings/user/appearance/AppearanceMenu.tsx b/packages/client/components/app/interface/settings/user/appearance/AppearanceMenu.tsx
+index 89790ec..d8f2664 100644
+--- a/packages/client/components/app/interface/settings/user/appearance/AppearanceMenu.tsx
++++ b/packages/client/components/app/interface/settings/user/appearance/AppearanceMenu.tsx
+@@ -63,6 +63,52 @@ export function AppearanceMenu() {
+         </Text>
+       </MessagePreview>
+ 
++      <Column>
++        <Text class="title" size="small">NullCord UI</Text>
++        <Text>
++          Switch between the default client styles. Quest, tag, plugin and
++          Nitro pages open in the NullCord client.
++        </Text>
++        <Row gap="xs" justify="stretch" wrap>
++          <Button
++            group="connected-start"
++            onPress={() => {
++              localStorage.setItem("nullcord:ui-mode", "regular");
++              location.href = "/";
++            }}
++          >
++            Regular
++          </Button>
++          <Button
++            group="connected"
++            onPress={() => {
++              localStorage.setItem("nullcord:ui-mode", "combined");
++              location.href = "/";
++            }}
++          >
++            Combined
++          </Button>
++          <Button group="connected-end" groupActive onPress={() => {}}>
++            Full NullCord UI
++          </Button>
++        </Row>
++        <Row gap="xs" justify="stretch" wrap>
++          <Button onPress={() => window.open("/quests", "_blank")}>
++            Quests & Orbs
++          </Button>
++          <Button onPress={() => window.open("/settings/server-tags", "_blank")}>
++            Server Tags
++          </Button>
++          <Button onPress={() => window.open("/settings/plugins", "_blank")}>
++            Plugins
++          </Button>
++          <Button onPress={() => window.open("/nitro", "_blank")}>
++            Nitro
++          </Button>
++        </Row>
++      </Column>
++
++
+       <Column>
+         <Text class="title" size="small">
+           Colours
 diff --git a/packages/client/components/auth/src/AuthPage.tsx b/packages/client/components/auth/src/AuthPage.tsx
 index dbd8225..6bc9b94 100644
 --- a/packages/client/components/auth/src/AuthPage.tsx
@@ -37,11 +139,48 @@ index dbd8225..6bc9b94 100644
                      </span>
                      <A href="/login/create">
                        <Trans>Create account</Trans>
+diff --git a/packages/client/components/client/index.tsx b/packages/client/components/client/index.tsx
+index 51901bc..572e120 100644
+--- a/packages/client/components/client/index.tsx
++++ b/packages/client/components/client/index.tsx
+@@ -13,7 +13,6 @@ import type { Client, User } from "stoat.js";
+ 
+ import { useInstance } from "@revolt/instance";
+ import { useModals } from "@revolt/modal";
+-import { fetchLatestChangelog } from "@revolt/modal/modals/Changelog";
+ import { useState } from "@revolt/state";
+ import { LoadingScreen } from "@revolt/ui";
+ 
+@@ -40,24 +39,6 @@ export function ClientContext(props: {
+   const controller = new ClientController(state, instance, setReady);
+   onCleanup(() => controller.dispose());
+ 
+-  let fetchedChangelog = false;
+-  createEffect(() => {
+-    if (!controller.isLoggedIn() || fetchedChangelog) return;
+-    fetchedChangelog = true;
+-
+-    fetchLatestChangelog().then((changelog) => {
+-      if (!changelog) return;
+-      if (state["release-notes"].lastSeenId === changelog.id) return;
+-
+-      state["release-notes"].markSeen(changelog.id, changelog.published_at);
+-
+-      openModal({
+-        type: "changelog",
+-        changelog,
+-      });
+-    });
+-  });
+-
+   createEffect(() => {
+     const policy = controller.lifecycle.policyAttentionRequired();
+     if (policy) {
 diff --git a/packages/client/index.html b/packages/client/index.html
-index c0708b7..cda55f2 100644
+index c0708b7..d1d45de 100644
 --- a/packages/client/index.html
 +++ b/packages/client/index.html
-@@ -10,14 +10,80 @@
+@@ -10,14 +10,79 @@
    <meta name="theme-color" content="#000" media="(prefers-color-scheme: dark)">
    <meta http-equiv="cache-control" content="no-cache">
    <link rel="shortcut icon" type="image/png" href="./public/assets/web/icon.ico">
@@ -94,7 +233,6 @@ index c0708b7..cda55f2 100644
 +  }
 +  .nullcord-return:hover { background: #2b2930; }
 +</style>
-+<a class="nullcord-return" href="/">← NullCord</a>
 +<script>
 +(function () {
 +  if (!/\/stoat(\/|$)/.test(location.pathname)) return;
@@ -137,6 +275,84 @@ index 635f248..fe81e69 100644
                <Route path="/i/:host" component={InstanceContext}>
                  {routes()}
                </Route>
+diff --git a/packages/client/src/interface/Home.tsx b/packages/client/src/interface/Home.tsx
+index 43e6da7..a3bbdb3 100644
+--- a/packages/client/src/interface/Home.tsx
++++ b/packages/client/src/interface/Home.tsx
+@@ -22,11 +22,9 @@ import MdAddCircle from "@material-design-icons/svg/filled/add_circle.svg?compon
+ import MdExplore from "@material-design-icons/svg/filled/explore.svg?component-solid";
+ import MdGroups3 from "@material-design-icons/svg/filled/groups_3.svg?component-solid";
+ import MdHome from "@material-design-icons/svg/filled/home.svg?component-solid";
+-import MdPayments from "@material-design-icons/svg/filled/payments.svg?component-solid";
+ import MdRateReview from "@material-design-icons/svg/filled/rate_review.svg?component-solid";
+ import MdSettings from "@material-design-icons/svg/filled/settings.svg?component-solid";
+ 
+-import Wordmark from "../../public/assets/web/wordmark.svg?component-solid";
+ 
+ import { HeaderIcon } from "./common/CommonHeader";
+ 
+@@ -113,12 +111,17 @@ export function HomePage() {
+       </Header>
+       <div use:scrollable={{ class: content() }}>
+         <Column>
+-          <Wordmark
++          <div
+             class={css({
+-              width: "160px",
+-              fill: "var(--md-sys-color-on-surface)",
++              fontSize: "48px",
++              fontWeight: 800,
++              letterSpacing: "-0.04em",
++              lineHeight: 1,
++              color: "var(--md-sys-color-on-surface)",
+             })}
+-          />
++          >
++            NullCord
++          </div>
+         </Column>
+         <Buttons>
+           <SeparatedColumn>
+@@ -176,16 +179,7 @@ export function HomePage() {
+                 </CategoryButton>
+               </Match>
+             </Switch>
+-            <CategoryButton
+-              variant="tertiary"
+-              onClick={() => window.open("https://ko-fi.com/stoatchat")}
+-              description={
+-                <Trans>Support the project by donating - thank you!</Trans>
+-              }
+-              icon={<MdPayments />}
+-            >
+-              <Trans>Donate to Stoat</Trans>
+-            </CategoryButton>
++
+           </SeparatedColumn>
+           <SeparatedColumn>
+             <Show when={instance.isStoat}>
+diff --git a/packages/client/src/serviceWorker.ts b/packages/client/src/serviceWorker.ts
+index 498d2ca..8b181d5 100644
+--- a/packages/client/src/serviceWorker.ts
++++ b/packages/client/src/serviceWorker.ts
+@@ -30,6 +30,17 @@ precacheAndRoute(
+           return false;
+         }
+ 
++        // Never precache code bundles or fonts: the default 20 MB precache
++        // made the first visit crawl.
++        if (
++          fn.endsWith(".js") ||
++          fn.endsWith(".css") ||
++          fn.endsWith(".map") ||
++          fn.endsWith(".woff2")
++        ) {
++          return false;
++        }
++
+         // Don't cache dayjs locales
+         for (const key of locale_keys) {
+           if (fn.startsWith(`${key}-`)) {
 diff --git a/packages/client/vite.config.ts b/packages/client/vite.config.ts
 index a682134..bfba0c4 100644
 --- a/packages/client/vite.config.ts
