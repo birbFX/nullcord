@@ -8,7 +8,7 @@ Stoat (formerly Revolt) stack.
 > NullCord is a **passion project by Canyon Lake Labs**, built for fun and made
 > almost entirely with AI assistance. It is a hobby project, not a polished
 > commercial product. If you don't like AI-made software, that's completely
-> fine — **don't use it.**
+> fine — **if you don't like AI made software then don't use it.**
 
 This repository contains the source for everything we run:
 
