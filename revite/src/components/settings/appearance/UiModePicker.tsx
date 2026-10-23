@@ -10,9 +10,9 @@ const MODES: { id: UiMode; name: string; description: string }[] = [
     },
     {
         id: "stoat",
-        name: "Stoat for Web (full UI)",
+        name: "NullCord (full UI)",
         description:
-            "Material 3 colours, rounded panels and the Stoat navigation rail.",
+            "The full Stoat for Web client, rebranded as NullCord.",
     },
     {
         id: "combined",

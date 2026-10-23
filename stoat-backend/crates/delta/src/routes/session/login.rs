@@ -50,19 +50,10 @@ pub async fn login(
                 // Make sure password has not been compromised
                 assert_safe(&password).await?;
 
-                // Check for account lockout
-                if let Some(lockout) = &account.lockout {
-                    if let Some(expiry) = lockout.expiry {
-                        if expiry > Timestamp::now_utc() {
-                            db.bump_lockout_count(&account.id).await?;
-                            return Err(create_error!(LockedOut));
-                        }
-                    }
-                }
-
                 // Verify the password is correct.
+                // Intentionally no account lockout: wrong passwords simply
+                // fail immediately instead of making the user wait.
                 if let Err(err) = account.verify_password(&password) {
-                    db.bump_lockout_count(&account.id).await?;
                     return Err(err);
                 }
 
@@ -107,24 +98,12 @@ pub async fn login(
             // Find the corresponding account
             let mut account = db.fetch_account(&ticket.account_id).await?;
 
-            // Check for account lockout
-            if let Some(lockout) = &account.lockout {
-                if let Some(expiry) = lockout.expiry {
-                    if expiry > Timestamp::now_utc() {
-                        db.bump_lockout_count(&account.id).await?;
-                        return Err(create_error!(LockedOut));
-                    }
-                }
-            }
-
             // Verify the MFA response
             if let Some(mfa_response) = mfa_response {
                 if let Err(err) = account
                     .consume_mfa_response(db, mfa_response, Some(ticket))
                     .await
                 {
-                    // MFA failures count towards lockout
-                    db.bump_lockout_count(&account.id).await?;
                     return Err(err);
                 }
             } else if !ticket.authorised {

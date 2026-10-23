@@ -1,8 +1,47 @@
+diff --git a/packages/client/components/auth/src/AuthPage.tsx b/packages/client/components/auth/src/AuthPage.tsx
+index dbd8225..6bc9b94 100644
+--- a/packages/client/components/auth/src/AuthPage.tsx
++++ b/packages/client/components/auth/src/AuthPage.tsx
+@@ -26,7 +26,6 @@ import { A, useLocation } from "@revolt/routing";
+ import { useState } from "@revolt/state";
+ import { IconButton, Symbol } from "@revolt/ui";
+ 
+-import Wordmark from "../../../public/assets/web/wordmark.svg?component-solid";
+ import { AppUpsell } from "./AppUpsell";
+ import { BubbleMood, BubbleProvider, FlowBase, FlowBubble } from "./flows/Flow";
+ 
+@@ -506,7 +505,7 @@ export function AuthPage(props: { children: JSX.Element }) {
+       <Page>
+         <Hero>
+           <Brand aria-hidden="true">
+-            <Wordmark />
++            <span style={{ "font-size": "34px", "font-weight": "800", "letter-spacing": "-0.04em", "line-height": "1" }}>NullCord</span>
+           </Brand>
+           <AppUpsell />
+         </Hero>
+@@ -532,7 +531,7 @@ export function AuthPage(props: { children: JSX.Element }) {
+                   <Symbol size={24}>arrow_back</Symbol>
+                 </IconButton>
+               </Show>
+-              <Wordmark />
++              <span style={{ "font-size": "34px", "font-weight": "800", "letter-spacing": "-0.04em", "line-height": "1" }}>NullCord</span>
+             </Brand>
+ 
+             <AccountSwitch>
+@@ -541,7 +540,7 @@ export function AuthPage(props: { children: JSX.Element }) {
+                 fallback={
+                   <>
+                     <span>
+-                      <Trans>New to Stoat?</Trans>
++                      <Trans>New to NullCord?</Trans>
+                     </span>
+                     <A href="/login/create">
+                       <Trans>Create account</Trans>
 diff --git a/packages/client/index.html b/packages/client/index.html
-index c0708b7..b7a68f2 100644
+index c0708b7..cda55f2 100644
 --- a/packages/client/index.html
 +++ b/packages/client/index.html
-@@ -10,7 +10,7 @@
+@@ -10,14 +10,80 @@
    <meta name="theme-color" content="#000" media="(prefers-color-scheme: dark)">
    <meta http-equiv="cache-control" content="no-cache">
    <link rel="shortcut icon" type="image/png" href="./public/assets/web/icon.ico">
@@ -10,8 +49,36 @@ index c0708b7..b7a68f2 100644
 +  <title>NullCord</title>
  </head>
  
++<script>
++(function () {
++  var BASE = "/stoat";
++  function fix(url) {
++    if (typeof url !== "string" || url.charAt(0) !== "/") return url;
++    if (url === BASE || url.indexOf(BASE + "/") === 0 || url.indexOf(BASE + "?") === 0) return url;
++    return BASE + url;
++  }
++  var push = history.pushState;
++  history.pushState = function (state, title, url) { return push.call(this, state, title, fix(url)); };
++  var replace = history.replaceState;
++  history.replaceState = function (state, title, url) { return replace.call(this, state, title, fix(url)); };
++  document.addEventListener("click", function (event) {
++    if (event.defaultPrevented || event.button !== 0) return;
++    var anchor = event.target && event.target.closest && event.target.closest("a");
++    if (!anchor || anchor.classList.contains("nullcord-return")) return;
++    var href = anchor.getAttribute("href");
++    if (!href || href.charAt(0) !== "/" || href === BASE || href.indexOf(BASE + "/") === 0 || href.indexOf(BASE + "?") === 0) return;
++    event.preventDefault();
++    var target = BASE + href;
++    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
++      window.open(target, anchor.getAttribute("target") || "_blank");
++    } else {
++      window.location.href = target;
++    }
++  }, true);
++})();
++</script>
  <body>
-@@ -18,6 +18,19 @@
+   <noscript>You need to enable JavaScript to run this app.</noscript>
    <div id="root"></div>
    <div id="floating"></div>
    <script src="/src/index.tsx" type="module"></script>
@@ -28,6 +95,31 @@ index c0708b7..b7a68f2 100644
 +  .nullcord-return:hover { background: #2b2930; }
 +</style>
 +<a class="nullcord-return" href="/">← NullCord</a>
++<script>
++(function () {
++  if (!/\/stoat(\/|$)/.test(location.pathname)) return;
++  function rename(root) {
++    if (!root) return;
++    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
++    var node;
++    while ((node = walker.nextNode())) {
++      var parent = node.parentElement;
++      if (!parent || /^(SCRIPT|STYLE|TEXTAREA)$/.test(parent.tagName)) continue;
++      if (node.nodeValue && node.nodeValue.indexOf("Stoat") !== -1) {
++        node.nodeValue = node.nodeValue.replace(/\bStoat\b/g, "NullCord");
++      }
++    }
++  }
++  document.addEventListener("DOMContentLoaded", function () { rename(document.body); });
++  new MutationObserver(function (records) {
++    for (var i = 0; i < records.length; i++) {
++      for (var j = 0; j < records[i].addedNodes.length; j++) {
++        rename(records[i].addedNodes[j]);
++      }
++    }
++  }).observe(document.documentElement, { childList: true, subtree: true });
++})();
++</script>
  </body>
  
  </html>
