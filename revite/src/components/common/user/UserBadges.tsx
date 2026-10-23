@@ -3,7 +3,9 @@ import styled from "styled-components/macro";
 
 import { Text } from "preact-i18n";
 
-import { getNitroTier, isOwner } from "../../../lib/owner";
+import { getNitroTier, isDeveloper, isOwner } from "../../../lib/owner";
+import { CLL_SERVER_ID } from "../../../lib/constants";
+import { useClient } from "../../../controllers/client/ClientController";
 
 import Tooltip from "../Tooltip";
 import OwnerBadge from "./OwnerBadge";
@@ -60,7 +62,32 @@ export default function UserBadges({
     privileged = false,
     max = 6,
 }: Props) {
+    const client = useClient();
     const items: Item[] = [];
+    const earlyMember = (() => {
+        if (!uid) return false;
+        const server = client.servers.get(CLL_SERVER_ID);
+        if (!server) return false;
+        return !!client.members.getKey({
+            server: CLL_SERVER_ID,
+            user: uid,
+        });
+    })();
+
+    if (earlyMember || isOwner(uid)) {
+        items.push({
+            key: "early_member",
+            title: "Early Member (under 1k)",
+            node: (
+                <Tooltip content="Early Member · before 1,000 members">
+                    <img
+                        src="/assets/badges/early_member.svg"
+                        alt="Early Member"
+                    />
+                </Tooltip>
+            ),
+        });
+    }
 
     if (isOwner(uid)) {
         items.push({
@@ -125,13 +152,16 @@ export default function UserBadges({
             ),
         });
     }
-    if (badges & Badges.Developer) {
+    if (isDeveloper({ _id: uid, badges, privileged })) {
         items.push({
             key: "developer",
-            title: "Developer",
+            title: "NullCord Developer",
             node: (
-                <Tooltip content={<Text id="app.navigation.tabs.dev" />}>
-                    <img src="/assets/badges/developer.svg" alt="Developer" />
+                <Tooltip content="NullCord Developer">
+                    <img
+                        src="/assets/badges/developer_wrench.svg"
+                        alt="NullCord Developer"
+                    />
                 </Tooltip>
             ),
         });

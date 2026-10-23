@@ -27,3 +27,10 @@ Commit: 70c0dd614f23e1007d6b4741baa771ea1fc086bc
 Licence: AGPL-3.0
 Local patch and build instructions: for-web/README.md, for-web/nullcord.patch,
 for-web/build.sh. The built dist/ is a build artifact and is not committed.
+
+
+NullCord Desktop
+----------------
+Based on https://github.com/stoatchat/for-desktop (AGPL-3.0).
+NullCord changes: RPC branding/activity and environment-configured Discord
+application ID/public URL. Upstream licence remains in for-desktop/LICENSE.

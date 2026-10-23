@@ -88,3 +88,9 @@ document.head.append(s);
 
 It can inspect/edit the local session handoff, Orbs, Nitro tier, plugins,
 quest claims, UI mode, and `nullcord:*` storage. It does not call admin APIs.
+
+## NullCord Desktop
+
+The Electron desktop source is bundled in `for-desktop/`, based on
+`stoatchat/for-desktop` (AGPL-3.0), with NullCord RPC branding. Set
+`NULLCORD_DISCORD_CLIENT_ID` and `NULLCORD_PUBLIC_URL` before starting it.
