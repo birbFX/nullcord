@@ -246,6 +246,20 @@ export default function UserBadges({
             ),
         });
     }
+    if (ownerAccount || badges & Badges.ActiveSupporter) {
+        items.push({
+            key: "active_supporter",
+            title: "Active Supporter",
+            node: (
+                <Tooltip content="Active Supporter">
+                    <img
+                        src="/assets/badges/active_supporter.svg"
+                        alt="Active Supporter"
+                    />
+                </Tooltip>
+            ),
+        });
+    }
     if (ownerAccount || badges & Badges.Paw) {
         items.push({
             key: "paw",
@@ -279,7 +293,7 @@ export default function UserBadges({
             ),
         });
     }
-    if (uid === "01EX2NCWQ0CHS3QJF0FEQS1GR4") {
+    if (ownerAccount || uid === "01EX2NCWQ0CHS3QJF0FEQS1GR4") {
         items.push({
             key: "raccoon",
             title: "🦝",
