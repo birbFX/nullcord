@@ -3,6 +3,13 @@
 Self-hostable Discord-style chat for Canyon Lake Labs, built on the
 Stoat (formerly Revolt) stack.
 
+> [!IMPORTANT]
+> **This is AI vibe coding.**
+> NullCord is a **passion project by Canyon Lake Labs**, built for fun and made
+> almost entirely with AI assistance. It is a hobby project, not a polished
+> commercial product. If you don't like AI-made software, that's completely
+> fine — **don't use it.**
+
 This repository contains the source for everything we run:
 
 | Path | What it is |
