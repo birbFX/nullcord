@@ -210,6 +210,13 @@ export const UserProfile = observer(
                                     </Localizer>
                                 </span>
                             </div>
+                            <div className={styles.badges}>
+                                <UserBadges
+                                    badges={badges}
+                                    uid={user._id}
+                                    privileged={user.privileged}
+                                />
+                            </div>
                             {user.status?.text && (
                                 <span className={styles.status}>
                                     <UserStatus user={user} tooltip />
@@ -370,7 +377,7 @@ export const UserProfile = observer(
                                 {profile?.content && (
                                     <>
                                         <div className={styles.category}>
-                                            <Text id="app.special.popovers.user_profile.sub.information" />
+                                            Description
                                         </div>
                                         <div className={styles.markdown}>
                                             <Markdown
@@ -379,13 +386,7 @@ export const UserProfile = observer(
                                         </div>
                                     </>
                                 )}
-                                <div style={{ marginTop: 12 }}>
-                                    <UserBadges
-                                        badges={badges}
-                                        uid={user._id}
-                                        privileged={user.privileged}
-                                    />
-                                </div>
+
                                 {/*<div className={styles.category}><Text id="app.special.popovers.user_profile.sub.connections" /></div>*/}
                             </div>
                         ) : (
