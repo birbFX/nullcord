@@ -9,6 +9,7 @@ import { Text } from "preact-i18n";
 
 import { internalEmit } from "../../../lib/eventEmitter";
 import { OWNER_COLOUR, isOwner } from "../../../lib/owner";
+import { getServerTag } from "../../../lib/serverExtras";
 
 import { dayjs } from "../../../context/Locale";
 
@@ -45,6 +46,26 @@ type UsernameProps = Omit<
     innerRef?: Ref<any>;
 };
 
+const ServerTag = styled.span`
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-inline-start: 5px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    background: var(--primary-background);
+    color: var(--foreground);
+    vertical-align: 0.1em;
+
+    &::before {
+        content: "◆";
+        color: #8b95ff;
+        font-size: 9px;
+    }
+`;
+
 const Name = styled.span<{ colour?: string | null }>`
     ${(props) =>
         props.colour &&
@@ -75,12 +96,14 @@ export const Username = observer(
             user?.username;
         let color = masquerade?.colour;
         let timed_out: Date | undefined;
+        let serverTag = "";
 
         if (override) {
             username = override;
         } else if (user && showServerIdentity) {
             const { server } = useParams<{ server?: string }>();
             if (server) {
+                serverTag = getServerTag(server);
                 const client = useClient();
                 const member = client.members.getKey({
                     server,
@@ -127,6 +150,7 @@ export const Username = observer(
                 </Name>
 
                 {owner && <OwnerCrown />}
+                {serverTag ? <ServerTag title="Server tag">{serverTag}</ServerTag> : undefined}
 
                 {timed_out && (
                     <Tooltip

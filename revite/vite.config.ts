@@ -119,7 +119,7 @@ export default defineConfig({
         }) as any,
     ],
     define: {
-        __CLL_REV: JSON.stringify("2026-10-23-5"),
+        __CLL_REV: JSON.stringify("2026-10-23-6"),
     },
     server: {
         headers: {

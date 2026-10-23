@@ -1,4 +1,5 @@
 import { observer } from "mobx-react-lite";
+import { Link } from "react-router-dom";
 
 import styles from "./Panes.module.scss";
 import { Text } from "preact-i18n";
@@ -9,8 +10,13 @@ import AppearanceOptions from "../../../components/settings/appearance/Appearanc
 import ChatOptions from "../../../components/settings/appearance/ChatOptions";
 import ThemeOverrides from "../../../components/settings/appearance/ThemeOverrides";
 import ThemeSelection from "../../../components/settings/appearance/ThemeSelection";
+import { useClient } from "../../../controllers/client/ClientController";
+import { isNitro } from "../../../lib/owner";
 
 export const Appearance = observer(() => {
+    const client = useClient();
+    const nitro = isNitro(client.user);
+
     return (
         <div className={styles.appearance}>
             <ThemeSelection />
@@ -22,8 +28,15 @@ export const Appearance = observer(() => {
             <CollapsibleSection
                 defaultValue={false}
                 id="settings_overrides"
-                summary={<Text id="app.settings.pages.appearance.overrides" />}>
-                <ThemeOverrides />
+                summary={nitro ? "Nitro theme overrides" : "Nitro theme overrides 🔒"}>
+                {nitro ? (
+                    <ThemeOverrides />
+                ) : (
+                    <div style={{ fontSize: 13, color: "var(--secondary-foreground)" }}>
+                        Custom theme overrides are a Nitro feature.{" "}
+                        <Link to="/nitro">Get Nitro with Orbs</Link>.
+                    </div>
+                )}
             </CollapsibleSection>
             <CollapsibleSection
                 id="settings_advanced_appearance"

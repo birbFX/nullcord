@@ -16,8 +16,7 @@ export default observer(() => {
     const layout = useApplicationState().layout;
     const { pathname } = useLocation();
     const isOpen =
-        !pathname.startsWith("/discover") &&
-        (isTouchscreenDevice || layout.getSectionState(SIDEBAR_CHANNELS, true));
+        isTouchscreenDevice || layout.getSectionState(SIDEBAR_CHANNELS, true);
 
     return (
         <SidebarBase>

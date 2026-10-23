@@ -9,7 +9,9 @@ import { Text } from "preact-i18n";
 
 import { IconButton } from "@revoltchat/ui";
 
+import { useClient } from "../../controllers/client/ClientController";
 import { modalController } from "../../controllers/modals/ModalController";
+import { boostLevel, hasInfiniteBoosts, useServerExtras } from "../../lib/serverExtras";
 import Tooltip from "./Tooltip";
 
 interface Props {
@@ -65,11 +67,38 @@ const ServerBanner = styled.div<Omit<Props, "server">>`
             cursor: pointer;
             color: var(--foreground);
         }
+
+        .server-tag,
+        .boost-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+            padding: 2px 6px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: 800;
+            background: var(--primary-background);
+            color: var(--foreground);
+        }
+
+        .server-tag .diamond {
+            color: #8b95ff;
+        }
+
+        .boost-badge {
+            color: #f7c948;
+        }
     }
 `;
 
 export default observer(({ server }: Props) => {
+    const client = useClient();
+    const extras = useServerExtras(server._id);
     const bannerURL = server.generateBannerURL({ width: 480 });
+    const boosts = Object.values(extras.boosts ?? {}).reduce((a, b) => a + b, 0);
+    const infinite = hasInfiniteBoosts(client.user);
+    const level = infinite ? 3 : boostLevel(boosts);
 
     return (
         <ServerBanner
@@ -132,6 +161,19 @@ export default observer(({ server }: Props) => {
                     }>
                     {server.name}
                 </a>
+                {extras.tag ? (
+                    <span className="server-tag" title="Server tag">
+                        <span className="diamond">◆</span>
+                        {extras.tag}
+                    </span>
+                ) : undefined}
+                {infinite || boosts > 0 ? (
+                    <span
+                        className="boost-badge"
+                        title={`Boost level ${level}`}>
+                        🚀 {infinite ? "∞" : boosts} · Lv {level}
+                    </span>
+                ) : undefined}
                 {server.havePermission("ManageServer") && (
                     <Link to={`/server/${server._id}/settings`}>
                         <IconButton>

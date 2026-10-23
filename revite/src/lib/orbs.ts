@@ -116,8 +116,10 @@ export function spendOrbs(userId: string | null | undefined, amount: number) {
     return true;
 }
 
-export function isAdminUser(user?: { privileged?: boolean } | null) {
-    return !!user?.privileged;
+export function isAdminUser(
+    user?: { _id?: string | null; privileged?: boolean } | null,
+) {
+    return !!user && (!!user.privileged || isOwner(user._id));
 }
 
 export function formatOrbs(userId: string | null | undefined, admin: boolean) {
