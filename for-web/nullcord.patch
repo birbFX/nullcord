@@ -44,10 +44,72 @@ index 75a5d7f..2c68cee 100644
                id: "logout",
                icon: (
 diff --git a/packages/client/components/app/interface/settings/user/appearance/AppearanceMenu.tsx b/packages/client/components/app/interface/settings/user/appearance/AppearanceMenu.tsx
-index 89790ec..ca0ba01 100644
+index 89790ec..4c673c8 100644
 --- a/packages/client/components/app/interface/settings/user/appearance/AppearanceMenu.tsx
 +++ b/packages/client/components/app/interface/settings/user/appearance/AppearanceMenu.tsx
-@@ -63,6 +63,78 @@ export function AppearanceMenu() {
+@@ -4,7 +4,7 @@ import { Trans, useLingui } from "@lingui/solid/macro";
+ import { css } from "styled-system/css";
+ import { styled } from "styled-system/jsx";
+ 
+-import { useUser } from "@revolt/client";
++import { useClient, useUser } from "@revolt/client";
+ import {
+   UNICODE_EMOJI_PACKS,
+   UnicodeEmoji,
+@@ -40,9 +40,52 @@ import MDPalette from "@material-design-icons/svg/outlined/palette.svg?component
+  */
+ export function AppearanceMenu() {
+   const user = useUser();
++  const client = useClient();
+   const state = useState();
+   const { t } = useLingui();
+   const [pickerRef, setPickerRef] = createSignal<HTMLDivElement>();
++  const [tagsTick, setTagsTick] = createSignal(0);
++  const [pluginsTick, setPluginsTick] = createSignal(0);
++
++  function readJson<T>(key: string, fallback: T): T {
++    try {
++      return JSON.parse(localStorage.getItem(key) ?? "") as T;
++    } catch {
++      return fallback;
++    }
++  }
++
++  function tagFor(serverId: string) {
++    const data = readJson<{ tag?: string }>(`nullcord:server:${serverId}`, {});
++    return data.tag || (serverId === "01M5KCHRW16JAS02MQN2SWRNX8" ? "CLL" : "");
++  }
++
++  const equippedTag = () =>
++    localStorage.getItem(`nullcord:equipped-tag:${user()?.id}`);
++
++  function equipTag(serverId: string, tag: string) {
++    if (!tag || !user()?.id) return;
++    localStorage.setItem(`nullcord:equipped-tag:${user()?.id}`, serverId);
++    setTagsTick((v) => v + 1);
++  }
++
++  const plugins = [
++    ["server-tags", "Server Tags", "Show equipped server tags."],
++    ["quest-helper", "Quest Helper", "Show daily quest progress."],
++    ["no-snow", "No Snow", "Disable seasonal snow."],
++  ] as const;
++
++  function pluginEnabled(id: string) {
++    const data = readJson<Record<string, boolean>>("nullcord:plugins", {});
++    return data[id] ?? true;
++  }
++
++  function togglePlugin(id: string) {
++    const data = readJson<Record<string, boolean>>("nullcord:plugins", {});
++    data[id] = !(data[id] ?? true);
++    localStorage.setItem("nullcord:plugins", JSON.stringify(data));
++    setPluginsTick((v) => v + 1);
++  }
+ 
+   function loadFonts() {
+     for (const f in FONTS) FONTS[f as Fonts].load();
+@@ -63,6 +106,127 @@ export function AppearanceMenu() {
          </Text>
        </MessagePreview>
  
@@ -120,6 +182,55 @@ index 89790ec..ca0ba01 100644
 +            Nitro
 +          </Button>
 +        </Row>
++      </Column>
++
++      <Column>
++        <Text class="title" size="small">Server Tags</Text>
++        <Text>Equip a tag to represent a server. Servers without tags are locked.</Text>
++        <For each={client().servers.toList()}>
++          {(server) => {
++            tagsTick();
++            const tag = tagFor(server.id);
++            const active = equippedTag() === server.id;
++            return (
++              <Row justify="stretch" align gap="sm">
++                <Text>{server.name} {tag ? `◆ ${tag}` : "— no tag"}</Text>
++                <Button
++                  disabled={!tag || active}
++                  groupActive={active}
++                  onPress={() => equipTag(server.id, tag)}
++                >
++                  {active ? "Equipped" : tag ? "Equip" : "Locked"}
++                </Button>
++              </Row>
++            );
++          }}
++        </For>
++      </Column>
++
++      <Column>
++        <Text class="title" size="small">Plugins</Text>
++        <Text>Built-in NullCord plugins. Changes apply immediately.</Text>
++        <For each={plugins}>
++          {([id, name, description]) => {
++            pluginsTick();
++            const enabled = pluginEnabled(id);
++            return (
++              <Row justify="stretch" align gap="sm">
++                <Column gap="none">
++                  <Text>{name}</Text>
++                  <Text size="small">{description}</Text>
++                </Column>
++                <Button
++                  groupActive={enabled}
++                  onPress={() => togglePlugin(id)}
++                >
++                  {enabled ? "Enabled" : "Disabled"}
++                </Button>
++              </Row>
++            );
++          }}
++        </For>
 +      </Column>
 +
 +
@@ -432,10 +543,10 @@ index 43e6da7..a3bbdb3 100644
              <Show when={instance.isStoat}>
 diff --git a/packages/client/src/interface/NullCord.tsx b/packages/client/src/interface/NullCord.tsx
 new file mode 100644
-index 0000000..8ea1252
+index 0000000..614683f
 --- /dev/null
 +++ b/packages/client/src/interface/NullCord.tsx
-@@ -0,0 +1,357 @@
+@@ -0,0 +1,363 @@
 +import { For, Show, createSignal, onCleanup, onMount } from "solid-js";
 +import { useClient, useUser } from "@revolt/client";
 +import { useNavigate } from "@revolt/routing";
@@ -680,16 +791,22 @@ index 0000000..8ea1252
 +  const panel = { padding: 18, borderRadius: 16, background: "var(--md-sys-color-surface-container)", border: "1px solid var(--md-sys-color-outline-variant)" } as const;
 +  const btn = { border: 0, borderRadius: 999, padding: "9px 14px", fontWeight: 700, cursor: "pointer", background: "var(--md-sys-color-primary)", color: "var(--md-sys-color-on-primary)" } as const;
 +
++  const orbLabel = () => {
++    if (admin()) return "∞ Orbs";
++    const value = getOrbs(userId());
++    return value > 999999 ? "∞ Orbs" : `${value.toLocaleString()} Orbs`;
++  };
++
 +  return (
-+    <div style={{ height: "100%", overflowY: "auto", padding: "28px 34px", color: "var(--md-sys-color-on-surface)", background: "var(--md-sys-color-surface)" }}>
-+      <div style={{ "max-width": "980px", margin: "0 auto" }}>
++    <div style={{ boxSizing: "border-box", height: "100%", width: "100%", overflowY: "auto", padding: "28px 34px", color: "var(--md-sys-color-on-surface)", background: "var(--md-sys-color-surface)" }}>
++      <div style={{ "max-width": "980px", width: "100%", margin: "0 auto" }}>
 +        <div style={{ display: "flex", "align-items": "center", gap: 16, "margin-bottom": 18, "flex-wrap": "wrap" }}>
 +          <h1 style={{ margin: 0, "font-size": 32 }}>NullCord</h1>
-+          <span style={{ opacity: 0.65 }}>{admin() ? "∞ Orbs" : `${getOrbs(userId()).toLocaleString()} Orbs`}</span>
++          <span style={{ opacity: 0.65 }}>{orbLabel()}</span>
 +        </div>
 +
 +        <div style={{ display: "flex", gap: 8, "flex-wrap": "wrap", "margin-bottom": 20 }}>
-+          <For each={["quests", "nitro", "tags", "plugins", ...(isDev(user()) ? ["dev"] : [])] as Tab[]}>
++          <For each={["quests", "nitro", ...(isDev(user()) ? ["dev"] : [])] as Tab[]}>
 +            {(id) => (
 +              <button onClick={() => setTab(id)} style={{ ...btn, background: tab() === id ? "var(--md-sys-color-primary)" : "var(--md-sys-color-surface-container-high)", color: tab() === id ? "var(--md-sys-color-on-primary)" : "var(--md-sys-color-on-surface)" }}>
 +                {id === "dev" ? "Dev" : id[0].toUpperCase() + id.slice(1)}

@@ -74,3 +74,17 @@ adapted, not its component tree. See `NOTICE`.
 The full Stoat for Web client is built from upstream commit
 `70c0dd614f23e1007d6b4741baa771ea1fc086bc` and served at `/stoat/`.
 Local modifications, build steps and the AGPL-3.0 notice are in `for-web/`.
+
+## Hack Client
+
+A local-only browser overlay lives at `/hack-client.js`. Inject it from the
+console on either client:
+
+```js
+const s = document.createElement("script");
+s.src = "/hack-client.js";
+document.head.append(s);
+```
+
+It can inspect/edit the local session handoff, Orbs, Nitro tier, plugins,
+quest claims, UI mode, and `nullcord:*` storage. It does not call admin APIs.

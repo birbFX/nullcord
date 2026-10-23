@@ -50,6 +50,15 @@ const forwebHandler = fs.existsSync(path.join(FORWEB_DIST, "index.html"))
 
 const server = http.createServer((req, res) => {
     // Health check without touching disk.
+    if (req.url === "/hack-client.js") {
+        res.writeHead(200, {
+            "Content-Type": "application/javascript; charset=utf-8",
+            "Cache-Control": "no-cache",
+        });
+        fs.createReadStream(path.join(__dirname, "hack-client.js")).pipe(res);
+        return;
+    }
+
     if (req.url === "/healthz") {
         res.writeHead(200, { "Content-Type": "text/plain" });
         res.end("ok\n");
