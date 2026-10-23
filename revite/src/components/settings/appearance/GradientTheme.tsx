@@ -7,7 +7,6 @@ import { useClient } from "../../../controllers/client/ClientController";
 import { useApplicationState } from "../../../mobx/State";
 import {
     customGradient,
-    gradientSolid,
     gradientText,
     GRADIENT_PRESETS,
 } from "../../../lib/gradients";
@@ -37,7 +36,8 @@ export default function GradientTheme({ onApplied }: { onApplied?: () => void })
         "secondary-foreground",
         "tertiary-foreground",
     ];
-    const allVars = [...surfaceVars, ...textVars, "accent"];
+    // Accent is intentionally excluded: keep the user's existing accent.
+    const allVars = [...surfaceVars, ...textVars];
 
     const [selected, setSelected] = useState(
         () => localStorage.getItem(selectedKey) ?? "",
@@ -71,7 +71,6 @@ export default function GradientTheme({ onApplied }: { onApplied?: () => void })
                 );
             }
 
-            const solid = gradientSolid(css);
             const text = gradientText(css);
             for (const key of surfaceVars) {
                 theme.setVariable(key as any, css);
@@ -79,7 +78,6 @@ export default function GradientTheme({ onApplied }: { onApplied?: () => void })
             for (const key of textVars) {
                 theme.setVariable(key as any, text);
             }
-            theme.setVariable("accent", solid);
             localStorage.setItem(selectedKey, css);
             setSelected(css);
             recordQuestEvent(userId, "gradient_applied");
@@ -115,7 +113,6 @@ export default function GradientTheme({ onApplied }: { onApplied?: () => void })
                         theme.getBase() === "light" ? "#111111" : "#ffffff",
                     );
                 }
-                theme.setVariable("accent", "#5865f2");
             }
             localStorage.removeItem(prevKey);
             localStorage.removeItem(selectedKey);
