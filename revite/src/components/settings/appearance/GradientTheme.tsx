@@ -61,16 +61,22 @@ export default function GradientTheme({ onApplied }: { onApplied?: () => void })
                 localStorage.setItem(
                     prevKey,
                     JSON.stringify(
-                        Object.fromEntries(
-                            allVars.map((key) => [
-                                key,
-                                theme.getVariable(key as any),
-                            ]),
-                        ),
+                        {
+                            vars: Object.fromEntries(
+                                allVars.map((key) => [
+                                    key,
+                                    theme.getVariable(key as any),
+                                ]),
+                            ),
+                            css: theme.getCSS() ?? "",
+                        },
                     ),
                 );
             }
 
+            // Drop custom CSS overrides for the duration of the gradient;
+            // otherwise leftover CSS can recolour only part of the client.
+            theme.setCSS("");
             const text = gradientText(css);
             for (const key of surfaceVars) {
                 theme.setVariable(key as any, css);
@@ -93,14 +99,16 @@ export default function GradientTheme({ onApplied }: { onApplied?: () => void })
             const raw = localStorage.getItem(prevKey);
             if (raw) {
                 const prev = JSON.parse(raw);
+                const values = prev.vars ?? prev;
                 for (const key of allVars) {
                     const value =
-                        prev[key] ??
+                        values[key] ??
                         (key === "background" || key === "primary-background"
                             ? prev.primary
                             : undefined);
                     if (value) theme.setVariable(key as any, value);
                 }
+                if (typeof prev.css === "string") theme.setCSS(prev.css);
             } else {
                 const fallback =
                     theme.getBase() === "light" ? "#ffffff" : "#191919";
