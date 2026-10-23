@@ -11,6 +11,8 @@ import { CategoryButton, ObservedInputElement } from "@revoltchat/ui";
 import { useApplicationState } from "../../../mobx/State";
 
 import { ThemeBaseSelector } from "./legacy/ThemeBaseSelector";
+import { useClient } from "../../../controllers/client/ClientController";
+import { recordQuestEvent } from "../../../lib/quests";
 
 /**
  * ! LEGACY
@@ -24,12 +26,14 @@ export const ShimThemeBaseSelector = observer(() => {
             setValue={(base) => {
                 theme.setBase(base);
                 theme.reset();
+                recordQuestEvent(client.user?._id, "theme_changed");
             }}
         />
     );
 });
 
 export default function ThemeSelection() {
+    const client = useClient();
     const theme = useApplicationState().settings.theme;
 
     return (
@@ -57,6 +61,7 @@ export default function ThemeSelection() {
                 onChange={(colour) => {
                     theme.setVariable("accent", colour as string);
                     theme.setVariable("scrollbar-thumb", pSBC(-0.2, colour));
+                    recordQuestEvent(client.user?._id, "theme_changed");
                 }}
             />
         </>

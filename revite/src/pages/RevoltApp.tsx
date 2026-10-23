@@ -4,6 +4,7 @@ import styled, { css } from "styled-components/macro";
 
 import { useEffect, useState } from "preact/hooks";
 
+import QuestTracker from "../components/QuestTracker";
 import ContextMenus from "../lib/ContextMenus";
 import { isTouchscreenDevice } from "../lib/isTouchscreenDevice";
 
@@ -227,6 +228,7 @@ export default function App() {
                         </Switch>
                     </Routes>
                     <ContextMenus />
+                    <QuestTracker />
                 </OverlappingPanels>
             </AppContainer>
         </>

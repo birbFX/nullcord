@@ -18,6 +18,7 @@ import { useMemo } from "preact/hooks";
 import { CategoryButton } from "@revoltchat/ui";
 
 import { isTouchscreenDevice } from "../../lib/isTouchscreenDevice";
+import { isPluginEnabled } from "../../lib/plugins";
 
 import { useApplicationState } from "../../mobx/State";
 
@@ -88,7 +89,7 @@ export default observer(() => {
     return (
         <div className={styles.home}>
             <Overlay>
-                {seasonalTheme && (
+                {seasonalTheme && !isPluginEnabled("no-snow") && (
                     <div className="snowfall">
                         {snowflakes.map((emoji, index) => (
                             <div key={index} className="snowflake">

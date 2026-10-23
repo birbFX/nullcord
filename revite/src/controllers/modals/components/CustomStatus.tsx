@@ -3,6 +3,7 @@ import { Text } from "preact-i18n";
 import { ModalForm } from "@revoltchat/ui";
 
 import { useClient } from "../../client/ClientController";
+import { recordQuestEvent } from "../../../lib/quests";
 import { ModalProps } from "../types";
 
 /**
@@ -30,14 +31,15 @@ export default function CustomStatus({
                     ) as React.ReactChild,
                 },
             }}
-            callback={({ text }) =>
-                client.users.edit({
+            callback={({ text }) => {
+                recordQuestEvent(client.user?._id, "status_updated");
+                return client.users.edit({
                     status: {
                         ...client.user?.status,
                         text: text.trim().length > 0 ? text : undefined,
                     },
-                })
-            }
+                });
+            }}
             submit={{
                 children: <Text id="app.special.modals.actions.save" />,
             }}

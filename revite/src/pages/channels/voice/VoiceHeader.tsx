@@ -10,11 +10,12 @@ import { observer } from "mobx-react-lite";
 import styled from "styled-components/macro";
 
 import { Text } from "preact-i18n";
-import { useMemo } from "preact/hooks";
+import { useEffect, useMemo } from "preact/hooks";
 
 import { Button } from "@revoltchat/ui";
 
 import { voiceState, VoiceStatus } from "../../../lib/vortex/VoiceState";
+import { recordVoiceState } from "../../../lib/quests";
 
 import Tooltip from "../../../components/common/Tooltip";
 import UserIcon from "../../../components/common/user/UserIcon";
@@ -84,6 +85,14 @@ export default observer(({ id }: Props) => {
 
     const client = useClient();
     const self = client.users.get(client.user!._id);
+
+    useEffect(() => {
+        recordVoiceState(
+            client.user?._id,
+            voiceState.participants.size,
+            voiceState.status === VoiceStatus.CONNECTED,
+        );
+    }, [client.user?._id, voiceState.status, voiceState.participants.size]);
 
     const keys = Array.from(voiceState.participants.keys());
     const users = useMemo(() => {

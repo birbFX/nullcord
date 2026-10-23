@@ -7,6 +7,7 @@ import { useState } from "preact/hooks";
 
 import { Button, InputBox } from "@revoltchat/ui";
 
+import { useClient } from "../../../controllers/client/ClientController";
 import {
     getServerTag,
     setServerTag,
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export const ServerTags = observer(({ server }: Props) => {
+    const client = useClient();
     const extras = useServerExtras(server._id);
     const [tag, setTag] = useState(getServerTag(server._id));
 
@@ -48,14 +50,14 @@ export const ServerTags = observer(({ server }: Props) => {
                 />
                 <Button
                     palette="primary"
-                    onClick={() => setServerTag(server._id, tag)}>
+                    onClick={() => setServerTag(server._id, tag, client.user?._id)}>
                     Save tag
                 </Button>
                 <Button
                     palette="secondary"
                     onClick={() => {
                         setTag("");
-                        setServerTag(server._id, "");
+                        setServerTag(server._id, "", client.user?._id);
                     }}>
                     Remove tag
                 </Button>

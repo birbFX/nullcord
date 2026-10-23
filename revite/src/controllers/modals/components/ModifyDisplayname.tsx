@@ -3,6 +3,7 @@ import { Text } from "preact-i18n";
 import { ModalForm } from "@revoltchat/ui";
 
 import { useClient } from "../../client/ClientController";
+import { recordQuestEvent } from "../../../lib/quests";
 import { ModalProps } from "../types";
 
 /**
@@ -30,15 +31,17 @@ export default function ModifyDisplayname({
                     field: "Display Name",
                 },
             }}
-            callback={({ display_name }) =>
-                display_name && display_name !== client.user!.username
+            callback={({ display_name }) => {
+                recordQuestEvent(client.user?._id, "profile_updated");
+                return display_name &&
+                    display_name !== client.user!.username
                     ? client.users.edit({
                           display_name,
                       } as never)
                     : client.users.edit({
                           remove: ["DisplayName"],
-                      } as never)
-            }
+                      } as never);
+            }}
             submit={{
                 children: <Text id="app.special.modals.actions.save" />,
             }}

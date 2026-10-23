@@ -6,6 +6,8 @@ import { useEffect, useState } from "preact/hooks";
 import { ModalForm } from "@revoltchat/ui";
 
 import { noopAsync } from "../../../lib/js";
+import { recordInviteCreated } from "../../../lib/quests";
+import { useClient } from "../../client/ClientController";
 
 import { takeError } from "../../client/jsx/error";
 import { modalController } from "../ModalController";
@@ -41,6 +43,7 @@ export default function CreateInvite({
     target,
     ...props
 }: ModalProps<"create_invite">) {
+    const client = useClient();
     const [processing, setProcessing] = useState(true);
     const [code, setCode] = useState<string>();
     const [error, setError] = useState<string>();
@@ -52,7 +55,14 @@ export default function CreateInvite({
 
         target
             .createInvite()
-            .then(({ _id }) => setCode(_id))
+            .then(({ _id }) => {
+                setCode(_id);
+                recordInviteCreated(
+                    client.user?._id,
+                    target.server_id,
+                    _id,
+                );
+            })
             .catch((err) => setError(String(takeError(err))))
             .finally(() => setProcessing(false));
     };

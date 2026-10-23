@@ -53,6 +53,8 @@ auto_derived!(
         pub max_uses: Option<u64>,
         /// Number of seconds until this invite expires
         pub expires: Option<Timestamp>,
+        /// Optional custom invite code (vanity link). Requires Level 3.
+        pub code: Option<String>,
     }
 
     /// Public invite response

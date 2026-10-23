@@ -17,6 +17,7 @@ import { defer } from "../../../lib/defer";
 import { internalEmit, internalSubscribe } from "../../../lib/eventEmitter";
 import { useTranslation } from "../../../lib/i18n";
 import { isTouchscreenDevice } from "../../../lib/isTouchscreenDevice";
+import { recordMessageSent } from "../../../lib/quests";
 import {
     getRenderer,
     SMOOTH_SCROLL_ON_RECEIVE,
@@ -394,6 +395,11 @@ export default observer(({ channel }: Props) => {
                     nonce,
                     replies,
                 });
+                recordMessageSent(
+                    client.user?._id,
+                    channel.server_id,
+                    false,
+                );
             } catch (error) {
                 state.queue.fail(nonce, takeError(error));
             }
@@ -475,6 +481,11 @@ export default observer(({ channel }: Props) => {
                 replies,
                 attachments,
             });
+            recordMessageSent(
+                client.user?._id,
+                channel.server_id,
+                files.some((file) => file.type.startsWith("image/")),
+            );
         } catch (err) {
             setUploadState({
                 type: "failed",

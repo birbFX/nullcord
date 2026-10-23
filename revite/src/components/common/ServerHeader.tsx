@@ -9,9 +9,13 @@ import { Text } from "preact-i18n";
 
 import { IconButton } from "@revoltchat/ui";
 
-import { useClient } from "../../controllers/client/ClientController";
 import { modalController } from "../../controllers/modals/ModalController";
-import { boostLevel, hasInfiniteBoosts, useServerExtras } from "../../lib/serverExtras";
+import { CLL_SERVER_ID } from "../../lib/constants";
+import {
+    boostLevel,
+    serverHasInfiniteBoosts,
+    useServerExtras,
+} from "../../lib/serverExtras";
 import Tooltip from "./Tooltip";
 
 interface Props {
@@ -93,12 +97,13 @@ const ServerBanner = styled.div<Omit<Props, "server">>`
 `;
 
 export default observer(({ server }: Props) => {
-    const client = useClient();
     const extras = useServerExtras(server._id);
     const bannerURL = server.generateBannerURL({ width: 480 });
     const boosts = Object.values(extras.boosts ?? {}).reduce((a, b) => a + b, 0);
-    const infinite = hasInfiniteBoosts(client.user);
+    const infinite = serverHasInfiniteBoosts(server._id);
     const level = infinite ? 3 : boostLevel(boosts);
+    const serverTag =
+        extras.tag || (server._id === CLL_SERVER_ID ? "CLL" : "");
 
     return (
         <ServerBanner
@@ -161,10 +166,10 @@ export default observer(({ server }: Props) => {
                     }>
                     {server.name}
                 </a>
-                {extras.tag ? (
+                {serverTag ? (
                     <span className="server-tag" title="Server tag">
                         <span className="diamond">◆</span>
-                        {extras.tag}
+                        {serverTag}
                     </span>
                 ) : undefined}
                 {infinite || boosts > 0 ? (

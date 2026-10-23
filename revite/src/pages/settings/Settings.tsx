@@ -4,6 +4,7 @@ import {
     LogOut,
     Desktop,
     ListUl,
+    Tag,
 } from "@styled-icons/boxicons-regular";
 import {
     Bell,
@@ -26,7 +27,6 @@ import styles from "./Settings.module.scss";
 import { openContextMenu } from "preact-context-menu";
 import { Text } from "preact-i18n";
 
-import { useApplicationState } from "../../mobx/State";
 
 import UserIcon from "../../components/common/user/UserIcon";
 import { Username } from "../../components/common/user/UserShort";
@@ -50,6 +50,7 @@ import { Native } from "./panes/Native";
 import { Notifications } from "./panes/Notifications";
 import { PluginsPage } from "./panes/Plugins";
 import { Profile } from "./panes/Profile";
+import { ServerTags } from "./panes/ServerTags";
 import { Sessions } from "./panes/Sessions";
 import { Sync } from "./panes/Sync";
 
@@ -117,8 +118,6 @@ const AccountHeader = styled.div`
 export default observer(() => {
     const history = useHistory();
     const client = useClient();
-    const experiments = useApplicationState().experiments;
-
     function switchPage(to?: string) {
         if (to) {
             history.replace(`/settings/${to}`);
@@ -144,6 +143,11 @@ export default observer(() => {
                     title: <Text id="app.settings.pages.profile.title" />,
                 },
                 {
+                    id: "server-tags",
+                    icon: <Tag size={20} />,
+                    title: "Server Tags",
+                },
+                {
                     id: "sessions",
                     icon: <CheckShield size={20} />,
                     title: <Text id="app.settings.pages.sessions.title" />,
@@ -165,7 +169,6 @@ export default observer(() => {
                     id: "plugins",
                     icon: <Plug size={20} />,
                     title: <Text id="app.settings.pages.plugins.title" />,
-                    hidden: !experiments.isEnabled("plugins"),
                 },
                 {
                     id: "notifications",
@@ -210,6 +213,9 @@ export default observer(() => {
                         <RequiresOnline>
                             <Sessions />
                         </RequiresOnline>
+                    </Route>
+                    <Route path="/settings/server-tags">
+                        <ServerTags />
                     </Route>
                     <Route path="/settings/appearance">
                         <Appearance />

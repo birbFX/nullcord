@@ -27,6 +27,9 @@ import placeholderSVG from "../items/placeholder.svg";
 
 import { useClient } from "../../../controllers/client/ClientController";
 import { isDeveloper } from "../../../lib/owner";
+import { dailyQuests, isQuestDone } from "../../../lib/orbs";
+import { getQuestProgress } from "../../../lib/quests";
+import { isPluginEnabled } from "../../../lib/plugins";
 import { modalController } from "../../../controllers/modals/ModalController";
 import { GenericSidebarBase, GenericSidebarList } from "../SidebarBase";
 import ButtonItem, { ChannelButton } from "../items/ButtonItem";
@@ -60,6 +63,12 @@ export default observer(() => {
     );
 
     const channel = client.channels.get(channel_id);
+    const quests = dailyQuests(client.user?._id);
+    const questsDone = quests.filter(
+        (quest) =>
+            isQuestDone(client.user?._id, quest) ||
+            getQuestProgress(client.user?._id, quest).verified,
+    ).length;
 
     // ! FIXME: move this globally
     // Track what page the user was last on (in home page).
@@ -148,6 +157,16 @@ export default observer(() => {
                         <span>Quests</span>
                     </ButtonItem>
                 </ConditionalLink>
+                {isPluginEnabled("quest-helper") && (
+                    <div
+                        style={{
+                            padding: "2px 14px 8px 42px",
+                            fontSize: 11,
+                            color: "var(--secondary-foreground)",
+                        }}>
+                        Today: {questsDone}/{quests.length} verified
+                    </div>
+                )}
                 {import.meta.env.DEV && isDeveloper(client.user) && (
                     <Link to="/dev">
                         <ButtonItem active={pathname === "/dev"}>

@@ -11,7 +11,7 @@ import {
     addBoost,
     boostCapacity,
     boostLevel,
-    hasInfiniteBoosts,
+    serverHasInfiniteBoosts,
     removeBoost,
     useServerExtras,
 } from "../../../lib/serverExtras";
@@ -32,7 +32,7 @@ export const Boosts = observer(({ server }: Props) => {
     const extras = useServerExtras(server._id);
 
     const boosts = Object.values(extras.boosts ?? {}).reduce((a, b) => a + b, 0);
-    const infinite = hasInfiniteBoosts(user);
+    const infinite = serverHasInfiniteBoosts(server._id);
     const level = infinite ? 3 : boostLevel(boosts);
     const capacity = boostCapacity(user);
     const myBoosts = user?._id ? extras.boosts?.[user._id] ?? 0 : 0;
@@ -43,8 +43,8 @@ export const Boosts = observer(({ server }: Props) => {
             <h3>Boost Server</h3>
             <p style={{ marginTop: -6, color: "var(--secondary-foreground)" }}>
                 Boosts unlock perks for everyone in {server.name}. Nitro
-                includes 2 boosts; NullCord owner and admins have unlimited
-                boosts.
+                includes 2 boosts. Canyon Lake Labs has permanent infinite
+                boosts; every other server needs real boosts.
             </p>
 
             <div
@@ -88,8 +88,9 @@ export const Boosts = observer(({ server }: Props) => {
                     }}>
                     <div style={{ fontSize: 12, opacity: 0.7 }}>Your boosts</div>
                     <div style={{ fontSize: 28, fontWeight: 800 }}>
-                        {infinite ? "∞" : myBoosts}/
-                        {capacity === Infinity ? "∞" : capacity}
+                        {infinite
+                            ? "∞/∞"
+                            : `${myBoosts}/${capacity}`}
                     </div>
                 </div>
             </div>

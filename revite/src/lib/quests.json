@@ -1,0 +1,266 @@
+[
+  {
+    "id": "first_hello",
+    "title": "Say hello somewhere new",
+    "description": "Send a message in a server you have never spoken in before.",
+    "reward": 40,
+    "verification": "first_message_server",
+    "action": "quiet_server"
+  },
+  {
+    "id": "chat_1",
+    "title": "Check in",
+    "description": "Send a message anywhere on NullCord today.",
+    "reward": 15,
+    "verification": "message_sent"
+  },
+  {
+    "id": "chat_3",
+    "title": "Small talk",
+    "description": "Send 3 messages today.",
+    "reward": 25,
+    "verification": "message_sent",
+    "target": 3
+  },
+  {
+    "id": "chat_10",
+    "title": "Chatterbox",
+    "description": "Send 10 messages today.",
+    "reward": 45,
+    "verification": "message_sent",
+    "target": 10
+  },
+  {
+    "id": "chat_25",
+    "title": "Yapper",
+    "description": "Send 25 messages today.",
+    "reward": 90,
+    "verification": "message_sent",
+    "target": 25
+  },
+  {
+    "id": "image_1",
+    "title": "Picture perfect",
+    "description": "Send an image in a channel.",
+    "reward": 30,
+    "verification": "image_sent"
+  },
+  {
+    "id": "image_3",
+    "title": "Photographer",
+    "description": "Send 3 images today.",
+    "reward": 60,
+    "verification": "image_sent",
+    "target": 3
+  },
+  {
+    "id": "image_5",
+    "title": "Gallery day",
+    "description": "Send 5 images today.",
+    "reward": 100,
+    "verification": "image_sent",
+    "target": 5
+  },
+  {
+    "id": "react_1",
+    "title": "First reaction",
+    "description": "React to a message.",
+    "reward": 15,
+    "verification": "reaction"
+  },
+  {
+    "id": "react_5",
+    "title": "Spread reactions",
+    "description": "React to 5 messages today.",
+    "reward": 35,
+    "verification": "reaction",
+    "target": 5
+  },
+  {
+    "id": "react_10",
+    "title": "Reaction goblin",
+    "description": "React to 10 messages today.",
+    "reward": 65,
+    "verification": "reaction",
+    "target": 10
+  },
+  {
+    "id": "invite_1",
+    "title": "Recruiter",
+    "description": "Create a server invite. The invite is tracked automatically.",
+    "reward": 35,
+    "verification": "invite_created"
+  },
+  {
+    "id": "invite_3",
+    "title": "Talent scout",
+    "description": "Create 3 server invites today.",
+    "reward": 70,
+    "verification": "invite_created",
+    "target": 3
+  },
+  {
+    "id": "invite_join",
+    "title": "Someone accepted",
+    "description": "Have someone join a server after you create an invite.",
+    "reward": 80,
+    "verification": "invite_joined"
+  },
+  {
+    "id": "invite_join_cll",
+    "title": "Bring a friend to Canyon Lake Labs",
+    "description": "Create an invite to Canyon Lake Labs, then have someone join. Joins to CLL are verified from the live member event.",
+    "reward": 120,
+    "verification": "invite_joined_cll",
+    "href": "/invite/canyonlake",
+    "hrefLabel": "CLL invite"
+  },
+  {
+    "id": "voice_join",
+    "title": "Join a voice channel",
+    "description": "Connect to any voice channel. Voice is still being repaired, so this stays locked until it actually connects.",
+    "reward": 30,
+    "verification": "voice_join"
+  },
+  {
+    "id": "voice_hangout",
+    "title": "Hang out in voice",
+    "description": "Join a voice channel with at least one other person in the call.",
+    "reward": 70,
+    "verification": "voice_with_others"
+  },
+  {
+    "id": "profile_bio",
+    "title": "Dress up",
+    "description": "Save something in your profile description.",
+    "reward": 30,
+    "verification": "profile_updated"
+  },
+  {
+    "id": "avatar",
+    "title": "New face",
+    "description": "Upload or remove your profile picture.",
+    "reward": 35,
+    "verification": "avatar_updated"
+  },
+  {
+    "id": "status",
+    "title": "Set a status",
+    "description": "Save a custom status.",
+    "reward": 20,
+    "verification": "status_updated"
+  },
+  {
+    "id": "theme",
+    "title": "Change your look",
+    "description": "Change your theme in Appearance settings.",
+    "reward": 30,
+    "verification": "theme_changed"
+  },
+  {
+    "id": "gradient",
+    "title": "Gradient hunter",
+    "description": "Apply a Nitro gradient theme.",
+    "reward": 45,
+    "verification": "gradient_applied",
+    "href": "/settings/appearance",
+    "hrefLabel": "Appearance"
+  },
+  {
+    "id": "discover",
+    "title": "Explore Discover",
+    "description": "Visit the Discover page.",
+    "reward": 20,
+    "verification": "visit_discover",
+    "href": "/discover",
+    "hrefLabel": "Open Discover"
+  },
+  {
+    "id": "themes",
+    "title": "Theme shopping",
+    "description": "Browse the theme gallery on Discover.",
+    "reward": 25,
+    "verification": "visit_themes",
+    "href": "/discover/themes",
+    "hrefLabel": "Open themes"
+  },
+  {
+    "id": "nitro",
+    "title": "Window shopping",
+    "description": "Visit the Nitro page.",
+    "reward": 15,
+    "verification": "visit_nitro",
+    "href": "/nitro",
+    "hrefLabel": "Open Nitro"
+  },
+  {
+    "id": "quests",
+    "title": "Check in",
+    "description": "Open the Quests page.",
+    "reward": 10,
+    "verification": "visit_quests",
+    "href": "/quests",
+    "hrefLabel": "Quests"
+  },
+  {
+    "id": "server_create",
+    "title": "Found a server",
+    "description": "Create a new server.",
+    "reward": 50,
+    "verification": "server_created"
+  },
+  {
+    "id": "server_tag_set",
+    "title": "Tag your server",
+    "description": "Set a server tag in Server Settings → Server Tags.",
+    "reward": 45,
+    "verification": "server_tag_set"
+  },
+  {
+    "id": "server_tag_equip",
+    "title": "Represent",
+    "description": "Equip a server tag in User Settings → Server Tags.",
+    "reward": 40,
+    "verification": "server_tag_equipped",
+    "href": "/settings/server-tags",
+    "hrefLabel": "Server Tags"
+  },
+  {
+    "id": "boost",
+    "title": "Boost a server",
+    "description": "Use a Nitro boost on a server.",
+    "reward": 50,
+    "verification": "server_boosted"
+  },
+  {
+    "id": "boost_3",
+    "title": "Super booster",
+    "description": "Use 3 boosts on servers today.",
+    "reward": 90,
+    "verification": "server_boosted",
+    "target": 3
+  },
+  {
+    "id": "friend",
+    "title": "Make a friend",
+    "description": "Send a friend request.",
+    "reward": 30,
+    "verification": "friend_requested"
+  },
+  {
+    "id": "vanity",
+    "title": "Vanity address",
+    "description": "Set a custom invite link on a boosted server.",
+    "reward": 75,
+    "verification": "vanity_set"
+  },
+  {
+    "id": "plugin",
+    "title": "Tinkerer",
+    "description": "Enable or disable a plugin.",
+    "reward": 20,
+    "verification": "plugin_enabled",
+    "href": "/settings/plugins",
+    "hrefLabel": "Plugins"
+  }
+]

@@ -1,6 +1,6 @@
 import { Gift } from "@styled-icons/boxicons-solid";
 import { useEffect, useState } from "preact/hooks";
-import { Link } from "react-router-dom";
+import { Link, useHistory } from "react-router-dom";
 import styled from "styled-components/macro";
 
 import { Button, Header } from "@revoltchat/ui";
@@ -14,6 +14,11 @@ import {
     isAdminUser,
     isQuestDone,
 } from "../../lib/orbs";
+import {
+    QUESTS_EVENT,
+    getQuestProgress,
+    recordQuestEvent,
+} from "../../lib/quests";
 import { isTouchscreenDevice } from "../../lib/isTouchscreenDevice";
 import { SOURCE_URL } from "../../lib/source";
 
@@ -92,6 +97,12 @@ const QuestCard = styled.div`
     border-radius: 14px;
     background: var(--secondary-background);
     border: 1px solid var(--tertiary-background);
+    transition: opacity 0.15s ease, filter 0.15s ease;
+
+    &[data-locked="true"] {
+        opacity: 0.62;
+        filter: grayscale(0.55);
+    }
 
     h3 {
         margin: 0;
@@ -119,6 +130,19 @@ const QuestCard = styled.div`
         color: #f7c948;
     }
 
+    .progress {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: var(--secondary-foreground);
+    }
+
+    .verified {
+        color: #5dd47a;
+        font-weight: 700;
+    }
+
     a {
         color: #8b95ff;
         font-size: 12px;
@@ -137,18 +161,60 @@ const Footer = styled.p`
 
 export default function Quests() {
     const client = useClient();
+    const history = useHistory();
     const userId = client.user?._id;
     const admin = isAdminUser(client.user);
     const [orbs, setOrbs] = useState(() => getOrbs(userId));
     const [, setTick] = useState(0);
 
     useEffect(() => {
-        const update = () => setOrbs(getOrbs(userId));
+        const update = () => {
+            setOrbs(getOrbs(userId));
+            setTick((x) => x + 1);
+        };
         window.addEventListener(ORBS_EVENT, update);
-        return () => window.removeEventListener(ORBS_EVENT, update);
+        window.addEventListener(QUESTS_EVENT, update);
+        return () => {
+            window.removeEventListener(ORBS_EVENT, update);
+            window.removeEventListener(QUESTS_EVENT, update);
+        };
+    }, [userId]);
+
+    useEffect(() => {
+        if (userId) recordQuestEvent(userId, "visit_quests");
     }, [userId]);
 
     const quests = dailyQuests(userId);
+
+    const openQuietServer = () => {
+        if (!userId) return;
+        let spoken: string[] = [];
+        try {
+            spoken = JSON.parse(
+                localStorage.getItem(`nullcord:spoken-servers:${userId}`) ??
+                    "[]",
+            );
+        } catch {
+            spoken = [];
+        }
+
+        for (const server of client.servers.values()) {
+            if (spoken.includes(server._id)) continue;
+            const channel = server.channel_ids
+                .map((id) => client.channels.get(id))
+                .find(
+                    (channel) =>
+                        channel?.channel_type === "TextChannel" &&
+                        channel.havePermission?.("SendMessage"),
+                );
+            if (channel) {
+                history.push(`/server/${server._id}/channel/${channel._id}`);
+                return;
+            }
+        }
+
+        history.push("/");
+    };
 
     return (
         <Container>
@@ -162,14 +228,16 @@ export default function Quests() {
                 <Hero>
                     <div>
                         <h1>Quests</h1>
-                        <p>Do things, earn Orbs, spend them on Nitro.</p>
+                        <p>
+                            Six daily quests. Progress is verified from real
+                            client activity, so locked quests cannot be
+                            claimed.
+                        </p>
                     </div>
                     <Balance>
                         <span className="label">Orbs</span>
                         <span className="value">
-                            {admin
-                                ? "∞"
-                                : orbs.toLocaleString()}
+                            {admin ? "∞" : orbs.toLocaleString()}
                         </span>
                         {!admin && (
                             <Link to="/nitro" className="label">
@@ -182,8 +250,13 @@ export default function Quests() {
                 <Grid>
                     {quests.map((quest) => {
                         const done = isQuestDone(userId, quest);
+                        const progress = getQuestProgress(userId, quest);
+                        const locked = !progress.verified && !done;
+
                         return (
-                            <QuestCard key={quest.id}>
+                            <QuestCard
+                                key={quest.id}
+                                data-locked={locked ? "true" : "false"}>
                                 <h3>{quest.title}</h3>
                                 <p>{quest.description}</p>
                                 <div className="row">
@@ -203,17 +276,40 @@ export default function Quests() {
                                         </a>
                                     )}
                                 </div>
+                                <div className="progress">
+                                    {done || progress.verified ? (
+                                        <span className="verified">
+                                            ✓ Verified
+                                        </span>
+                                    ) : (
+                                        <span>Not completed yet</span>
+                                    )}
+                                    <span>
+                                        {progress.current}/{progress.target}
+                                    </span>
+                                </div>
+                                {quest.action === "quiet_server" &&
+                                    !progress.verified &&
+                                    !done && (
+                                        <Button
+                                            palette="secondary"
+                                            onClick={openQuietServer}>
+                                            Open a quiet server
+                                        </Button>
+                                    )}
                                 <Button
                                     palette={done ? "secondary" : "primary"}
-                                    disabled={done}
+                                    disabled={done || !progress.verified}
                                     onClick={() => {
-                                        if (
-                                            completeQuest(userId, quest)
-                                        ) {
+                                        if (completeQuest(userId, quest)) {
                                             setTick((x) => x + 1);
                                         }
                                     }}>
-                                    {done ? "Claimed today" : "Claim"}
+                                    {done
+                                        ? "Claimed today"
+                                        : progress.verified
+                                          ? "Claim"
+                                          : "Verify first"}
                                 </Button>
                             </QuestCard>
                         );
@@ -221,8 +317,11 @@ export default function Quests() {
                 </Grid>
 
                 <Footer>
-                    New quests every day. Orbs and completions are stored on
-                    this device; admins have unlimited Orbs.{" "}
+                    Verification is automatic: messages, images, reactions,
+                    invites, joins, voice presence, profile changes, themes,
+                    server tags, boosts and plugin changes are tracked
+                    locally. Quests rotate by date. Orbs are stored on this
+                    device; admins have unlimited Orbs.{" "}
                     <Link to="/nitro">See what Orbs can buy →</Link> ·{" "}
                     <a href={SOURCE_URL} target="_blank" rel="noreferrer">
                         Source code

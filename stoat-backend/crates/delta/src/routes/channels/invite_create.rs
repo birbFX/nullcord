@@ -48,7 +48,15 @@ pub async fn create_invite(
         .await
         .throw_if_lacking_channel_permission(ChannelPermission::InviteOthers)?;
 
-    let invite = Invite::create_channel_invite(db, &user, &channel, data.max_uses, data.expires).await?;
+    let invite = Invite::create_channel_invite(
+        db,
+        &user,
+        &channel,
+        data.max_uses,
+        data.expires,
+        data.code,
+    )
+    .await?;
 
     if let Some(server_id) = channel.server() {
         AuditLogEntryAction::InviteCreate {

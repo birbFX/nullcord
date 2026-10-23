@@ -79,8 +79,27 @@ impl Invite {
         channel: &Channel,
         max_uses: Option<u64>,
         expires: Option<Timestamp>,
+        custom_code: Option<String>,
     ) -> Result<Invite> {
-        let code = nanoid::nanoid!(8, &ALPHABET);
+        let code = if let Some(custom) = custom_code {
+            let code = custom.trim().to_string();
+            if code.len() < 3
+                || code.len() > 24
+                || !code
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+            {
+                return Err(create_error!(InvalidOperation));
+            }
+            if db.fetch_invite(&code).await.is_ok()
+                || db.fetch_server(&code).await.is_ok()
+            {
+                return Err(create_error!(InvalidOperation));
+            }
+            code
+        } else {
+            nanoid::nanoid!(8, &ALPHABET)
+        };
 
         let invite = match &channel {
             Channel::Group { id, .. } => Ok(Invite::Group {

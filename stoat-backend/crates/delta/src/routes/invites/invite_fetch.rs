@@ -99,6 +99,7 @@ mod test {
                 .json(&DataCreateInvite {
                     max_uses: None,
                     expires: None,
+                    code: None,
                 }),
         )
         .await;
@@ -155,6 +156,7 @@ mod test {
                 .json(&DataCreateInvite {
                     max_uses: None,
                     expires: None,
+                    code: None,
                 }),
         )
         .await;
@@ -215,6 +217,7 @@ mod test {
                 .json(&DataCreateInvite {
                     max_uses: None,
                     expires: None,
+                    code: None,
                 }),
         )
         .await;

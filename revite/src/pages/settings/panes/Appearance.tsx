@@ -8,6 +8,7 @@ import CollapsibleSection from "../../../components/common/CollapsibleSection";
 import AdvancedOptions from "../../../components/settings/appearance/AdvancedOptions";
 import AppearanceOptions from "../../../components/settings/appearance/AppearanceOptions";
 import ChatOptions from "../../../components/settings/appearance/ChatOptions";
+import GradientTheme from "../../../components/settings/appearance/GradientTheme";
 import ThemeOverrides from "../../../components/settings/appearance/ThemeOverrides";
 import ThemeSelection from "../../../components/settings/appearance/ThemeSelection";
 import { useClient } from "../../../controllers/client/ClientController";
@@ -20,6 +21,8 @@ export const Appearance = observer(() => {
     return (
         <div className={styles.appearance}>
             <ThemeSelection />
+            <hr />
+            <GradientTheme />
             <hr />
             <AppearanceOptions />
             <hr />

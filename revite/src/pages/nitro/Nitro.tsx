@@ -5,6 +5,8 @@ import styled from "styled-components/macro";
 
 import { Header } from "@revoltchat/ui";
 
+import GradientTheme from "../../components/settings/appearance/GradientTheme";
+
 import { isNitro } from "../../lib/owner";
 import { useClient } from "../../controllers/client/ClientController";
 import { useApplicationState } from "../../mobx/State";
@@ -331,6 +333,15 @@ export default function Nitro() {
 
                     {active ? (
                         <>
+                            <GradientTheme
+                                onApplied={() =>
+                                    setNote({
+                                        plan: "theme",
+                                        text: "Gradient theme applied.",
+                                    })
+                                }
+                            />
+                            <hr />
                             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
                                 {(
                                     [

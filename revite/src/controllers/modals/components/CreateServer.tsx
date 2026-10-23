@@ -6,6 +6,7 @@ import { ModalForm } from "@revoltchat/ui";
 
 import { useClient } from "../../client/ClientController";
 import { mapError } from "../../client/jsx/error";
+import { recordQuestEvent } from "../../../lib/quests";
 import { ModalProps } from "../types";
 
 /**
@@ -44,6 +45,7 @@ export default function CreateServer({
                     })
                     .catch(mapError);
 
+                recordQuestEvent(client.user?._id, "server_created");
                 history.push(`/server/${server._id}`);
             }}
             submit={{

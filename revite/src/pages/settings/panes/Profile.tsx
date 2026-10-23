@@ -12,6 +12,7 @@ import { Button, LineDivider, Tip, CategoryButton } from "@revoltchat/ui";
 
 import TextAreaAutoSize from "../../../lib/TextAreaAutoSize";
 import { useTranslation } from "../../../lib/i18n";
+import { recordQuestEvent } from "../../../lib/quests";
 
 import AutoComplete, {
     useAutoComplete,
@@ -115,8 +116,24 @@ export const Profile = observer(() => {
                         fileType="avatars"
                         behaviour="upload"
                         maxFileSize={4_000_000}
-                        onUpload={(avatar) => client.users.edit({ avatar })}
-                        remove={() => client.users.edit({ remove: ["Avatar"] })}
+                        onUpload={(avatar) =>
+                            client.users.edit({ avatar }).then(() =>
+                                recordQuestEvent(
+                                    client.user?._id,
+                                    "avatar_updated",
+                                ),
+                            )
+                        }
+                        remove={() =>
+                            client.users
+                                .edit({ remove: ["Avatar"] })
+                                .then(() =>
+                                    recordQuestEvent(
+                                        client.user?._id,
+                                        "avatar_updated",
+                                    ),
+                                )
+                        }
                         defaultPreview={client.user!.generateAvatarURL(
                             { max_side: 256 },
                             true,
@@ -141,6 +158,10 @@ export const Profile = observer(() => {
                             await client.users.edit({
                                 profile: { background },
                             });
+                            recordQuestEvent(
+                                client.user?._id,
+                                "profile_updated",
+                            );
                             refreshProfile();
                         }}
                         remove={async () => {
@@ -196,6 +217,10 @@ export const Profile = observer(() => {
                     palette="secondary"
                     onClick={() => {
                         setChanged(false);
+                        recordQuestEvent(
+                            client.user?._id,
+                            "profile_updated",
+                        );
                         client.users.edit({
                             profile: { content: profile?.content },
                         });

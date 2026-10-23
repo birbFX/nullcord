@@ -17,6 +17,7 @@ import { IconButton } from "@revoltchat/ui";
 import { emojiDictionary } from "../../../../assets/emojis";
 import { useClient } from "../../../../controllers/client/ClientController";
 import { RenderEmoji } from "../../../markdown/plugins/emoji";
+import { recordQuestEvent } from "../../../../lib/quests";
 import { HackAlertThisFileWillBeReplaced } from "../MessageBox";
 
 interface Props {
@@ -102,9 +103,12 @@ export const Reactions = observer(({ message }: Props) => {
             return (
                 <Reaction
                     active={active}
-                    onClick={() =>
-                        active ? message.unreact(id) : message.react(id)
-                    }>
+                    onClick={() => {
+                        if (!active) {
+                            recordQuestEvent(client.user?._id, "reaction");
+                        }
+                        active ? message.unreact(id) : message.react(id);
+                    }}>
                     <RenderEmoji match={id} /> {user_ids?.size || 0}
                 </Reaction>
             );
@@ -220,13 +224,17 @@ export const ReactionWrapper: React.FC<{
                                 left: x ?? 0,
                             }}>
                             <HackAlertThisFileWillBeReplaced
-                                onSelect={(emoji) =>
+                                onSelect={(emoji) => {
+                                    recordQuestEvent(
+                                        client.user?._id,
+                                        "reaction",
+                                    );
                                     message.react(
                                         emojiDictionary[
                                             emoji as keyof typeof emojiDictionary
                                         ] ?? emoji,
-                                    )
-                                }
+                                    );
+                                }}
                                 onClose={toggle}
                             />
                         </Base>

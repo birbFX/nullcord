@@ -9,7 +9,8 @@ import { Text } from "preact-i18n";
 
 import { internalEmit } from "../../../lib/eventEmitter";
 import { OWNER_COLOUR, isOwner } from "../../../lib/owner";
-import { getServerTag } from "../../../lib/serverExtras";
+import { getEquippedServerTag } from "../../../lib/serverExtras";
+import { isPluginEnabled } from "../../../lib/plugins";
 
 import { dayjs } from "../../../context/Locale";
 
@@ -101,9 +102,12 @@ export const Username = observer(
         if (override) {
             username = override;
         } else if (user && showServerIdentity) {
+            if (isPluginEnabled("server-tags")) {
+                const equipped = getEquippedServerTag(user._id);
+                if (equipped) serverTag = equipped.tag;
+            }
             const { server } = useParams<{ server?: string }>();
             if (server) {
-                serverTag = getServerTag(server);
                 const client = useClient();
                 const member = client.members.getKey({
                     server,
