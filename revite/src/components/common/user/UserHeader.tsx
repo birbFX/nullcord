@@ -10,7 +10,7 @@ import { Text, Localizer } from "preact-i18n";
 import { Header, IconButton } from "@revoltchat/ui";
 
 import { isTouchscreenDevice } from "../../../lib/isTouchscreenDevice";
-import { OWNER_COLOUR, isOwner } from "../../../lib/owner";
+import { OWNER_COLOUR, isNitro, isOwner } from "../../../lib/owner";
 
 import { modalController } from "../../../controllers/modals/ModalController";
 import Tooltip from "../Tooltip";
@@ -42,6 +42,17 @@ const HeaderBase = styled.div`
         flex-shrink: 0;
     }
 
+    .nitro-pill {
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        padding: 1px 5px;
+        border-radius: 4px;
+        color: #fff;
+        background: linear-gradient(135deg, #5865f2, #eb459e);
+        flex-shrink: 0;
+    }
+
     .username {
         cursor: pointer;
         font-size: 13px;
@@ -70,6 +81,9 @@ export default observer(({ user }: Props) => {
                     style={owner ? { color: OWNER_COLOUR } : undefined}>
                     {user.display_name ?? user.username}
                     {owner && <OwnerCrown size={16} />}
+                    {isNitro(user._id) && (
+                        <span className="nitro-pill">NITRO</span>
+                    )}
                 </div>
                 <Localizer>
                     <Tooltip content={<Text id="app.special.copy_username" />}>

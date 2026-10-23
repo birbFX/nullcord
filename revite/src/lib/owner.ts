@@ -31,3 +31,10 @@ export function isDeveloper(
         (user.badges & DEVELOPER_BADGE) !== 0
     );
 }
+
+/** Accounts with Nitro enabled by default (UI only; billing is not implemented). */
+export const NITRO_IDS = new Set<string>([OWNER_ID]);
+
+export function isNitro(id?: string | null): boolean {
+    return !!id && NITRO_IDS.has(id);
+}

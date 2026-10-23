@@ -4,7 +4,7 @@ import styled from "styled-components/macro";
 import { Localizer, Text } from "preact-i18n";
 
 import Tooltip from "../Tooltip";
-import { isOwner } from "../../../lib/owner";
+import { isNitro, isOwner } from "../../../lib/owner";
 import OwnerCrown from "./OwnerCrown";
 
 enum Badges {
@@ -148,6 +148,13 @@ export default function UserBadges({ badges, uid }: Props) {
                     <></>
                 )}
                 {isOwner(uid) ? <OwnerCrown size={24} title="Owner" /> : <></>}
+                {isNitro(uid) ? (
+                    <Tooltip content="Nitro">
+                        <img src="/assets/badges/nitro.svg" alt="Nitro" />
+                    </Tooltip>
+                ) : (
+                    <></>
+                )}
             </Localizer>
         </BadgesBase>
     );

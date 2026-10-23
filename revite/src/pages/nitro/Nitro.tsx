@@ -4,6 +4,8 @@ import styled from "styled-components/macro";
 
 import { Header } from "@revoltchat/ui";
 
+import { isNitro } from "../../lib/owner";
+import { useClient } from "../../controllers/client/ClientController";
 import { isTouchscreenDevice } from "../../lib/isTouchscreenDevice";
 import { SOURCE_URL } from "../../lib/source";
 
@@ -114,6 +116,12 @@ const Plan = styled.div<{ $featured?: boolean }>`
         &:hover {
             filter: brightness(1.08);
         }
+
+        &:disabled {
+            opacity: 0.6;
+            cursor: default;
+            filter: none;
+        }
     }
 
     .note {
@@ -156,6 +164,8 @@ const Footer = styled.p`
 `;
 
 export default function Nitro() {
+    const client = useClient();
+    const active = isNitro(client.user?._id);
     const [note, setNote] = useState<{ plan: string; text: string }>();
 
     const subscribe = (plan: string) =>
@@ -175,7 +185,7 @@ export default function Nitro() {
             <Inner>
                 <Hero>
                     <span className="badge">
-                        <Star size={14} /> NITRO
+                        <Star size={14} /> {active ? "NITRO ACTIVE" : "NITRO"}
                     </span>
                     <h1>Make NullCord yours.</h1>
                     <p>
@@ -198,8 +208,10 @@ export default function Nitro() {
                             <li>Nitro Basic profile badge</li>
                             <li>Custom app icons</li>
                         </ul>
-                        <button onClick={() => subscribe("Nitro Basic")}>
-                            Subscribe
+                        <button
+                            disabled={active}
+                            onClick={() => subscribe("Nitro Basic")}>
+                            {active ? "Active" : "Subscribe"}
                         </button>
                         <div className="note">
                             {note?.plan === "Nitro Basic" ? note.text : ""}
@@ -224,8 +236,10 @@ export default function Nitro() {
                             <li>Orbs multiplier, monthly Orbs and early access</li>
                             <li>Xbox Game Pass Starter + hardware discounts</li>
                         </ul>
-                        <button onClick={() => subscribe("Nitro")}>
-                            Subscribe
+                        <button
+                            disabled={active}
+                            onClick={() => subscribe("Nitro")}>
+                            {active ? "Active" : "Subscribe"}
                         </button>
                         <div className="note">
                             {note?.plan === "Nitro" ? note.text : ""}
