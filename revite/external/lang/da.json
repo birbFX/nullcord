@@ -1,0 +1,1130 @@
+{
+    "login": {
+        "enter": {
+            "username": "Indtast dit foretrukne brugernavn.",
+            "current_password": "Indtast din nuværende adgangskode.",
+            "invite": "Indtast din invitationskode.",
+            "password": "Indtast din adgangskode.",
+            "email": "Indtast din e-mail.",
+            "new_password": "Indtast en ny adgangskode."
+        },
+        "resend": "Send bekræftelse igen",
+        "error": {
+            "resend": "Gensendelse mislykkedes!",
+            "reset": "Nulstilling mislykkedes!",
+            "login": "Login mislykkedes!",
+            "create": "Tilmelding mislykkedes!",
+            "verify": "Bekræftelse mislykkedes!"
+        },
+        "successful_registration": "Tilmelding lykkedes!",
+        "check_spam": "Tjek venligst din spam-mappe, hvis du ikke kan finde den",
+        "email_delay": "Vi har sendt dig en bekræftelses-e-mail. Der kan gå op til 10 minutter, før den ankommer.",
+        "check_mail": "Tjek din mail!",
+        "cancel": "Annuller anmodning",
+        "missing_verification": "Modtog du ingen e-mail?",
+        "create": "Opret en ny konto",
+        "set_password": "Indstil ny adgangskode",
+        "existing": "Har du allerede en bruger?",
+        "new": "Ny hos NullCord?",
+        "remembered": "Gå tilbage til login",
+        "reset": "Nulstil adgangskode",
+        "forgot": "Glemt din adgangskode?",
+        "current_password": "Nuværende adgangskode",
+        "invite": "Invitationskode",
+        "password": "Adgangskode",
+        "email": "E-mail",
+        "username": "Brugernavn",
+        "register": "Tilmeld",
+        "title": "Log ind",
+        "open_mail_provider": "Åbn {{provider}}",
+        "welcome2": "Hej!",
+        "subtitle2": "Opret en konto",
+        "welcome": "Velkommen!",
+        "subtitle": "Log ind på NullCord",
+        "unofficial_instance": "Tredjepartstjeneste.",
+        "totp": "Godkendelsesapp",
+        "recovery": "Gendannelseskode",
+        "verifying_account": "Bekræfter din konto…",
+        "verified_account": "Din konto er blevet bekræftet!",
+        "verified_continue": "Fortsæt til login",
+        "new_password": "Ny adgangskode",
+        "log_out_other": "Log ud af alle andre sessioner"
+    },
+    "app": {
+        "main": {
+            "channel": {
+                "edited": "(redigeret)",
+                "unknown_user": "<Ukendt bruger>",
+                "nsfw": {
+                    "confirm": "Jeg bekræfter, at jeg er mindst 18 år gammel.",
+                    "channel": {
+                        "confirm": "Gå ind i kanal",
+                        "marked": "Denne kanal er markeret som NSFW."
+                    }
+                },
+                "misc": {
+                    "sent_multiple_files": "Sendte flere vedhæftelser",
+                    "sent_file": "Sendte en vedhæftelse",
+                    "blocked_user": "Blokeret bruger",
+                    "blocked_messages": "{{count}} blokerede beskeder",
+                    "no_sending": "Du har ikke tilladelse til at sende beskeder i denne kanal.",
+                    "failed_load": "Kunne ikke indlæse beskeden.",
+                    "spoiler_attachment": "Spoiler",
+                    "jump_present": "Hop til nutiden",
+                    "viewing_old": "Ser ældre beskeder",
+                    "jump_beginning": "Hop til begyndelsen",
+                    "new_messages": "Nye beskeder siden {{time_ago}}",
+                    "load_file": "Indlæs fil",
+                    "timed_out": "Du har fået timeout i {{time}}.",
+                    "not_loaded": "Beskeden er ikke indlæst; klik for at hoppe"
+                },
+                "voice": {
+                    "unmute": "Unmute",
+                    "mute": "Mute",
+                    "leave": "Forlad",
+                    "connected": "Stemme tilsluttet"
+                },
+                "start": {
+                    "group": "Dette er starten på jeres samtale.",
+                    "saved": "Dette er starten på dine noter."
+                },
+                "system": {
+                    "channel_icon_changed": "{{user}} ændrede kanalikonet",
+                    "channel_description_changed": "{{user}} ændrede kanalbeskrivelsen",
+                    "channel_renamed": "{{user}} omdøbte kanalen til {{name}}",
+                    "removed_by": "{{user}} blev fjernet af {{other_user}}",
+                    "added_by": "{{user}} blev tilføjet af {{other_user}}",
+                    "user_banned": "{{user}} blev udelukket",
+                    "user_kicked": "{{user}} blev smidt ud",
+                    "user_left": "{{user}} forlod",
+                    "user_joined": "{{user}} tilsluttede sig",
+                    "registered_at": "Registreret {{time}}",
+                    "channel_ownership_changed": "{{from}} gav {{to}} gruppeejerskab"
+                },
+                "typing": {
+                    "several": "Adskillige personer skriver…",
+                    "multiple": "{{userlist}} og {{user}} skriver…",
+                    "single": "{{user}} skriver…"
+                },
+                "attached_file": "Vedhæftede {{filename}}",
+                "failed_upload": "Upload mislykkedes!",
+                "uploading_file": "Uploader…",
+                "message_saved": "Gem i dine noter",
+                "message_who": "Send besked til @{{person}}",
+                "message_where": "Send besked til {{channel_name}}",
+                "bot": "Bot",
+                "notifications": {
+                    "default": "Brug standard",
+                    "all": "Alle beskeder",
+                    "mention": "Kun omtaler",
+                    "none": "Ingen",
+                    "muted": "Muted"
+                },
+                "search": {
+                    "title": "Søg",
+                    "sort": {
+                        "relevance": "Relevans",
+                        "latest": "Seneste",
+                        "oldest": "Ældste"
+                    }
+                },
+                "errors": {
+                    "title": "Ups, her er intet!",
+                    "nochannels": "Denne server har ingen kanaler, eller du har ikke adgang til nogen.",
+                    "nochannel": "Ingen kanal"
+                },
+                "reply": {
+                    "replying": "Svarer på",
+                    "toggle": "Slå forfatter-ping til/fra"
+                },
+                "bridge": "bro",
+                "user_timed_out": "Brugeren har timeout i {{time}}.",
+                "bridged": "Beskeden blev sendt på en anden platform",
+                "team": "Officiel kommunikation",
+                "reactions": {
+                    "single_reacted": "1 person reagerede",
+                    "people_reacted": "{{people}} reagerede",
+                    "others_reacted": "{{userlist}} og {{count}} andre reagerede",
+                    "unknown_reacted": "{{count}} personer reagerede"
+                },
+                "new_to_server": "Ny på denne server",
+                "new_to_revolt": "Ny hos NullCord"
+            },
+            "categories": {
+                "members": "Medlemmer",
+                "channels": "Kanaler",
+                "participants": "Deltagere",
+                "conversations": "Samtaler"
+            },
+            "groups": {
+                "create": "Opret en gruppe",
+                "name": "Gruppenavn",
+                "description": "Gruppebeskrivelse",
+                "owner": "Gruppeejer"
+            },
+            "servers": {
+                "create": "Opret en server",
+                "text_channel": "Tekstkanal",
+                "voice_channel": "Stemmekanal",
+                "name": "Servernavn",
+                "description": "Serverbeskrivelse",
+                "channel_name": "Kanalnavn",
+                "channel_type": "Kanaltype",
+                "channel_description": "Kanalbeskrivelse",
+                "custom_banner": "Brugerdefineret banner",
+                "owner": "Serverejer",
+                "category_name": "Kategorinavn"
+            }
+        },
+        "navigation": {
+            "tabs": {
+                "saved": "Gemte noter",
+                "unreads": "Ulæste",
+                "friends": "Venner",
+                "dev": "Udvikler",
+                "home": "Hjem"
+            }
+        },
+        "status": {
+            "offline": "Offline",
+            "invisible": "Usynlig",
+            "busy": "Forstyr ikke",
+            "idle": "Inaktiv",
+            "online": "Online",
+            "reconnect": "Forbind igen",
+            "focus": "Fokus"
+        },
+        "special": {
+            "modals": {
+                "prompt": {
+                    "create_invite_generate": "Genererer invitation…",
+                    "confirm_ban": "Du er ved at udelukke {{name}}",
+                    "confirm_delete_long": "Når først den er slettet, er der ingen vej tilbage.",
+                    "confirm_delete_message_long": "Er du sikker på, at du vil slette dette?",
+                    "confirm_kick": "Er du sikker på, at du vil smide {{name}} ud?",
+                    "unfriend_user_long": "Du kan muligvis ikke tale med dem, før du tilføjer dem igen.",
+                    "confirm_leave": "Forlad {{name}}?",
+                    "confirm_close_dm": "Luk samtale med {{name}}?",
+                    "confirm_ban_reason": "Årsag til udelukkelse",
+                    "confirm_leave_long": "Du vil ikke kunne deltage igen, medmindre du inviteres igen.",
+                    "confirm_close_dm_long": "Du kan åbne den igen senere, men den forsvinder på begge sider.",
+                    "confirm_delete": "Slet {{name}}?",
+                    "create_invite_created": "Her er din nye invitationskode:",
+                    "block_user_long": "Er du sikker på, at du vil blokere {{name}}? De fjernes også fra din venneliste.",
+                    "unfriend_user": "Fjern {{name}} som ven?",
+                    "block_user": "Bloker {{name}}?",
+                    "members_not_notified": "Andre medlemmer underrettes ikke",
+                    "silent_leave": "Forlad lydløst",
+                    "reset_bot_token": "Nulstil {{name}}'s token?",
+                    "reset_bot_token_long": "Dette vil ugyldiggøre det nuværende token og stoppe alle eksisterende forekomster af botten fra at køre."
+                },
+                "external_links": {
+                    "trust_domain": "Stol på dette domæne",
+                    "title": "Eksterne links kan være farlige!",
+                    "short": "Er du sikker på, at du vil gå til:"
+                },
+                "actions": {
+                    "save": "Gem",
+                    "hide": "Skjul",
+                    "delete": "Slet",
+                    "reload": "Genindlæs app",
+                    "continue": "Fortsæt",
+                    "kick": "Smid ud",
+                    "leave": "Forlad",
+                    "remove": "Fjern",
+                    "create": "Opret",
+                    "preview": "Forhåndsvis",
+                    "ok": "OK",
+                    "ban": "Udeluk",
+                    "edit": "Rediger",
+                    "block": "Bloker",
+                    "reveal": "Vis",
+                    "cancel": "Annuller",
+                    "send_email": "Send e-mail",
+                    "back": "Gå tilbage",
+                    "close": "Luk",
+                    "update": "Opdater",
+                    "report": "Rapportér",
+                    "done": "Færdig",
+                    "reset": "Nulstil",
+                    "confirm": "Bekræft",
+                    "dont_block": "Bloker ikke"
+                },
+                "error": "En fejl opstod!",
+                "signed_out": "Du blev logget ud!",
+                "onboarding": {
+                    "pick": "Vælg et brugernavn, som folk kan finde dig på. Dette kan ændres senere i dine brugerindstillinger.",
+                    "welcome": "Velkommen til"
+                },
+                "account": {
+                    "change": {
+                        "email": "Ændr din e-mail",
+                        "username": "Ændr dit brugernavn",
+                        "password": "Ændr din adgangskode",
+                        "display_name": "Ændr dit visningsnavn"
+                    },
+                    "failed": "Kunne ikke ændres!"
+                },
+                "clipboard": {
+                    "unavailable": "Udklipsholder er utilgængelig!",
+                    "https": "Du er ikke i en HTTPS-kontekst.",
+                    "copy": "Manuel kopi:"
+                },
+                "token_reveal": "{{name}}'s token",
+                "sessions": {
+                    "accept": "Fjern alle sessioner",
+                    "title": "Er du sikker på, at du vil rydde dine sessioner?",
+                    "short": "Du kan ikke fortryde denne handling."
+                },
+                "mfa": {
+                    "confirm": "Bekræft venligst denne handling med den valgte metode.",
+                    "prompt_totp": "Scan eller brug venligst nedenstående token i din godkendelsesapp.",
+                    "save_codes": "Gem dem et sikkert sted.",
+                    "select_method": "Vælg venligst en metode til at godkende din anmodning.",
+                    "enable_totp": "Aktiver godkendelsesapp",
+                    "recovery_codes": "Dine gendannelseskoder",
+                    "enter_code": "Indtast kode"
+                },
+                "changelogs": {
+                    "description": "Læs om opdateringerne af NullCord.",
+                    "title": "Ændringslog",
+                    "older": "Se ældre opdateringer"
+                },
+                "confirm": "Bekræft handling",
+                "out_of_date": {
+                    "title": "Din klient er forældet!",
+                    "description": "Den skal opdateres for at fungere med de seneste ændringer.",
+                    "version": "Din klient er på {{client}}, men serveren kræver {{server}}.",
+                    "ignore": "Ignorer opdatering",
+                    "attempting": "Forsøger at opdatere…"
+                },
+                "report": {
+                    "thank_you": "Tak, fordi du hjælper med at holde NullCord sikkert. Vi vil gennemgå din rapport så hurtigt som muligt.",
+                    "block_user": "Vil du blokere denne bruger?",
+                    "content_reason": {
+                        "PromotesHarm": "Indholdet fremmer skade på andre eller sig selv",
+                        "SpamAbuse": "Dette er spam eller platformsmisbrug",
+                        "Malware": "Dette er malware",
+                        "Harassment": "Dette er chikane eller misbrug rettet mod en anden bruger",
+                        "Illegal": "Indholdet bryder en eller flere love"
+                    },
+                    "reported": "Rapporteret",
+                    "user_reason": {
+                        "Impersonation": "Brugeren udgiver sig for at være en anden",
+                        "SpamAbuse": "Brugeren sender spam eller misbruger platformen på anden vis",
+                        "Underage": "Brugeren er ikke gammel nok til at have en konto",
+                        "InappropriateProfile": "Brugerens profil er upassende for andre brugere",
+                        "BanEvasion": "Brugeren omgår en udelukkelse"
+                    },
+                    "reason": "Årsag",
+                    "message": "Rapportér besked",
+                    "additional_context": "Yderligere information",
+                    "no_reason": "Ingen årsag angivet / anden årsag",
+                    "by_name": "Rapportér {{name}}"
+                },
+                "edit_keybind": {
+                    "title": "Skift genvejstast for {{action}}",
+                    "placeholder": "Tryk på tasterne for at optage"
+                }
+            },
+            "popovers": {
+                "user_profile": {
+                    "mutual_friends": "Fælles venner",
+                    "mutual_groups": "Fælles grupper",
+                    "profile": "Profil",
+                    "badges": {
+                        "founder": "Grundlægger",
+                        "translator": "Oversætter",
+                        "early_adopter": "Tidlig bruger",
+                        "supporter": "Tilhænger",
+                        "moderation": "Moderation af platform",
+                        "responsible_disclosure": "Ansvarlig sikkerhedsrapportør"
+                    },
+                    "empty": "Her er lidt tomt…",
+                    "no_users": "Ingen fælles venner",
+                    "no_groups": "Ingen gensidige grupper",
+                    "no_servers": "Ingen fælles servere",
+                    "sub": {
+                        "badges": "Badges",
+                        "information": "Information",
+                        "connections": "Forbindelser"
+                    },
+                    "mutual_servers": "Fælles servere"
+                },
+                "server_identity": {
+                    "title": "Skift identitet på {{server}}",
+                    "avatar": "Avatar",
+                    "nickname": "Kaldenavn"
+                },
+                "user_picker": {
+                    "select": "Vælg venner at tilføje."
+                },
+                "create_bot": {
+                    "title": "Opret en ny bot",
+                    "failed": "Kunne ikke oprette en bot!"
+                }
+            },
+            "friends": {
+                "blocked": "Blokeret",
+                "incoming": "Indgående venneanmodning.",
+                "outgoing": "Udgående venneanmodning.",
+                "from": {
+                    "single": "Fra {{user}}",
+                    "multiple": "Fra {{userlist}} og {{user}}",
+                    "several": "Fra {{userlist}} og {{count}} mere…"
+                },
+                "pending": "Afventende anmodninger",
+                "sent": "Udgående",
+                "nobody": "Ingen her endnu!"
+            },
+            "requires_online": "Du skal være online for at se dette.",
+            "invite": {
+                "invited_by": "Inviteret af {{user}}",
+                "login": "Log ind på NullCord",
+                "accept": "Acceptér invitation",
+                "user_count": "{{member_count}} brugere",
+                "invalid": "Ugyldig invitation!",
+                "invalid_desc": "Invitationen findes muligvis ikke, eller du har ikke tilladelse til at deltage."
+            },
+            "status": {
+                "offline": "Offline.",
+                "disconnected": "Afbrudt.",
+                "connecting": "Tilslutter…",
+                "reconnecting": "Genopretter forbindelse…"
+            },
+            "server-badges": {
+                "official": "Officiel server",
+                "verified": "Verificeret server"
+            },
+            "copy_username": "Klik for at kopiere brugernavn",
+            "copy": "Klik for at kopiere"
+        },
+        "settings": {
+            "actions": {
+                "remove": "Fjern",
+                "upload": "Upload",
+                "max_filesize": "(maks. {{filesize}})",
+                "edit": "Rediger {{name}}"
+            },
+            "pages": {
+                "account": {
+                    "change_field": "Ændr",
+                    "unique_id": "Dette er et unikt bruger-ID til din konto.",
+                    "2fa": {
+                        "title": "To-faktor-godkendelse",
+                        "description": "Tilføj et ekstra lag sikkerhed ved at aktivere 2FA på din konto.",
+                        "add_auth": "Tilføj autentifikator",
+                        "remove_auth": "Fjern autentifikator",
+                        "view_recovery_long": "Se og download dine 2FA-gendannelseskoder.",
+                        "generate_recovery": "Generér gendannelseskoder",
+                        "two_factor_on": "To-faktor-godkendelse er slået til.",
+                        "generate_recovery_long": "Bliv klar til at bruge 2FA ved at opsætte en gendannelsesmetode.",
+                        "two_factor_off": "Du har ikke aktiveret to-faktor-godkendelse!",
+                        "view_recovery": "Se gendannelseskoder"
+                    },
+                    "manage": {
+                        "description": "Deaktiver eller slet din konto når som helst. Begge dele logger dig ud af dine aktive sessioner.",
+                        "delete": "Markér konto til sletning",
+                        "title": "Kontoadministration",
+                        "disable": "Deaktiver konto",
+                        "disable_description": "Du vil ikke kunne få adgang til din konto, medmindre du kontakter support – dine data slettes dog ikke.",
+                        "delete_still_own_servers": "Kan ikke slette konto, før servere er slettet eller overført",
+                        "delete_description": "Din konto og alle dine data (inklusive beskeder og venneliste) sættes i kø til sletning. En bekræftelsesmail bliver sendt – du kan annullere det inden for 7 dage ved at kontakte support."
+                    },
+                    "title": "Min konto"
+                },
+                "profile": {
+                    "edit_background": "Rediger baggrund",
+                    "profile_picture": "Profilbillede",
+                    "edit_profile": "Rediger profil",
+                    "title": "Profil",
+                    "info": "Information",
+                    "fetching": "Henter din profil…",
+                    "placeholder": "Skriv noget om dig selv…",
+                    "custom_background": "Brugerdefineret baggrund"
+                },
+                "audio": {
+                    "tip_retry": "Du har ikke givet NullCord tilladelse til mikrofonen. {{retryBtn}}.",
+                    "device_label_NA": "N/A",
+                    "button_retry": "prøv igen",
+                    "title": "Stemmeindstillinger",
+                    "input_device": "Mikrofon",
+                    "output_device": "Højtaler / Headset",
+                    "tip_grant_permission": "Du skal give tilladelse til at få adgang til lydindstillinger.",
+                    "button_grant": "Giv tilladelse"
+                },
+                "sessions": {
+                    "title": "Sessioner",
+                    "active_sessions": "Aktive sessioner",
+                    "this_device": "Denne enhed",
+                    "created": "Oprettet {{time_ago}}",
+                    "logout": "Log ud af alle andre sessioner"
+                },
+                "appearance": {
+                    "title": "Udseende",
+                    "theme": "Tema",
+                    "display": {
+                        "default": "Standard",
+                        "compact": "Kompakt",
+                        "default_description": "Smuk, elegant og moderne.",
+                        "compact_description": "Gode gamle IRC."
+                    },
+                    "font": "Skrifttype",
+                    "import": "Importér et tema",
+                    "sync": "Synkroniseringsmuligheder",
+                    "mono_font": "Monospace-skrifttypevælger",
+                    "color": {
+                        "light": "lys",
+                        "dark": "mørk"
+                    },
+                    "accent_selector": "Accentfarve",
+                    "emoji_pack": "Emojipakke",
+                    "message_display": "Beskedvisning",
+                    "advanced": "Avancerede indstillinger",
+                    "import_theme": "Importér tema fra streng",
+                    "theme_data": "Temadata",
+                    "custom_css": "Brugerdefineret CSS",
+                    "ligatures": "Skrifttypeligaturer",
+                    "overrides": "Tematilsidesættelser",
+                    "ligatures_desc": "Ved understøttede skrifttyper kombinerer ligaturer tegn – f.eks. omdannes -> til en pil.",
+                    "reset_overrides": "Nulstil tilsidesættelser",
+                    "theme_options": {
+                        "follow_desc": "Hvis dette er aktiveret, kan du ikke ændre dit tema eller bruge et tilpasset tema.",
+                        "title": "Temaindstillinger",
+                        "follow": "Følg systemets tema",
+                        "seasonal": "Sæsonbestemt tema",
+                        "transparency": "Gennemsigtighedseffekter",
+                        "transparency_desc": "Aktiverer gennemsigtighedseffekter i hele appen.",
+                        "seasonal_desc": "Viser effekter på hjem-fanen under højtider."
+                    },
+                    "discover": {
+                        "title": "Udforsk temaer",
+                        "description": "Udforsk temaer lavet af fælleskabet"
+                    },
+                    "appearance_options": {
+                        "title": "Udseendeindstillinger",
+                        "show_send": "Vis altid Send Besked-knappen",
+                        "show_send_desc": "Hvis dette er deaktiveret, vises Send Besked-knappen kun på mobil.",
+                        "show_account_age": "Vis altid kontoens alder ved siden af tilslutningsbeskeder",
+                        "show_account_age_desc": "Hvis dette er deaktiveret, vises kontoens alder kun for nye brugere."
+                    },
+                    "colours": {
+                        "title": "Farver"
+                    },
+                    "emoji": {
+                        "title": "Emoji"
+                    },
+                    "fonts": {
+                        "title": "Skrifttyper"
+                    },
+                    "advanced_options": {
+                        "title": "Avancerede indstillinger"
+                    }
+                },
+                "feedback": {
+                    "title": "Feedback",
+                    "bug": "Fejlsporing",
+                    "suggest": "Indsend forslag til funktioner",
+                    "suggest_desc": "Foreslå nye NullCord-funktioner på GitHub-diskussioner.",
+                    "issue": "Opret et nyt problem",
+                    "issue_desc": "For at hjælpe os med at håndtere problemer kan du oprette et problem på GitHub.",
+                    "bug_desc": "Se aktuelt aktive fejlrapporter her.",
+                    "description": "Indsend feedback"
+                },
+                "notifications": {
+                    "sound": {
+                        "call_join": "Bruger tilsluttede sig opkald",
+                        "message": "Besked modtaget",
+                        "call_leave": "Bruger forlod opkald",
+                        "outbound": "Besked sendt"
+                    },
+                    "push_notifications": "Push-notifikationer",
+                    "enable_push": "Aktiver push-notifikationer",
+                    "descriptions": {
+                        "enable_push": "Hvis dette er aktiveret, modtager du notifikationer, selv når du er offline.",
+                        "enable_desktop": "Hvis dette er aktiveret, modtager du notifikationer, mens appen er åben."
+                    },
+                    "title": "Notifikationer",
+                    "enable_desktop": "Aktiver skrivebordsnotifikationer",
+                    "sounds": "Lyde"
+                },
+                "language": {
+                    "title": "Sprog",
+                    "other": "Andre sprogmuligheder",
+                    "select": "Vælg dit sprog",
+                    "const": "Konstruerede sprog"
+                },
+                "sync": {
+                    "descriptions": {
+                        "appearance": "Dette synkroniserer udseendeindstillinger, såsom dit valgte emojipakke og beskedtæthed.",
+                        "theme": "Dette synkroniserer dit valgte tema, farver og enhver tilpasset CSS.",
+                        "locale": "Dette synkroniserer dit aktuelt valgte sprog."
+                    },
+                    "title": "Synkronisering",
+                    "categories": "Synkroniser kategorier",
+                    "options": "Synkroniseringsindstillinger"
+                },
+                "bots": {
+                    "create_bot": "Opret en bot",
+                    "public_bot": "Offentlig bot",
+                    "reserved": "Bemærk: dette felt er reserveret til fremtiden.",
+                    "copy_invite": "Kopiér invitationslink",
+                    "unique_id": "Dette er en unik identifikator for din bot – ikke dens token.",
+                    "public_bot_tip": "Denne bot er offentlig. Alle kan invitere den.",
+                    "private_bot_tip": "Denne bot er privat. Kun du kan invitere den.",
+                    "public_bot_desc": "Hvis dette er aktiveret, kan andre brugere føje denne bot til servere og gruppebeskeder.",
+                    "interactions_url": "Interaktions-URL",
+                    "token": "Token",
+                    "title": "Mine bots",
+                    "add": "Tilføj bot",
+                    "profile": "Bot-profil",
+                    "reset_token": "Nulstil token"
+                },
+                "theme_shop": {
+                    "title": "Temabutik",
+                    "category": {
+                        "manage": "Administrer gemt",
+                        "new": "Nyt denne uge",
+                        "highest": "Højest bedømt",
+                        "viewall": "Se alle",
+                        "default": "Standardtemaer",
+                        "saved": "Gemt"
+                    },
+                    "active": "I øjeblikket aktiv",
+                    "search": "Søg efter temaer…",
+                    "description": "Gennemse hundredvis af temaer skabt og kurateret af fællesskabet.",
+                    "use": "Brug tema",
+                    "by": "af"
+                },
+                "logOut": "Log ud",
+                "experiments": {
+                    "not_available": "Ingen eksperimenter er tilgængelige i øjeblikket.",
+                    "title": "Eksperimenter",
+                    "features": "Tilgængelige funktioner"
+                },
+                "donate": {
+                    "title": "Donér"
+                },
+                "source_code": "Kildekode",
+                "native": {
+                    "title": "Skrivebordsindstillinger"
+                },
+                "plugins": {
+                    "wip": "Advarsel: denne funktion er stadig under udvikling.",
+                    "delete_plugin": "Slet",
+                    "no_plugins": "Ingen plugins er installeret.",
+                    "title": "Plugins"
+                },
+                "keybinds": {
+                    "edit_keybind": "Rediger genvejstast",
+                    "search": "Søg efter genvejstaster…",
+                    "description": "Se og vælg genvejstaster",
+                    "remove_keybind": "Fjern genvejstast",
+                    "reset_keybind": "Nulstil genvejstast til {{keybind}}",
+                    "category": {
+                        "navigation": "Navigation",
+                        "advanced": "Avanceret",
+                        "messaging": "Beskeder"
+                    },
+                    "action": {
+                        "navigate_channel_up": {
+                            "description": "Naviger til forrige kanal.",
+                            "title": "Naviger til forrige kanal"
+                        },
+                        "navigate_channel_down": {
+                            "title": "Naviger til næste kanal",
+                            "description": "Naviger til næste kanal."
+                        },
+                        "navigate_server_up": {
+                            "title": "Naviger til forrige server",
+                            "description": "Naviger til forrige server."
+                        },
+                        "navigate_server_down": {
+                            "title": "Naviger til næste server",
+                            "description": "Naviger til næste server."
+                        },
+                        "messaging_edit_previous_message": {
+                            "title": "Rediger forrige besked",
+                            "description": "Rediger den tidligere sendte besked i den aktuelt indlæste beskedvisning."
+                        },
+                        "messaging_mark_channel_read": {
+                            "title": "Markér kanal som læst",
+                            "description": "Markerer den aktuelle kanal som læst."
+                        },
+                        "input_cancel": {
+                            "description": "En avanceret genvej, der typisk bruges til at annullere det aktuelle input – f.eks. annullering af en redigering, fjernelse af et billede i kø eller lignende.",
+                            "title": "Annuller input"
+                        },
+                        "navigate_previous_context": {
+                            "description": "En avanceret genvej, der typisk bruges til at lukke indstillingssiden, en modal eller pop-op og vende tilbage til den forrige kontekst.",
+                            "title": "Naviger til den forrige kontekst"
+                        },
+                        "auto_complete_up": {
+                            "title": "Forrige valg af autofuldførelse",
+                            "description": "Flyt autofuldførelsesvalget til det forrige."
+                        },
+                        "auto_complete_down": {
+                            "title": "Næste autofuldførelsesvalg",
+                            "description": "Flyt autofuldførelsesvalget til det næste."
+                        },
+                        "auto_complete_select": {
+                            "title": "Bekræft autofuldførelsesvalg",
+                            "description": "Bekræft det aktuelle valg af autofuldførelse."
+                        },
+                        "input_submit": {
+                            "title": "Indsend input",
+                            "description": "En avanceret genvej, der typisk bruges til at indsende det aktuelle input – f.eks. en besked, redigering eller søgning."
+                        },
+                        "input_force_submit": {
+                            "title": "Tving indsendelse af input",
+                            "description": "En avanceret genvej, der typisk bruges til at tvinge indsendelse af det aktuelle input og ignorere visse tjek eller andre genveje – f.eks. ved at indsende en besked i stedet for at bekræfte et autofuldført forslag."
+                        },
+                        "messaging_scroll_to_bottom": {
+                            "title": "Rul til bunden af beskeder",
+                            "description": "Rul til bunden af beskedvisningen."
+                        },
+                        "developer_toggle_all_experiments": {
+                            "title": "Slå eksperimentel sikker tilstand til/fra",
+                            "description": "Dette aktiverer/deaktiverer alle eksperimenter på én gang."
+                        }
+                    },
+                    "title": "Genvejstaster",
+                    "add_keybind": "Tilføj ny genvejstast"
+                },
+                "accessibility": {
+                    "title": "Tilgængelighed",
+                    "descriptions": {
+                        "reduced_motion": "Hvis dette er aktiveret, afspilles animationer og bevægelseseffekter ikke eller vil være mindre intense."
+                    },
+                    "reduced_motion": "Reduceret bevægelse"
+                }
+            },
+            "title": "Indstillinger",
+            "categories": {
+                "user_settings": "Brugerindstillinger",
+                "client_settings": "Klientindstillinger",
+                "danger_zone": "Farezone"
+            },
+            "server_pages": {
+                "bans": {
+                    "title": "Udelukkelser",
+                    "reason": "Årsag til udelukkelse",
+                    "user": "Bruger",
+                    "revoke": "Tilbagekald",
+                    "no_reason": "Ingen årsag til udelukkelse."
+                },
+                "invites": {
+                    "revoke": "Tilbagekald",
+                    "title": "Invitationer",
+                    "code": "Invitationskode",
+                    "invitor": "Invitere",
+                    "channel": "Kanal"
+                },
+                "members": {
+                    "title": "Medlemmer"
+                },
+                "overview": {
+                    "system_messages": "Systembeskedkanaler",
+                    "title": "Oversigt",
+                    "name": "Servernavn",
+                    "description": "Kanalbeskrivelse"
+                },
+                "roles": {
+                    "title": "Roller"
+                },
+                "categories": {
+                    "title": "Kategorier"
+                },
+                "management": {
+                    "title": "Brugeradministration"
+                },
+                "emojis": {
+                    "title": "Emojis",
+                    "upload": "Upload emoji"
+                },
+                "customisation": {
+                    "title": "Tilpasning"
+                }
+            },
+            "permissions": {
+                "create_role": "Opret en ny rolle",
+                "channel": "Kanalrettigheder",
+                "server": "Serverrettigheder",
+                "default_role": "Standard",
+                "role_name": "Rollenavn",
+                "role_colour": "Rollefarve",
+                "delete_role": "Slet rolle",
+                "role_ranking": "Rollerangering",
+                "role_options": "Rolleindstillinger",
+                "hoist_role": "Løft rolle",
+                "hoist_desc": "Vis denne rolle over andre.",
+                "title": "Rettigheder for {{role}}",
+                "edit_title": "Rediger rettigheder"
+            },
+            "tips": {
+                "account": {
+                    "a": "Vil du tilpasse din offentlige profil?",
+                    "b": "Gå over til dine profilindstillinger."
+                },
+                "sessions": {
+                    "b": "bør du sikre din konto ved at ændre din adgangskode og opsætte 2FA.",
+                    "a": "Hvis du ser en ukendt session på listen,"
+                },
+                "languages": {
+                    "a": "Mangler vi et sprog, du ønsker?",
+                    "b": "Hjælp os ved at bidrage med flere oversættelser."
+                }
+            },
+            "channel_pages": {
+                "overview": {
+                    "title": "Oversigt",
+                    "name": "Kanalnavn",
+                    "description": "Kanalbeskrivelse"
+                },
+                "permissions": {
+                    "title": "Rettigheder"
+                },
+                "webhooks": {
+                    "title": "Webhooks"
+                }
+            }
+        },
+        "context_menu": {
+            "copy_id": "Kopiér ID",
+            "cancel_message": "Annuller afsendelse",
+            "copy_text": "Kopiér tekst",
+            "copy_selection": "Kopiér markering",
+            "open_image": "Åbn billede",
+            "save_image": "Gem billede",
+            "copy_link": "Kopiér link",
+            "open_link": "Åbn link",
+            "set_custom_status": "Indstil en brugerdefineret status",
+            "delete_server": "Slet server",
+            "create_channel": "Opret kanal",
+            "edit_message": "Rediger besked",
+            "delete_message": "Slet besked",
+            "create_category": "Opret kategori",
+            "kick_member": "Smid medlem ud",
+            "ban_member": "Udeluk medlem",
+            "open_file": "Åbn fil",
+            "save_file": "Gem fil",
+            "open_video": "Åbn video",
+            "save_video": "Gem video",
+            "open_server_settings": "Serverindstillinger",
+            "block_user": "Bloker bruger",
+            "unblock_user": "Fjern blokering af bruger",
+            "add_friend": "Tilføj ven",
+            "remove_friend": "Fjern ven",
+            "cancel_friend": "Annuller venneanmodning",
+            "custom_status": "Brugerdefineret status",
+            "open_group_settings": "Gruppeindstillinger",
+            "quote_message": "Citér besked",
+            "remove_member": "Fjern fra gruppen",
+            "copy_uid": "Kopiér bruger-ID",
+            "copy_sid": "Kopiér server-ID",
+            "copy_cid": "Kopiér kanal-ID",
+            "copy_mid": "Kopiér besked-ID",
+            "copy_message_link": "Kopiér beskedlink",
+            "mention": "Nævn",
+            "message_user": "Besked",
+            "view_profile": "Se profil",
+            "mark_as_read": "Markér som læst",
+            "retry_message": "Prøv at sende igen",
+            "reply_message": "Svar",
+            "clear_status": "Ryd status",
+            "leave_group": "Forlad gruppe",
+            "leave_server": "Forlad server",
+            "close_dm": "Luk DM",
+            "edit_identity": "Rediger identitet",
+            "delete_channel": "Slet kanal",
+            "create_invite": "Opret invitation",
+            "open_notification_options": "Notifikationsindstillinger",
+            "open_channel_settings": "Kanalindstillinger",
+            "mark_unread": "Markér som ulæst",
+            "make_owner": "Giv gruppeejerskab",
+            "report_message": "Rapportér besked",
+            "report_user": "Rapportér bruger",
+            "report_server": "Rapportér server",
+            "edit_your_identity": "Rediger din identitet",
+            "accept_friend": "Acceptér venneanmodning",
+            "reject_friend": "Afvis venneanmodning"
+        },
+        "home": {
+            "join-testers": "Deltag i testernes server",
+            "goto-testers": "Gå til testernes server",
+            "donate": "Donér til NullCord",
+            "feedback": "Giv feedback om NullCord",
+            "settings": "Åbn indstillinger",
+            "settings-tooltip": "Du kan også højreklikke på brugerikonet øverst til venstre eller venstreklikke, hvis du allerede er på startsiden.",
+            "social": "Find servere og bots",
+            "directs": "Direkte beskeder",
+            "join-testers_desc": "Du kan rapportere problemer og diskutere forbedringer med os direkte her.",
+            "goto-testers_desc": "Du kan rapportere problemer og diskutere forbedringer med os direkte her.",
+            "donate_desc": "Støt projektet med en donation – tak!",
+            "discover_desc": "Find et fællesskab baseret på dine hobbyer eller interesser.",
+            "group": "Opret en gruppe",
+            "group_desc": "Inviter alle dine venner og nogle seje bots, og hold en stor fest.",
+            "feedback_desc": "Fortæl os hvordan vi kan forbedre appen ved at give os feedback.",
+            "discover": "Udforsk NullCord"
+        },
+        "permissions": {
+            "required": "Rettigheder påkrævet"
+        }
+    },
+    "general": {
+        "unavailable": "Utilgængeligt",
+        "disabled": "Deaktiveret",
+        "off": "Fra",
+        "on": "Til",
+        "loading": "Indlæser…",
+        "image_by": "Billede af",
+        "privacy": "Privatlivspolitik",
+        "tos": "Servicevilkår",
+        "about": "Om",
+        "learn_more": "Læs mere"
+    },
+    "dayjs": {
+        "nextDay": "[I morgen kl.] {{time}}",
+        "lastDay": "[I går kl.] {{time}}",
+        "sameDay": "[I dag kl.] {{time}}",
+        "lastWeek": "[Sidste] dddd [kl.] {{time}}",
+        "nextWeek": "dddd [kl.] {{time}}",
+        "defaults": {
+            "date_separator": "/",
+            "date_format": "traditional",
+            "twelvehour": "no"
+        }
+    },
+    "quantities": {
+        "members": {
+            "many": "{{count}} medlemmer",
+            "one": "1 medlem"
+        },
+        "dropFiles": {
+            "many": "Indsæt {{count}} filer",
+            "one": "Indsæt en fil"
+        }
+    },
+    "error": {
+        "OperationFailed": "Handling mislykkedes.",
+        "DeniedNotification": "Du nægtede notifikationsadgang. Tjek sideindstillingerne.",
+        "UnsupportedBrowser": "Browser mangler understøttelse af denne funktion.",
+        "NetworkError": "Netværksfejl.",
+        "Unauthorized": "Uautoriseret.",
+        "Unlabelled": "Der skete noget.",
+        "FailedValidation": "Kunne ikke validere felter.",
+        "InvalidToken": "Ugyldig token",
+        "MissingInvite": "Manglende invitationskode i anmodningen.",
+        "InvalidInvite": "Ugyldig kode",
+        "EmailFailed": "E-mail kunne ikke sendes.",
+        "AlreadyOnboarded": "Introduktion allerede gennemført.",
+        "AlreadyFriends": "Allerede venner med denne bruger.",
+        "AudioPermissionBlock": "Ingen adgang til din mikrofon. Tjek venligst din browsers konfiguration.",
+        "UnverifiedAccount": "Ubekræftet konto.",
+        "UsernameTaken": "Det brugernavn er optaget.",
+        "NoEffect": "Denne anmodning havde ingen virkning.",
+        "TooLong": "For langt",
+        "FailedToReceive": "Serveren kunne ikke modtage din fil.",
+        "IoError": "Serveren stødte på en I/O-fejl.",
+        "DatabaseError": "Databasefejl. Kontakt venligst support.",
+        "InternalError": "Intern fejl.",
+        "MissingPermission": "Mangler rettigheder.",
+        "UnknownError": "Se konsol.",
+        "RenderFail": "Skabelongengivelse mislykkedes.",
+        "MissingHeaders": "Manglende overskrifter.",
+        "InvalidSession": "Ugyldig session.",
+        "UnknownUser": "Ukendt bruger.",
+        "EmailInUse": "E-mail i brug.",
+        "InvalidCredentials": "E-mail eller adgangskode er forkert.",
+        "AlreadySentRequest": "Har allerede sendt en anmodning til denne bruger.",
+        "Blocked": "Du har blokeret denne bruger.",
+        "BlockedOther": "Denne bruger har blokeret dig.",
+        "RequiredField": "Påkrævet",
+        "TooShort": "For kort",
+        "InvalidEmail": "Ugyldig e-mailadresse",
+        "Unavailable": "Utilgængelig.",
+        "FileTooLarge": "Filen er for stor.",
+        "MissingData": "Anmodningen mangler data.",
+        "ProbeError": "Kunne ikke hente filens metadata.",
+        "CompromisedPassword": "Denne kombination er registreret i offentlige sikkerhedsdatabaser. Vælg venligst en anden adgangskode.",
+        "ReachedMaximumBots": "Du har nået det maksimale antal bots.",
+        "DiscriminatorChangeRatelimited": "For mange tag-ændringer.",
+        "LockedOut": "For mange loginforsøg. Prøv igen senere eller nulstil adgangskoden."
+    },
+    "permissions": {
+        "BanMembers": {
+            "t": "Udeluk medlemmer",
+            "d": "Tillader medlemmer at fjerne andre permanent fra denne server."
+        },
+        "ChangeAvatar": {
+            "d": "Tillader medlemmer at ændre deres serveravatar på denne server.",
+            "t": "Skift avatar"
+        },
+        "ManageChannels": {
+            "t": "Administrer kanaler",
+            "d": "Tillader medlemmer at oprette, redigere og slette kanaler."
+        },
+        "ManageServer": {
+            "t": "Administrer server",
+            "d": "Tillader medlemmer at ændre denne servers navn, beskrivelse, ikon og andre relaterede oplysninger."
+        },
+        "KickMembers": {
+            "t": "Smid medlemmer ud",
+            "d": "Tillader medlemmer at fjerne andre fra denne server. De kan deltage igen med en invitation."
+        },
+        "ChangeNickname": {
+            "t": "Ændr kaldenavn",
+            "d": "Tillader medlemmer at ændre deres kaldenavn på denne server."
+        },
+        "ManageNicknames": {
+            "t": "Administrer kaldenavne",
+            "d": "Tillader medlemmer at ændre kaldenavne på andre medlemmer."
+        },
+        "RemoveAvatars": {
+            "t": "Fjern avatarer",
+            "d": "Tillader medlemmer at fjerne serveravatarer for andre på serveren."
+        },
+        "EmbedLinks": {
+            "d": "Tillader medlemmer at vise indlejret indhold på links de poster i tekstkanaler.",
+            "t": "Integrer Links"
+        },
+        "VoiceCall": {
+            "d": "Tillader medlemmer at deltage i stemmekanaler.",
+            "t": "Taleopkald"
+        },
+        "SendMessage": {
+            "d": "Tillader medlemmer at sende beskeder i tekstkanaler.",
+            "t": "Send beskeder"
+        },
+        "UploadFiles": {
+            "d": "Tillader medlemmer at uploade filer i tekstkanaler.",
+            "t": "Upload filer"
+        },
+        "ManageChannel": {
+            "t": "Administrer kanaler",
+            "d": "Tillader medlemmer at redigere eller slette en kanal."
+        },
+        "InviteOthers": {
+            "t": "Inviter andre",
+            "d": "Tillader medlemmer at invitere andre brugere til en kanal."
+        },
+        "ManageMessages": {
+            "t": "Administrer beskeder",
+            "d": "Tillader medlemmer at slette beskeder sendt af andre medlemmer."
+        },
+        "Masquerade": {
+            "t": "Maskerade",
+            "d": "Tillader medlemmer at ændre navn og avatar pr. besked."
+        },
+        "ManageRole": {
+            "d": "Tillader medlemmer at oprette, redigere og slette roller med lavere rang end deres egen samt redigere rollerettigheder i kanaler.",
+            "t": "Administrer roller"
+        },
+        "ViewChannel": {
+            "t": "Se kanal",
+            "d": "Tillader medlemmer at se alle kanaler, hvor de har denne rettighed."
+        },
+        "ManagePermissions": {
+            "d": "Tillader medlemmer at ændre rettigheder for kanaler og roller med en lavere rangering.",
+            "t": "Administrer rettigheder"
+        },
+        "TimeoutMembers": {
+            "t": "Timeout medlemmer",
+            "d": "Tillader medlemmer at midlertidigt forhindre brugere i at interagere med serveren."
+        },
+        "AssignRoles": {
+            "t": "Tildel roller",
+            "d": "Tillader medlemmer at tildele roller under deres egen rang til andre medlemmer."
+        },
+        "ReadMessageHistory": {
+            "t": "Læs beskedhistorik",
+            "d": "Tillader medlemmer at læse beskedhistorikken af denne kanal."
+        },
+        "ManageWebhooks": {
+            "t": "Administrer webhooks",
+            "d": "Tillader medlemmer at kontrollere webhooks i en kanal."
+        },
+        "ManageCustomisation": {
+            "d": "Tillader brugere at oprette, redigere og slette emojis.",
+            "t": "Administrer tilpasning"
+        },
+        "SendEmbeds": {
+            "t": "Send indlejringer",
+            "d": "Tillader medlemmer at sende indlejret indhold, uanset om det er links eller brugerdefinerede tekstindlejringer."
+        },
+        "React": {
+            "d": "Tillader medlemmer at reagere på beskeder.",
+            "t": "Brug reaktioner"
+        },
+        "Connect": {
+            "t": "Forbind",
+            "d": "Tillader medlemmer at forbinde til en lydkanal."
+        },
+        "Speak": {
+            "t": "Tale",
+            "d": "Tillader medlemmer at snakke i en lydkanal."
+        },
+        "DeafenMembers": {
+            "t": "Gøre medlemmer døve",
+            "d": "Tillader medlemmer at gøre andre døve i lyd kanalen."
+        },
+        "MoveMembers": {
+            "t": "Flyt medlemmer",
+            "d": "Tillader medlemmer at flytte andre medlemmer mellem lydkanaler."
+        },
+        "MuteMembers": {
+            "d": "Tillader medlemmer at mute andre i en lydkanal.",
+            "t": "Mute medlemmer"
+        },
+        "Video": {
+            "d": "Tillader medlemmer at streame video i en lydkanal.",
+            "t": "Video"
+        }
+    },
+    "notifications": {
+        "sent_request": "@{{person}} har sendt dig en venneanmodning.",
+        "now_friends": "Du er nu venner med @{{person}}!"
+    },
+    "shortcuts": {
+        "ctrlc": "Ctrl + C"
+    },
+    "actions": {
+        "submit": "Indsend"
+    },
+    "keys": {
+        "Escape": {
+            "short": "Esc"
+        },
+        "PageUp": {
+            "full": "Page Up",
+            "short": "PgUp"
+        },
+        "Control": {
+            "short": "Ctrl"
+        },
+        "Insert": {
+            "short": "Ins"
+        },
+        "Delete": {
+            "short": "Del"
+        },
+        "Backspace": {
+            "short": "Backspace"
+        },
+        "PageDown": {
+            "full": "Page Down",
+            "short": "PgDown"
+        },
+        "PrintScreen": {
+            "full": "Print Screen",
+            "short": "PrtSc"
+        },
+        "ScrollLock": {
+            "full": "Scroll Lock",
+            "short": "ScrLK"
+        },
+        "CapsLock": {
+            "full": "Caps Lock"
+        }
+    }
+}

@@ -1,0 +1,120 @@
+{
+    "general": {
+        "about": "Um",
+        "tos": "Skilmálar",
+        "privacy": "Persónuverndarstefna",
+        "off": "Af",
+        "learn_more": "Læra meira",
+        "image_by": "Mynd eftir",
+        "loading": "Hleður…",
+        "unavailable": "Ekki í boði",
+        "on": "Á",
+        "disabled": "Óvirkt"
+    },
+    "actions": {
+        "submit": "Senda inn"
+    },
+    "login": {
+        "title": "Skrá inn",
+        "welcome": "Velkomin/n!",
+        "welcome2": "Halló!",
+        "register": "Nýskráning",
+        "password": "Lykilorð",
+        "current_password": "Núverandi Lykilorð",
+        "subtitle2": "Nýskráning",
+        "email": "Netfang",
+        "new_password": "Nýtt Lykilorð",
+        "username": "Notandanafn",
+        "invite": "Boðkóði",
+        "subtitle": "Skráðu þig inn í NullCord",
+        "totp": "Auðkennisapp",
+        "recovery": "Endurheimtarkóði",
+        "enter": {
+            "username": "Veldu notandanafn.",
+            "email": "Sláðu inn netfangið þitt.",
+            "password": "Sláðu inn lykilorðið þitt.",
+            "new_password": "Sláðu inn nýtt lykilorð.",
+            "invite": "Sláðu inn bodkóðann þinn.",
+            "current_password": "Sláðu inn núverandi lykilorðið þitt."
+        },
+        "forgot": "Týnt lykilorð?",
+        "reset": "Endurnýja lykilorð",
+        "set_password": "Veldu nýtt lykilorð",
+        "remembered": "Aftur í innskráningu",
+        "existing": "Ertu með aðgang?",
+        "new": "Nýr notandi?",
+        "create": "Nýskráning",
+        "missing_verification": "Fékkstu ekki tölvupóst?",
+        "resend": "Senda staðfestingu aftur",
+        "cancel": "Hætta við",
+        "check_mail": "Tékkaðu tölvupóstinn þinn!",
+        "open_mail_provider": "Opna {{provider}}",
+        "successful_registration": "Skráning tókst!",
+        "verifying_account": "Við erum að staðfesta aðganginn þinn…",
+        "verified_continue": "Halda áfram með innskráningu",
+        "error": {
+            "create": "Nýskráning tókst ekki!",
+            "login": "Innskráning tókst ekki!",
+            "resend": "Tókst ekki að senda aftur!",
+            "verify": "Tókst ekki að staðfesta!",
+            "reset": "Tókst ekki að endursetja!"
+        },
+        "log_out_other": "Skráðu þig út úr öllum öðrum fundum",
+        "verified_account": "Aðgangurinn þinn hefur verið staðfestur!",
+        "check_spam": "Vinsamlegast tékkaðu ruslpóstinn þinn, ef þú finnur hana ekki",
+        "email_delay": "Við sendum þér staðfestingu í tölvupósti. Það geta liðið allt að 10 mínútur þar til að hún kemur.",
+        "unofficial_instance": "Tilvik þriðja aðila"
+    },
+    "app": {
+        "status": {
+            "busy": "Ekki Trufla",
+            "reconnect": "Endurtengja"
+        },
+        "navigation": {
+            "tabs": {
+                "home": "Heim",
+                "friends": "Vinir",
+                "unreads": "Ólesið",
+                "saved": "Vistaðar Athugasemdir",
+                "dev": "Þróunaraðili"
+            }
+        },
+        "home": {
+            "directs": "Bein Skilaboð",
+            "join-testers_desc": "Þú getur tilkynnt galla og rætt endurbætur með okkur hér.",
+            "goto-testers_desc": "Þú getur tilkynnt galla og rætt endurbætur með okkur hér.",
+            "donate": "Gefðu til NullCord",
+            "settings": "Opna stillingar",
+            "settings-tooltip": "Þú getur líka hægri-smellt á notandaíkonið efst til vinstri, eða vinstri-smellt ef þú ert þegar á forsíðuni.",
+            "discover": "Kanna NullCord",
+            "group": "Stofna hóp",
+            "group_desc": "Bjóddu öllum vinum þínum og nokkra vélmenni og haldið risa veislu.",
+            "join-testers": "Taktu þátt í prufusamfélaginu",
+            "goto-testers": "Fara í prufusamfélagið"
+        },
+        "settings": {
+            "pages": {
+                "account": {
+                    "change_field": "Breyta",
+                    "title": "Minn Aðgangur"
+                }
+            }
+        },
+        "main": {
+            "categories": {
+                "conversations": "Samtöl",
+                "participants": "Þátttakendur",
+                "channels": "Rásir",
+                "members": "Meðlimir"
+            },
+            "channel": {
+                "message_where": "Senda skilaboð á {{channel_name}}",
+                "message_who": "Senda skilaboð til @{{person}}",
+                "message_saved": "Vista í þínum athugasemdum",
+                "start": {
+                    "saved": "Þetta er byrjunin á þínum athugasemdum."
+                }
+            }
+        }
+    }
+}

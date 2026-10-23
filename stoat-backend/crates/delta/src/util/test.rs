@@ -1,0 +1,323 @@
+use std::time::Duration;
+
+use futures::{FutureExt, StreamExt};
+use rand::Rng;
+use redis_kiss::redis::aio::PubSub;
+use revolt_database::util::email::normalise_email;
+use revolt_database::util::password::hash_password;
+use revolt_database::{
+    AMQP, Bot, Channel, Database, Member, Message, PartialRole, Server, User, events::client::EventV1,
+};
+use revolt_database::{Account, EmailVerification, Session};
+use revolt_database::{Role, util::idempotency::IdempotencyKey};
+use revolt_models::v0;
+use revolt_permissions::OverrideField;
+use rocket::http::Header;
+use rocket::local::asynchronous::{Client, LocalRequest, LocalResponse};
+use rocket::tokio;
+use serde::{Deserialize, Serialize};
+
+pub struct TestHarness {
+    pub client: Client,
+    pub db: Database,
+    pub amqp: AMQP,
+}
+
+impl TestHarness {
+    pub async fn new() -> TestHarness {
+        let client = Client::tracked(crate::web().await)
+            .await
+            .expect("valid rocket instance");
+
+        let db = client
+            .rocket()
+            .state::<Database>()
+            .expect("`Database`")
+            .clone();
+
+        let amqp = AMQP::new_auto().await;
+        TestHarness { client, db, amqp }
+    }
+
+    pub fn rand_string() -> String {
+        let mut rng = rand::thread_rng();
+        (&mut rng)
+            .sample_iter(rand::distributions::Alphanumeric)
+            .take(20)
+            .map(char::from)
+            .collect()
+    }
+
+    pub async fn new_user(&self) -> (Account, Session, User) {
+        let user = User::create(&self.db, TestHarness::rand_string(), None, None)
+            .await
+            .expect("`User`");
+
+        let (account, session) = self.account_from_user(user.id.clone()).await;
+
+        (account, session, user)
+    }
+
+    pub async fn account_from_user(&self, id: String) -> (Account, Session) {
+        let email = format!("{}@stoat.chat", TestHarness::rand_string());
+        let account = Account {
+            id,
+            email: email.clone(),
+            password: hash_password("password_insecure".to_string()).unwrap(),
+            email_normalised: normalise_email(email),
+            deletion: None,
+            disabled: false,
+            lockout: None,
+            mfa: Default::default(),
+            password_reset: None,
+            verification: EmailVerification::Verified,
+        };
+
+        self.db.save_account(&account).await.expect("`Account`");
+
+        let session = account
+            .create_session(&self.db, String::new())
+            .await
+            .expect("`Session`");
+
+        (account, session)
+    }
+
+    pub async fn new_server(&self, user: &User) -> (Server, Vec<Channel>) {
+        Server::create(
+            &self.db,
+            v0::DataCreateServer {
+                name: "Test Server".to_string(),
+                ..Default::default()
+            },
+            user,
+            true,
+        )
+        .await
+        .expect("Failed to create test server")
+    }
+
+    pub async fn new_role(
+        &self,
+        server: &Server,
+        rank: i64,
+        overrides: Option<OverrideField>,
+    ) -> Role {
+        let mut role = Role::create(&self.db, &server, TestHarness::rand_string())
+            .await
+            .expect("Failed to create test role");
+
+        if let Some(overrides) = overrides {
+            role.update(
+                &self.db,
+                &server.id,
+                PartialRole {
+                    permissions: Some(overrides),
+                    ..Default::default()
+                },
+                Vec::new(),
+            )
+            .await
+            .expect("Failed to set test role overrides");
+        };
+
+        role
+    }
+
+    pub async fn new_channel(&self, server: &Server) -> Channel {
+        Channel::create_server_channel(
+            &self.db,
+            &mut server.clone(),
+            v0::DataCreateServerChannel {
+                channel_type: v0::LegacyServerChannelType::Text,
+                name: "Test Channel".to_string(),
+                description: None,
+                nsfw: Some(false),
+                voice: None,
+            },
+            true,
+        )
+        .await
+        .expect("Failed to make test channel")
+    }
+
+    pub async fn new_message(
+        &self,
+        user: &User,
+        server: &Server,
+        channels: Vec<Channel>,
+    ) -> (Channel, Member, Message) {
+        let (member, channels) = Member::create(&self.db, server, user, Some(channels))
+            .await
+            .expect("Failed to create member");
+        let channel = &channels[0];
+        let message = Message::create_from_api(
+            &self.db,
+            None,
+            channel.clone(),
+            v0::DataMessageSend {
+                content: Some("Test message".to_string()),
+                nonce: None,
+                attachments: None,
+                replies: None,
+                embeds: None,
+                masquerade: None,
+                interactions: None,
+                flags: None,
+            },
+            v0::MessageAuthor::User(&user.clone().into(&self.db, Some(user)).await),
+            Some(user.clone().into(&self.db, Some(user)).await),
+            Some(member.clone().into()),
+            user.limits().await,
+            IdempotencyKey::unchecked_from_string("0".to_string()),
+            false,
+            false,
+        )
+        .await
+        .expect("Failed to create message");
+        (channel.clone(), member, message)
+    }
+
+    pub async fn with_session(session: Session, request: LocalRequest<'_>) -> LocalResponse<'_> {
+        request
+            .header(Header::new("x-session-token", session.token.to_string()))
+            .dispatch()
+            .await
+    }
+
+    pub async fn assert_email(&self, mailbox: &str) -> (Mail, String) {
+        // Wait a moment for maildev to catch the email
+
+        tokio::time::sleep(Duration::from_secs(1)).await;
+
+        let client = reqwest::Client::new();
+        let results = client
+            .get("http://localhost:14080/email")
+            .send()
+            .await
+            .unwrap()
+            .json::<Vec<Mail>>()
+            .await
+            .unwrap();
+
+        let re = regex::Regex::new(r"\[\[([A-Za-z0-9_-]*)\]\]").unwrap();
+
+        for entry in results.into_iter().rev() {
+            if entry.envelope.to[0].address == mailbox {
+                client
+                    .delete(format!("http://localhost:14080/delete/{}", &entry.id))
+                    .send()
+                    .await
+                    .unwrap();
+
+                let code = re.captures_iter(&entry.text).next().unwrap()[1].to_string();
+
+                return (entry, code);
+            }
+        }
+
+        panic!("Email not found.")
+    }
+
+    pub async fn new_bot(&self, user: &User,) -> (Bot, User) {
+        let (bot, bot_user) = Bot::create(&self.db, TestHarness::rand_string(), user, None)
+            .await
+            .expect("`Bot`");
+
+        (bot, bot_user)
+    }
+}
+
+pub struct PubSubTestHelper {
+    sub: PubSub,
+    event_buffer: Vec<(String, EventV1)>,
+}
+
+impl PubSubTestHelper {
+    pub async fn new(topic: &str) -> Self {
+        let mut sub = redis_kiss::open_pubsub_connection()
+            .await
+            .expect("`PubSub`");
+
+        sub.subscribe(topic).await.unwrap();
+
+        PubSubTestHelper {
+            sub,
+            event_buffer: vec![],
+        }
+    }
+
+    pub async fn wait_for_event<F>(&mut self, predicate: F) -> EventV1
+    where
+        F: Fn(&EventV1) -> bool,
+    {
+        for (_, event) in &self.event_buffer {
+            if predicate(event) {
+                // does not remove from buffer
+                return event.clone();
+            }
+        }
+
+        let mut stream = self.sub.on_message();
+        while let Some(item) = stream.next().await {
+            let msg_topic = item.get_channel_name();
+            let payload: EventV1 = redis_kiss::decode_payload(&item).unwrap();
+
+            if predicate(&payload) {
+                let matched = payload;
+
+                // Saw this used while chasing ghosts in the Redis stream, s/o Alice Ryhl
+                // Seems to be necessary when events on the same channel arrive too quickly
+                while let Some(Some(item)) = stream.next().now_or_never() {
+                    let msg_topic = item.get_channel_name().to_string();
+                    let payload: EventV1 = redis_kiss::decode_payload(&item).unwrap();
+
+                    self.event_buffer.push((msg_topic, payload));
+                }
+
+                return matched;
+            }
+
+            self.event_buffer.push((msg_topic.to_string(), payload));
+        }
+
+        // WARNING: if predicate is never satisfied, this will never return
+        //          should add a timeout for events so tests can fail gracefully
+
+        unreachable!()
+    }
+
+    pub async fn wait_for_message(&mut self) -> v0::Message {
+        dbg!(&self.event_buffer);
+
+        match self
+            .wait_for_event(|event| match event {
+                EventV1::Message(v0::Message { channel, .. }) => !channel.trim().is_empty(),
+                _ => false,
+            })
+            .await
+        {
+            EventV1::Message(message) => message,
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Mail {
+    pub id: String,
+    pub envelope: MailEnvelope,
+    pub subject: String,
+    pub text: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MailEnvelope {
+    pub from: MailAddress,
+    pub to: Vec<MailAddress>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MailAddress {
+    pub address: String,
+}

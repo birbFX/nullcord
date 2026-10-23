@@ -1,0 +1,91 @@
+[package]
+name = "revolt-delta"
+version = "0.15.5"
+license = "AGPL-3.0-or-later"
+authors = ["Paul Makles <paulmakles@gmail.com>"]
+edition = "2024"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Test
+rand = { workspace = true }
+redis-kiss = { workspace = true, default-features = false, features = [
+    "tokio-runtime",
+] }
+
+# Utility
+lru = { workspace = true }
+url = { workspace = true }
+log = { workspace = true }
+dashmap = { workspace = true }
+linkify = { workspace = true }
+once_cell = { workspace = true }
+
+# Lang. Utilities
+regex = { workspace = true }
+num_enum = { workspace = true }
+impl_ops = { workspace = true }
+bitfield = { workspace = true }
+
+# ID / key generation
+ulid = { workspace = true }
+nanoid = { workspace = true }
+
+# serde
+serde_json = { workspace = true }
+serde = { workspace = true }
+validator = { workspace = true, features = ["derive"] }
+iso8601-timestamp = { workspace = true }
+
+# async
+futures = { workspace = true }
+chrono = { workspace = true }
+async-channel = { workspace = true }
+reqwest = { workspace = true, features = ["json"] }
+tokio = { workspace = true }
+
+# internal util
+lettre = { workspace = true }
+
+# web
+
+rocket = { workspace = true, features = ["json"] }
+rocket_cors = { workspace = true }
+rocket_empty = { workspace = true, features = ["schema"] }
+rocket_prometheus = { workspace = true }
+
+# spec generation
+schemars = { workspace = true }
+revolt_rocket_okapi = { workspace = true, features = ["swagger"] }
+
+# rabbit
+lapin = { workspace = true, features = ["tokio"] }
+
+# core
+revolt-config = { workspace = true }
+revolt-database = { workspace = true, features = [
+    "rocket-impl",
+    "redis-is-patched",
+    "voice",
+] }
+revolt-models = { workspace = true, features = [
+    "schemas",
+    "validator",
+    "rocket",
+] }
+revolt-presence = { workspace = true }
+revolt-result = { workspace = true, features = ["rocket", "okapi"] }
+revolt-permissions = { workspace = true, features = ["schemas"] }
+revolt-ratelimits = { workspace = true, features = ["rocket"] }
+
+# voice
+livekit-api = { workspace = true }
+livekit-protocol = { workspace = true }
+
+[dev-dependencies]
+revolt-config = { workspace = true, features = ["test"] }
+
+[build-dependencies]
+vergen = { workspace = true }

@@ -1,0 +1,35 @@
+# dependencies / build output
+node_modules/
+.yarn/cache/
+.yarn/install-state.gz
+dist/
+esm/
+build/
+.next/
+server/.build/
+target/
+.vite/
+*.tsbuildinfo
+
+# secrets and local data
+.env
+.env.local
+.env.*.local
+.token
+bot/data/
+bot/bin/
+stoat-backend/.data/
+stoat-backend/logs/
+stoat-backend/Revolt.overrides.toml
+*.log
+*.pid
+
+# tooling
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# upstream submodules / local data
+admin-panel/server/modules/
+admin-panel/.data/

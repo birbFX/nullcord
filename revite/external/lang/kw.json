@@ -1,0 +1,126 @@
+{
+    "general": {
+        "about": "A-dro",
+        "disabled": "Evredhek",
+        "off": "Dhe-ves",
+        "on": "Eyn",
+        "privacy": "polici Privetter",
+        "image_by": "Aven bys",
+        "loading": "Behyans…",
+        "unavailable": "Ankavadow",
+        "learn_more": "Dysk moy",
+        "tos": "Termynyow devnydh"
+    },
+    "login": {
+        "email": "Ebost",
+        "password": "Ger-tremena",
+        "welcome": "Dynnargh!",
+        "welcome2": "Dydh Da!",
+        "register": "Kovskrifa",
+        "username": "Honanieth usyer",
+        "new_password": "Nowedh Ger-tremena",
+        "title": "Omgelmi",
+        "subtitle": "NullCord Omgelmi a-berth yn",
+        "subtitle2": "Gwruthyl akont",
+        "recovery": "Daswrians Kod",
+        "invite": "Galow Kod",
+        "current_password": "A'n jedh hedhyw Ger-tremena",
+        "enter": {
+            "username": "Entrewgh agas dewis hanow.",
+            "email": "Entrewgh trigva ebost dien.",
+            "password": "Entrewgh agas ger tremena.",
+            "new_password": "Entrewgh agas ger nowedh tremena.",
+            "invite": "Entrewgh agas galow kod.",
+            "current_password": "Entrewgh agas ger a'n eur ma tremena."
+        },
+        "forgot": "Ankevys agas tremena?",
+        "reset": "Dassettya tremena",
+        "remembered": "Dehweles rag omgelmi",
+        "new": "Nowedh bys dhe NullCord?",
+        "totp": "Gwiryonhe Towlen",
+        "log_out_other": "Digelmi dhyworth arall esedhvosow",
+        "set_password": "Gorra nowedh tremena"
+    },
+    "actions": {
+        "submit": "Pellhe"
+    },
+    "app": {
+        "settings": {
+            "pages": {
+                "account": {
+                    "change_field": "Chanj"
+                },
+                "profile": {
+                    "title": "Profil",
+                    "info": "Kedhlow"
+                },
+                "sessions": {
+                    "title": "Esedhogow"
+                },
+                "audio": {
+                    "input_device": "Korrgowsell",
+                    "device_label_NA": "N/A",
+                    "button_retry": "Arta-assay"
+                },
+                "appearance": {
+                    "title": "Mir",
+                    "theme": "Thema",
+                    "colours": {
+                        "title": "Kolorys"
+                    },
+                    "display": {
+                        "default": "Defowt"
+                    }
+                },
+                "plugins": {
+                    "title": "Ebilyansow",
+                    "delete_plugin": "Dileans"
+                },
+                "experiments": {
+                    "title": "Arbrovow"
+                },
+                "donate": {
+                    "title": "Vossawya"
+                },
+                "bots": {
+                    "token": "Nos"
+                },
+                "theme_shop": {
+                    "by": "bys",
+                    "category": {
+                        "saved": "Sawys"
+                    }
+                },
+                "keybinds": {
+                    "title": "Chanjyellow an vysowek"
+                },
+                "sync": {
+                    "title": "Kettermynegi"
+                },
+                "notifications": {
+                    "title": "Notyans",
+                    "sounds": "Sonyow"
+                },
+                "language": {
+                    "title": "Settyansow yeth"
+                }
+            }
+        },
+        "status": {
+            "reconnect": "Junya dhe arta"
+        },
+        "navigation": {
+            "tabs": {
+                "home": "Anneth",
+                "friends": "Karadowyon",
+                "unreads": "Anparys",
+                "saved": "Sawys Notednow",
+                "dev": "Dysplegyer"
+            }
+        },
+        "home": {
+            "directs": "Kevarwodhys Messajya desempis",
+            "join-testers": "Omjunyewgh an apposyans leuren"
+        }
+    }
+}

@@ -1,0 +1,40 @@
+[package]
+name = "revolt-permissions"
+version = "0.15.5"
+edition = "2024"
+license = "MIT"
+authors = ["Paul Makles <me@insrt.uk>"]
+description = "Revolt Backend: Permission Logic"
+repository = "https://github.com/stoatchat/stoatchat"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+bson = ["dep:bson"]
+serde = ["dep:serde"]
+schemas = ["dep:schemars"]
+try-from-primitive = ["dep:num_enum"]
+
+
+[dev-dependencies]
+# Async
+tokio = { workspace = true }
+
+[dependencies]
+# Core
+revolt-result = { workspace = true }
+
+# Utility
+auto_ops = { workspace = true }
+once_cell = { workspace = true }
+num_enum = { workspace = true, optional = true }
+
+# Async
+async-trait = { workspace = true }
+
+# Serialisation
+serde = { workspace = true, optional = true }
+bson = { workspace = true, optional = true }
+
+# Spec Generation
+schemars = { workspace = true, optional = true }

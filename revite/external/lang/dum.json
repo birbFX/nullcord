@@ -1,0 +1,59 @@
+{
+    "general": {
+        "tos": "Servicevoorwaarden",
+        "image_by": "Afbeelding door",
+        "on": "Aan",
+        "off": "Uit",
+        "unavailable": "Niet beschikbaar",
+        "learn_more": "Meer informatie",
+        "about": "Over",
+        "privacy": "Privacybeleid",
+        "disabled": "Uitgeschakeld",
+        "loading": "Bezig met laden…"
+    },
+    "actions": {
+        "submit": "Indienen"
+    },
+    "login": {
+        "title": "Log in",
+        "welcome": "Welkom!",
+        "welcome2": "Hallo!",
+        "register": "Registereren",
+        "username": "Gebruikersnaam",
+        "email": "E-mail",
+        "password": "Wachtwoord",
+        "new_password": "Nieuw Wachtwoord",
+        "totp": "Authenticatie App",
+        "recovery": "Herstel Code",
+        "invite": "Uitnodigingscode",
+        "current_password": "Huidige Wachtwoord",
+        "enter": {
+            "password": "Voer uw wachtwoord in.",
+            "new_password": "Voer een nieuw wachtwoord in.",
+            "username": "Voer de gebruikersnaam van uw voorkeur in.",
+            "email": "Voer uw e-mailadres in.",
+            "invite": "Voer je uitnodigingscode in.",
+            "current_password": "Voer je huidige wachtwoord in."
+        },
+        "subtitle": "Meld u aan bij NullCord",
+        "subtitle2": "Een account aanmaken",
+        "log_out_other": "Afmelden bij alle andere sessies",
+        "forgot": "Wachtwoord vergeten?",
+        "reset": "Wachtwoord opnieuw instellen",
+        "set_password": "nieuw wachtwoord instellen",
+        "remembered": "Ga terug naar login",
+        "new": "Nieuw bij NullCord?",
+        "existing": "Heb je al een account?",
+        "create": "Maak een nieuw account aan",
+        "missing_verification": "Geen e-mail ontvangen?",
+        "resend": "Verificatie opnieuw verzenden",
+        "cancel": "Aanvraag annuleren",
+        "check_mail": "Check je mail!",
+        "email_delay": "Het kan tot 10 minuten duren voordat het aankomt.",
+        "check_spam": "Controleer spam als u deze niet kunt vinden",
+        "open_mail_provider": "Open {{provider}}",
+        "successful_registration": "Succesvol geregistreerd!",
+        "verifying_account": "Je account verifiëren…",
+        "verified_account": "Uw account is geverifieerd!"
+    }
+}

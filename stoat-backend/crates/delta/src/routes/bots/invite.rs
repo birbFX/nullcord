@@ -1,0 +1,230 @@
+use revolt_database::util::permissions::DatabasePermissionQuery;
+use revolt_database::{util::reference::Reference, Database, User};
+use revolt_database::{Member, PartialMember, PartialRole, Role, AMQP, AuditLogEntryAction};
+use revolt_database::voice::{sync_voice_permissions, VoiceClient};
+use revolt_models::v0;
+use revolt_permissions::{
+    calculate_channel_permissions, calculate_server_permissions, ChannelPermission, Override,
+};
+use revolt_result::{create_error, Result};
+use rocket::State;
+
+use rocket::serde::json::Json;
+use rocket_empty::EmptyResponse;
+
+use crate::util::audit_log_reason::AuditLogReason;
+
+/// # Invite Bot
+///
+/// Invite a bot to a server or group by its id.`
+#[openapi(tag = "Bots")]
+#[post("/<target>/invite?<permissions>", data = "<dest>")]
+pub async fn invite_bot(
+    db: &State<Database>,
+    amqp: &State<AMQP>,
+    user: User,
+    reason: AuditLogReason,
+    target: Reference<'_>,
+    permissions: Option<i64>,
+    dest: Json<v0::InviteBotDestination>,
+) -> Result<EmptyResponse> {
+    if user.bot.is_some() {
+        return Err(create_error!(IsBot));
+    }
+
+    let bot = target.as_bot(db).await?;
+    if !bot.public && bot.owner != user.id {
+        return Err(create_error!(BotIsPrivate));
+    }
+
+    let bot_user = db.fetch_user(&bot.id).await?;
+
+    match dest.into_inner() {
+        v0::InviteBotDestination::Server { server } => {
+            let mut server = db.fetch_server(&server).await?;
+
+            let mut query = DatabasePermissionQuery::new(db, &user).server(&server);
+            let user_permissions = calculate_server_permissions(&mut query).await;
+            user_permissions
+                .throw_if_lacking_channel_permission(ChannelPermission::ManageServer)?;
+
+            let (mut member, _channels) = Member::create(db, &server, &bot_user, None).await?;
+
+            if let Some(permissions) = permissions {
+                user_permissions
+                    .throw_if_lacking_channel_permission(ChannelPermission::ManageRole)?;
+
+                let requested = Override {
+                    allow: permissions as u64,
+                    deny: 0,
+                };
+
+                user_permissions
+                    .throw_permission_override(Override::default(), &requested)
+                    .await?;
+
+                let mut role = Role::create_managed(db, &server, bot_user.username.clone(), bot_user.id.clone()).await?;
+
+                role.update(
+                    db,
+                    &server.id,
+                    PartialRole {
+                        permissions: Some(requested.into()),
+                        ..Default::default()
+                    },
+                    vec![],
+                )
+                    .await?;
+
+                AuditLogEntryAction::RoleCreate {
+                    role: role.id.clone(),
+                    name: role.name.clone(),
+                }
+                    .insert(db, server.id.clone(), reason, user.id.clone(), None)
+                    .await;
+
+                member
+                    .update(
+                        db,
+                        PartialMember {
+                            roles: Some(vec![role.id.clone()]),
+                            ..Default::default()
+                        },
+                        vec![],
+                    )
+                    .await?;
+            }
+
+            Ok(EmptyResponse)
+        }
+        v0::InviteBotDestination::Group { group } => {
+            let mut channel = db.fetch_channel(&group).await?;
+
+            let mut query = DatabasePermissionQuery::new(db, &user).channel(&channel);
+            calculate_channel_permissions(&mut query)
+                .await
+                .throw_if_lacking_channel_permission(ChannelPermission::InviteOthers)?;
+
+            channel
+                .add_user_to_group(db, amqp, &bot_user, &user.id)
+                .await
+                .map(|_| EmptyResponse)
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{rocket, util::test::TestHarness};
+    use revolt_database::{events::client::EventV1, Bot, Channel, Server};
+    use revolt_models::v0::{self, DataCreateServer};
+    use rocket::http::{ContentType, Header, Status};
+    use crate::util::test::PubSubTestHelper;
+
+    #[rocket::async_test]
+    async fn invite_bot_to_group() {
+        let harness = TestHarness::new().await;
+        let (_, session, user) = harness.new_user().await;
+
+        let (bot, _) = Bot::create(&harness.db, TestHarness::rand_string(), &user, None)
+            .await
+            .expect("`Bot`");
+
+        let group = Channel::create_group(
+            &harness.db,
+            v0::DataCreateGroup {
+                name: TestHarness::rand_string(),
+                ..Default::default()
+            },
+            user.id.to_string(),
+        )
+        .await
+        .unwrap();
+        let mut pubsub = PubSubTestHelper::new(group.id()).await;
+
+        let response = harness
+            .client
+            .post(format!("/bots/{}/invite", bot.id))
+            .header(ContentType::JSON)
+            .body(
+                json!(v0::InviteBotDestination::Group {
+                    group: group.id().to_string()
+                })
+                .to_string(),
+            )
+            .header(Header::new("x-session-token", session.token.to_string()))
+            .dispatch()
+            .await;
+
+        assert_eq!(response.status(), Status::NoContent);
+        drop(response);
+
+        let event = pubsub
+            .wait_for_event(|event| match event {
+                EventV1::ChannelGroupJoin { id, .. } => id == group.id(),
+                _ => false,
+            })
+            .await;
+
+        match event {
+            EventV1::ChannelGroupJoin { user, .. } => {
+                assert_eq!(bot.id, user);
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    #[rocket::async_test]
+    async fn invite_bot_to_server() {
+        let harness = TestHarness::new().await;
+        let (_, session, user) = harness.new_user().await;
+
+        let (bot, _) = Bot::create(&harness.db, TestHarness::rand_string(), &user, None)
+            .await
+            .expect("`Bot`");
+
+        let (server, _) = Server::create(
+            &harness.db,
+            DataCreateServer {
+                name: TestHarness::rand_string(),
+                ..Default::default()
+            },
+            &user,
+            false,
+        )
+        .await
+        .unwrap();
+        let mut pubsub = PubSubTestHelper::new(&server.id).await;
+
+        let response = harness
+            .client
+            .post(format!("/bots/{}/invite", bot.id))
+            .header(ContentType::JSON)
+            .body(
+                json!(v0::InviteBotDestination::Server {
+                    server: server.id.to_string()
+                })
+                .to_string(),
+            )
+            .header(Header::new("x-session-token", session.token.to_string()))
+            .dispatch()
+            .await;
+
+        assert_eq!(response.status(), Status::NoContent);
+        drop(response);
+
+        let event = pubsub
+            .wait_for_event(|event| match event {
+                EventV1::ServerMemberJoin { id, .. } => id == &server.id,
+                _ => false,
+            })
+            .await;
+
+        match event {
+            EventV1::ServerMemberJoin { member, .. } => {
+                assert_eq!(bot.id, member.id.user);
+            }
+            _ => unreachable!(),
+        }
+    }
+}

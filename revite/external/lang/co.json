@@ -1,0 +1,100 @@
+{
+    "general": {
+        "about": "Apprupositu",
+        "tos": "Clausa",
+        "privacy": "Pulizza di cunfidenzialità",
+        "image_by": "Figura da",
+        "loading": "Carichendu…",
+        "learn_more": "Scuprì ne di più",
+        "on": "Attivu",
+        "off": "Spentu",
+        "disabled": "Disattivatu",
+        "unavailable": "Indispunibile"
+    },
+    "actions": {
+        "submit": "Invià"
+    },
+    "login": {
+        "title": "Cunnettati",
+        "welcome": "Bè venutu!",
+        "subtitle": "Cunnettassi à NullCord",
+        "welcome2": "Salute!",
+        "subtitle2": "Crià un contu",
+        "register": "Registrassi",
+        "username": "Pseudonimu",
+        "email": "Currieru elettronicu",
+        "password": "Parulla d'intesa",
+        "new_password": "Nova parulla d'intesa",
+        "totp": "Appiicazione d'autenticazione",
+        "recovery": "Codice di ricuperu",
+        "invite": "Codice d'invitu",
+        "current_password": "Parulla d'intesa attuale",
+        "log_out_other": "Scunnettassi da tutte l'altre sessione",
+        "enter": {
+            "username": "Inserisci u to pseudonimu prifiritu.",
+            "email": "Inserisci u to currieru elettronicu.",
+            "password": "Inserisci a to parulla d'intesa.",
+            "new_password": "Inserisci una nova parulla d'intesa.",
+            "invite": "Inserisci u to codice d'invitu.",
+            "current_password": "Inserisci a to parulla d'intesa attuale."
+        },
+        "forgot": "Hai scurdatu a to parulla d'intesa ?",
+        "reset": "Cambià a parulla d'intesa",
+        "set_password": "Dichjarà a nova parulla d'intesa",
+        "remembered": "Vultà à l'accessu",
+        "new": "Sì novu in NullCord ?",
+        "existing": "Hai dighjà un contu ?",
+        "create": "Crià un novu contu",
+        "missing_verification": "Ùn hai recevutu un currieru elettronicu ?",
+        "resend": "Mandà a verifica di novu",
+        "cancel": "Cancellà a richiesta",
+        "check_mail": "Verificheghja u to currieru elettrunicu !",
+        "email_delay": "Vi avemu mandatu un currieru di verificazione. Puderia piglià sin'à 10 minuti per ghjunghje.",
+        "check_spam": "Verificate u vostru documentale di spazzatura sè ùn a truvate",
+        "open_mail_provider": "Apri {{provider}}",
+        "successful_registration": "Registratu cù successu !",
+        "verifying_account": "Verifichendu u vostru contu…",
+        "verified_account": "U vostru contu hè statu verificatu !",
+        "verified_continue": "Cuntinueghja à l’accessu",
+        "error": {
+            "create": "Registramentu faltatu !",
+            "login": "Cunnessione faltata !",
+            "reset": "Scambiamentu faltatu !",
+            "resend": "Rimandu faltatu !",
+            "verify": "Verificazione faltata !"
+        },
+        "unofficial_instance": "Instanza di un terzu."
+    },
+    "app": {
+        "status": {
+            "online": "Cunnessu",
+            "idle": "In pausa",
+            "focus": "Cuncentratu",
+            "busy": "Ùn scumudà",
+            "invisible": "Imbisibile",
+            "offline": "Scunessu",
+            "reconnect": "Cunnettassi di novu"
+        },
+        "navigation": {
+            "tabs": {
+                "home": "Casa",
+                "dev": "Prugrammatore",
+                "friends": "Amichi",
+                "unreads": "Da leghje",
+                "saved": "Note Salvate"
+            }
+        },
+        "home": {
+            "join-testers": "Ghjunghjite u servore di i \"pruvatori\"",
+            "goto-testers": "Andate à u servore di i \"pruvatori\"",
+            "directs": "Missaghji Diretti",
+            "join-testers_desc": "Pudete signalà i prublemi è scuntizà di migliuramenti cun noi direttamente quì.",
+            "goto-testers_desc": "Pudete signalà i prublemi è scuntizà di migliuramenti cun noi direttamente quì.",
+            "donate": "Date à NullCord",
+            "donate_desc": "Aiutate u prughjettu ramazzè à un donu - À ringraziavvi!",
+            "feedback": "Date un ritornu à nantu à NullCord",
+            "settings": "Apre preferenze",
+            "feedback_desc": "Fate ci sapè cume pudemu amendà a nostra appiicazione cù un ritornu."
+        }
+    }
+}

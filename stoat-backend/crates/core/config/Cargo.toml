@@ -1,0 +1,40 @@
+[package]
+name = "revolt-config"
+version = "0.15.5"
+edition = "2024"
+license = "MIT"
+authors = ["Paul Makles <me@insrt.uk>"]
+description = "Revolt Backend: Configuration"
+repository = "https://github.com/stoatchat/stoatchat"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+anyhow = ["dep:sentry-anyhow"]
+report-macros = ["revolt-result"]
+sentry = ["dep:sentry"]
+test = ["tokio"]
+default = ["sentry"]
+
+[dependencies]
+# Utility
+config = { workspace = true }
+cached = { workspace = true }
+
+# Serde
+serde = { workspace = true }
+
+# Async
+futures-locks = { workspace = true }
+tokio = { workspace = true, optional = true }
+
+# Logging
+log = { workspace = true }
+pretty_env_logger = { workspace = true }
+
+# Sentry
+sentry = { workspace = true, optional = true }
+sentry-anyhow = { workspace = true, optional = true }
+
+# Core
+revolt-result = { workspace = true, optional = true }

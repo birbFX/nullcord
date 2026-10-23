@@ -1,0 +1,31 @@
+[package]
+name = "revolt-presence"
+version = "0.15.5"
+edition = "2024"
+license = "AGPL-3.0-or-later"
+authors = ["Paul Makles <me@insrt.uk>"]
+description = "Revolt Backend: User Presence"
+repository = "https://github.com/stoatchat/stoatchat"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+redis-is-patched = []
+
+[dev-dependencies]
+# Async
+tokio = { workspace = true }
+
+# Config for loading Redis URI
+revolt-config = { workspace = true }
+
+[dependencies]
+# Utility
+log = { workspace = true }
+rand = { workspace = true }
+once_cell = { workspace = true }
+
+# Redis
+redis-kiss = { workspace = true, default-features = false, features = [
+    "tokio-runtime",
+] }

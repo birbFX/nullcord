@@ -1,0 +1,212 @@
+#[macro_use]
+extern crate serde;
+
+#[macro_use]
+extern crate async_recursion;
+
+#[macro_use]
+extern crate async_trait;
+
+#[macro_use]
+extern crate log;
+
+#[macro_use]
+extern crate revolt_optional_struct;
+
+#[macro_use]
+extern crate revolt_result;
+
+pub use iso8601_timestamp;
+
+#[cfg(feature = "mongodb")]
+pub use mongodb;
+
+#[cfg(feature = "mongodb")]
+#[macro_use]
+extern crate bson;
+
+#[cfg(not(feature = "tokio-runtime"))]
+compile_error!("tokio-runtime feature must be enabled.");
+
+#[macro_export]
+#[cfg(debug_assertions)]
+macro_rules! query {
+    ( $self: ident, $type: ident, $collection: expr, $($rest:expr),+ ) => {
+        Ok($self.$type($collection, $($rest),+).await.unwrap())
+    };
+}
+
+#[macro_export]
+#[cfg(not(debug_assertions))]
+macro_rules! query {
+    ( $self: ident, $type: ident, $collection: expr, $($rest:expr),+ ) => {
+        $self.$type($collection, $($rest),+).await
+            .map_err(|err| {
+                revolt_config::capture_internal_error!(err);
+                create_database_error!(stringify!($type), $collection)
+            })
+    };
+}
+
+macro_rules! database_derived {
+    ( $( $item:item )+ ) => {
+        $(
+            #[derive(Clone)]
+            $item
+        )+
+    };
+}
+
+macro_rules! auto_derived {
+    ( $( $item:item )+ ) => {
+        $(
+            #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+            $item
+        )+
+    };
+}
+
+macro_rules! auto_derived_partial {
+    ( $item:item, $name:expr ) => {
+        #[derive(OptionalStruct, Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+        #[optional_derive(Serialize, Deserialize, Debug, Clone, Default, Eq, PartialEq)]
+        #[optional_name = $name]
+        #[opt_skip_serializing_none]
+        #[opt_some_priority]
+        $item
+    };
+}
+
+/// Internal macro for `generate_diff!`, you should not need to use this yourself.
+macro_rules! generate_field_diff {
+    (optional, $remove:ident, $fieldsmember:path, $self:ident, $before:ident, $partial:ident, $field:ident) => {
+        if $partial.$field.is_some() || $remove.contains(&$fieldsmember) {
+            $before.$field = $self.$field.clone();
+        };
+    };
+
+    (optional, default, $remove:ident, $fieldsmember:path, $self:ident, $before:ident, $partial:ident, $field:ident) => {
+        if $partial.$field.is_some() || $remove.contains(&$fieldsmember) {
+            $before.$field = Some($self.$field.clone());
+        };
+    };
+
+    ($self:ident, $before:ident, $partial:ident, $field:ident) => {
+        if $partial.$field.is_some() {
+            $before.$field = Some($self.$field.clone());
+        };
+    };
+}
+
+/// Generates a partial model containing the data which has changed in an update
+///
+/// ## Usage:
+/// `before` is the "output" containing what the model had before being updated,
+/// this will corraspond to `partial` which is what the data is being changed too.
+///
+/// ```rs
+/// let mut before = PartialModel::default();
+///
+/// generate_diff!(
+///     self,  // database model
+///     before,  // mutable empty partial corrasponding to the current model
+///     partial,  // partial containing what is being updated
+///     remove,  // slice of fields being removed
+///     (
+///         name,  // regular non-nullable non-removable field
+///         (FieldsEnum::Nickname) nickname,  // optional removable field
+///         ((default) FieldsEnum::Roles) roles,  // optional removable field with custom default
+///     )
+/// );
+/// ```
+///
+/// See `Member::generate_diff` `Server::generate_diff` `Role::generate_diff` for full examples
+macro_rules! generate_diff {
+    (
+        $self:ident,
+        $before:ident,
+        $partial:ident,
+        $remove:ident,
+        (
+            $(
+                $(
+                    $(@$optional:tt)? (
+                        $($(@$default:tt)? (default))?
+                        $fieldsmember:path
+                    )
+                )?
+                $field: ident
+            ),*
+            $(,)?
+        )
+    ) => {
+        $(
+            generate_field_diff!(
+                $( $($optional)? optional, $($($default)? default,)? $remove, $fieldsmember,)?
+                $self, $before, $partial, $field
+            );
+        )*
+    }
+}
+
+mod drivers;
+pub use drivers::*;
+
+#[cfg(test)]
+macro_rules! database_test {
+    ( | $db: ident | $test:expr ) => {
+        let db = $crate::DatabaseInfo::Test(format!(
+            "{}:{}",
+            file!().replace('/', "_").replace(".rs", ""),
+            line!()
+        ))
+        .connect()
+        .await
+        .expect("Database connection failed.");
+
+        $crate::AMQP::new_auto().await
+        .connection().create_channel().await
+        .expect("channel").exchange_declare(
+                "revolt.default".into(),
+                ExchangeKind::Topic,
+                ExchangeDeclareOptions {
+                    durable: true,
+                    ..Default::default()
+                },
+                FieldTable::default(),
+            )
+            .await
+            .expect("Failed to declare test exchange");
+
+        db.drop_database().await;
+
+        #[allow(clippy::redundant_closure_call)]
+        (|$db: $crate::Database| $test)(db.clone()).await;
+
+        db.drop_database().await
+    };
+}
+
+mod models;
+pub mod util;
+pub use models::*;
+
+pub mod events;
+#[cfg(feature = "tasks")]
+pub mod tasks;
+
+mod amqp;
+pub use amqp::amqp::AMQP;
+
+#[cfg(feature = "voice")]
+pub mod voice;
+
+/// Utility function to check if a boolean value is false
+pub fn if_false(t: &bool) -> bool {
+    !t
+}
+
+/// Utility function to check if an option doesnt contain true
+pub fn if_option_false(t: &Option<bool>) -> bool {
+    t != &Some(true)
+}
