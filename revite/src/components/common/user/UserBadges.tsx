@@ -31,6 +31,7 @@ const BadgesBase = styled.div`
     gap: 8px;
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
 
     img,
@@ -65,6 +66,7 @@ export default function UserBadges({
     max = 6,
 }: Props) {
     const client = useClient();
+    const ownerAccount = isOwner(uid);
     const items: Item[] = [];
     const earlyMember = (() => {
         if (!uid) return false;
@@ -128,7 +130,7 @@ export default function UserBadges({
         });
     }
 
-    if (isOwner(uid) || badges & Badges.BugHunter) {
+    if (ownerAccount || badges & Badges.BugHunter) {
         items.push({
             key: "bughunter",
             title: "Bug Hunter",
@@ -140,7 +142,7 @@ export default function UserBadges({
         });
     }
 
-    if (badges & Badges.Founder) {
+    if (ownerAccount || badges & Badges.Founder) {
         items.push({
             key: "founder",
             title: "Founder",
@@ -154,7 +156,7 @@ export default function UserBadges({
             ),
         });
     }
-    if (isDeveloper({ _id: uid, badges, privileged })) {
+    if (ownerAccount || isDeveloper({ _id: uid, badges, privileged })) {
         items.push({
             key: "developer",
             title: "NullCord Developer",
@@ -168,7 +170,7 @@ export default function UserBadges({
             ),
         });
     }
-    if (badges & Badges.Translator) {
+    if (ownerAccount || badges & Badges.Translator) {
         items.push({
             key: "translator",
             title: "Translator",
@@ -182,7 +184,7 @@ export default function UserBadges({
             ),
         });
     }
-    if (badges & Badges.EarlyAdopter) {
+    if (ownerAccount || badges & Badges.EarlyAdopter) {
         items.push({
             key: "early",
             title: "Early Adopter",
@@ -199,7 +201,7 @@ export default function UserBadges({
             ),
         });
     }
-    if (badges & Badges.PlatformModeration) {
+    if (ownerAccount || badges & Badges.PlatformModeration) {
         items.push({
             key: "moderation",
             title: "Platform Moderation",
@@ -216,7 +218,7 @@ export default function UserBadges({
             ),
         });
     }
-    if (badges & Badges.ResponsibleDisclosure) {
+    if (ownerAccount || badges & Badges.ResponsibleDisclosure) {
         items.push({
             key: "disclosure",
             title: "Responsible Disclosure",
@@ -230,7 +232,7 @@ export default function UserBadges({
             ),
         });
     }
-    if (badges & Badges.Supporter) {
+    if (ownerAccount || badges & Badges.Supporter) {
         items.push({
             key: "supporter",
             title: "Supporter",
@@ -244,7 +246,7 @@ export default function UserBadges({
             ),
         });
     }
-    if (badges & Badges.Paw) {
+    if (ownerAccount || badges & Badges.Paw) {
         items.push({
             key: "paw",
             title: "Paw",
@@ -255,7 +257,7 @@ export default function UserBadges({
             ),
         });
     }
-    if (badges & Badges.ReservedRelevantJokeBadge1) {
+    if (ownerAccount || badges & Badges.ReservedRelevantJokeBadge1) {
         items.push({
             key: "amog",
             title: "sus",
@@ -266,7 +268,7 @@ export default function UserBadges({
             ),
         });
     }
-    if (badges & Badges.ReservedRelevantJokeBadge2) {
+    if (ownerAccount || badges & Badges.ReservedRelevantJokeBadge2) {
         items.push({
             key: "amorbus",
             title: "It's Morbin Time",
@@ -291,8 +293,9 @@ export default function UserBadges({
 
     if (!items.length) return <></>;
 
-    const visible = max > 0 ? items.slice(0, max) : items;
-    const hidden = max > 0 ? items.slice(max) : [];
+    const limit = ownerAccount ? 0 : max;
+    const visible = limit > 0 ? items.slice(0, limit) : items;
+    const hidden = limit > 0 ? items.slice(limit) : [];
 
     return (
         <BadgesBase>

@@ -10,7 +10,12 @@ import { Text, Localizer } from "preact-i18n";
 import { Header, IconButton } from "@revoltchat/ui";
 
 import { isTouchscreenDevice } from "../../../lib/isTouchscreenDevice";
-import { OWNER_COLOUR, isNitro, isOwner } from "../../../lib/owner";
+import {
+    OWNER_COLOUR,
+    displayDiscriminator,
+    isNitro,
+    isOwner,
+} from "../../../lib/owner";
 
 import { modalController } from "../../../controllers/modals/ModalController";
 import Tooltip from "../Tooltip";
@@ -95,7 +100,7 @@ export default observer(({ user }: Props) => {
                             }>
                             {user.username}
                             {"#"}
-                            {user.discriminator}
+                            {displayDiscriminator(user)}
                         </span>
                     </Tooltip>
                 </Localizer>

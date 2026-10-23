@@ -283,7 +283,7 @@ export default observer(() => {
                             <span className="full">
                                 {client.user.username}
                                 {"#"}
-                                {client.user.discriminator}
+                                {displayDiscriminator(client.user)}
                             </span>
                             <UserStatus user={client.user!} />
                         </div>

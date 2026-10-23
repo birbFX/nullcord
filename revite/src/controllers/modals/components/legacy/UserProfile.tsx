@@ -26,6 +26,7 @@ import {
 } from "@revoltchat/ui";
 
 import { noop } from "../../../../lib/js";
+import { displayDiscriminator } from "../../../../lib/owner";
 
 import ChannelIcon from "../../../../components/common/ChannelIcon";
 import ServerIcon from "../../../../components/common/ServerIcon";
@@ -194,7 +195,7 @@ export const UserProfile = observer(
                                         modalController.writeText(
                                             user.username +
                                                 "#" +
-                                                user.discriminator,
+                                                displayDiscriminator(user),
                                         )
                                     }>
                                     <Localizer>
@@ -202,7 +203,7 @@ export const UserProfile = observer(
                                             content={
                                                 <Text id="app.special.copy_username" />
                                             }>
-                                            {user.username}#{user.discriminator}
+                                            {user.username}#{displayDiscriminator(user)}
                                         </Tooltip>
                                     </Localizer>
                                 </span>

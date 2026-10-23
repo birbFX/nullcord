@@ -3,7 +3,6 @@ import { type JSONSchema } from "json-schema-typed";
 import { ipcMain } from "electron";
 import Store from "electron-store";
 
-import { destroyDiscordRpc, initDiscordRpc } from "./discordRpc";
 import { mainWindow } from "./window";
 
 const schema = {
@@ -178,12 +177,7 @@ class Config {
   }
 
   set discordRpc(value: boolean) {
-    if (value) {
-      initDiscordRpc();
-    } else {
-      destroyDiscordRpc();
-    }
-
+    // Discord RPC is intentionally disabled in NullCord.
     (store as never as { set(k: string, value: boolean): void }).set(
       "discordRpc",
       value,

@@ -7,7 +7,6 @@ import started from "electron-squirrel-startup";
 
 import { initAutoLaunch } from "./native/autoLaunch";
 import { config } from "./native/config";
-import { initDiscordRpc } from "./native/discordRpc";
 import { initTray } from "./native/tray";
 import { initVirtualMic } from "./native/virtualMic";
 import { BUILD_URL, createMainWindow, mainWindow } from "./native/window";
@@ -69,7 +68,6 @@ if (acquiredLock) {
     }
 
     initTray();
-    initDiscordRpc();
     initVirtualMic();
     initAutoLaunch();
 

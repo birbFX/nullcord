@@ -95,3 +95,12 @@ export function setNitroTier(userId: string, tier: NitroTier | null) {
         // ignore storage failures
     }
 }
+
+
+/** Display-only discriminator override for the owner account. */
+export function displayDiscriminator(
+    user?: { _id?: string | null; discriminator?: string | null } | null,
+): string {
+    if (isOwner(user?._id)) return "0001";
+    return user?.discriminator ?? "0000";
+}

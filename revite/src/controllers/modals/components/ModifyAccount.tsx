@@ -9,6 +9,7 @@ import { noopTrue } from "../../../lib/js";
 
 import FormField from "../../../pages/login/FormField";
 import { useClient } from "../../client/ClientController";
+import { displayDiscriminator } from "../../../lib/owner";
 import { takeError } from "../../client/jsx/error";
 import { ModalProps } from "../types";
 
@@ -144,7 +145,7 @@ export default function ModifyAccount({
                             }}>
                             <InputBox
                                 disabled
-                                value={"#" + client.user.discriminator}
+                                value={"#" + displayDiscriminator(client.user)}
                             />
                         </div>
                     </div>

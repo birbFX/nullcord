@@ -13,6 +13,7 @@ import {
 } from "@revoltchat/ui";
 
 import { useSession } from "../../../controllers/client/ClientController";
+import { displayDiscriminator } from "../../../lib/owner";
 import { modalController } from "../../../controllers/modals/ModalController";
 
 export default observer(() => {
@@ -41,7 +42,7 @@ export default observer(() => {
                         "username",
                         client.user!.username +
                             "#" +
-                            client.user!.discriminator,
+                            displayDiscriminator(client.user),
                         At,
                     ],
                     ["email", email, Envelope],
