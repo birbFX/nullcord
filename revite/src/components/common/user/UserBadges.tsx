@@ -1,7 +1,7 @@
 import { Shield } from "@styled-icons/boxicons-regular";
 import styled from "styled-components/macro";
 
-import { Localizer, Text } from "preact-i18n";
+import { Text } from "preact-i18n";
 
 import { isNitro, isOwner } from "../../../lib/owner";
 
@@ -259,17 +259,15 @@ export default function UserBadges({
 
     return (
         <BadgesBase>
-            <Localizer>
-                {visible.map((item) => (
-                    <span key={item.key}>{item.node}</span>
-                ))}
-                {hidden.length > 0 && (
-                    <Tooltip
-                        content={hidden.map((item) => item.title).join(" · ")}>
-                        <span className="more">+{hidden.length}</span>
-                    </Tooltip>
-                )}
-            </Localizer>
+            {visible.map((item) => (
+                <span key={item.key}>{item.node}</span>
+            ))}
+            {hidden.length > 0 && (
+                <Tooltip
+                    content={hidden.map((item) => item.title).join(" · ")}>
+                    <span className="more">+{hidden.length}</span>
+                </Tooltip>
+            )}
         </BadgesBase>
     );
 }

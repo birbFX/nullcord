@@ -1,4 +1,3 @@
-import axios from "axios";
 import localforage from "localforage";
 import * as stackTrace from "stacktrace-js";
 import styled from "styled-components/macro";
@@ -39,19 +38,9 @@ interface Props {
     section: "client" | "renderer";
 }
 
-const ERROR_URL = "https://github.com/birbFX/nullcord/issues/new";
-
 export function reportError(error: Error, section: string) {
-    stackTrace.fromError(error).then((stackframes) =>
-        axios.post(ERROR_URL, {
-            stackframes,
-            rawStackTrace: error.stack,
-            origin: window.origin,
-            commitSHA: GIT_REVISION,
-            userAgent: navigator.userAgent,
-            section,
-        }),
-    );
+    // Remote crash reporting is disabled on this instance.
+    console.error(`[crash:${section}]`, error);
 }
 
 export default function ErrorBoundary({ children, section }: Props) {

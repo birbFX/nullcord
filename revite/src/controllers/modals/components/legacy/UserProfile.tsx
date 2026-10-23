@@ -94,22 +94,41 @@ export const UserProfile = observer(
         }, [isPlaceholder, placeholderProfile]);
 
         useEffect(() => {
+            let cancelled = false;
             if (isPlaceholder) return;
             if (session.state === "Online" && typeof mutual === "undefined") {
+                if (user._id === client.user?._id) {
+                    // The API rejects mutual lookup for yourself (400).
+                    setMutual({ users: [], servers: [], channels: [] });
+                    return;
+                }
                 setMutual(null);
-                user.fetchMutual().then(setMutual);
+                user.fetchMutual().then((value) => {
+                    if (!cancelled) setMutual(value);
+                });
             }
+            return () => {
+                cancelled = true;
+            };
         }, [mutual, session.state, isPlaceholder, user]);
 
         useEffect(() => {
+            let cancelled = false;
             if (isPlaceholder) return;
             if (session.state === "Online" && typeof profile === "undefined") {
                 setProfile(null);
 
                 if (user.permission & UserPermission.ViewProfile) {
-                    user.fetchProfile().then(setProfile).catch(noop);
+                    user.fetchProfile()
+                        .then((value) => {
+                            if (!cancelled) setProfile(value);
+                        })
+                        .catch(noop);
                 }
             }
+            return () => {
+                cancelled = true;
+            };
         }, [profile, session.state, isPlaceholder, user]);
 
         useEffect(() => {
