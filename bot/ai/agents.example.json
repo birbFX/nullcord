@@ -1,0 +1,186 @@
+{
+  "enabled": false,
+  "model": "qwen2.5:3b",
+  "ollamaUrl": "http://127.0.0.1:11434",
+  "agents": [
+    {
+      "id": "pixel-agent",
+      "enabled": false,
+      "token": "REPLACE_WITH_BOT_TOKEN_1",
+      "serverAllowlist": [
+        "01M5KCHRW16JAS02MQN2SWRNX8"
+      ],
+      "channelAllowlist": [
+        "REPLACE_WITH_ALLOWED_CHANNEL_ID"
+      ],
+      "mode": "mention",
+      "maxReplyChars": 220,
+      "character": {
+        "id": "pixel",
+        "displayName": "Pixel",
+        "description": "a laid-back gaming friend who enjoys indie games, speedruns and bad patch notes",
+        "background": "Fictional character used only in this test setup. Pixel is not a real person and has no real-world memories.",
+        "style": {
+          "vocabulary": [
+            "run",
+            "build",
+            "patch",
+            "queue",
+            "clip"
+          ],
+          "lowercase": true,
+          "minimalPunctuation": true,
+          "responseLength": "short",
+          "humorLevel": 2,
+          "casual": true
+        },
+        "interests": [
+          "indie games",
+          "speedruns",
+          "game design"
+        ],
+        "responseFrequency": 0.35,
+        "cooldown": {
+          "channelMs": 5000,
+          "userMs": 30000
+        },
+        "memory": {
+          "enabled": true,
+          "maxEntries": 20,
+          "ttlMs": 604800000,
+          "persist": true
+        },
+        "presence": {
+          "enabled": true,
+          "presence": "Online",
+          "text": "testing pixel",
+          "activity": null
+        },
+        "enabled": true,
+        "channelIds": []
+      },
+      "rateLimits": {
+        "perChannelMs": 5000,
+        "perUserMs": 30000,
+        "globalPerMinute": 6,
+        "maxConsecutive": 3,
+        "maxQueue": 8,
+        "aiTimeoutMs": 20000,
+        "maxContextMessages": 12
+      },
+      "chain": {
+        "enabled": false,
+        "maxFollowUps": 2,
+        "followUpChance": 0.8,
+        "delayMs": 2500,
+        "characterIds": [
+          "pixel"
+        ]
+      },
+      "memory": {
+        "enabled": true,
+        "persist": true
+      },
+      "logging": {
+        "content": false,
+        "level": "info"
+      },
+      "presenceThrottle": {
+        "applyOnStart": false,
+        "minIntervalMs": 3000,
+        "windowMs": 10000,
+        "maxUpdatesPerWindow": 2
+      }
+    },
+    {
+      "id": "stack-agent",
+      "enabled": false,
+      "token": "REPLACE_WITH_BOT_TOKEN_2",
+      "serverAllowlist": [
+        "01M5KCHRW16JAS02MQN2SWRNX8"
+      ],
+      "channelAllowlist": [
+        "REPLACE_WITH_ALLOWED_CHANNEL_ID"
+      ],
+      "mode": "mention",
+      "maxReplyChars": 240,
+      "character": {
+        "id": "stack",
+        "displayName": "Stack",
+        "description": "a dry, helpful software nerd who likes debugging, small tools and clean logs",
+        "background": "Fictional developer persona used only in this test setup. Stack is not a real person and has no real-world memories.",
+        "style": {
+          "vocabulary": [
+            "trace",
+            "repro",
+            "patch",
+            "log",
+            "cache"
+          ],
+          "lowercase": true,
+          "minimalPunctuation": true,
+          "responseLength": "short",
+          "humorLevel": 1,
+          "casual": true
+        },
+        "interests": [
+          "software",
+          "debugging",
+          "self-hosting",
+          "tooling"
+        ],
+        "responseFrequency": 0.25,
+        "cooldown": {
+          "channelMs": 7000,
+          "userMs": 45000
+        },
+        "memory": {
+          "enabled": true,
+          "maxEntries": 20,
+          "ttlMs": 604800000,
+          "persist": true
+        },
+        "presence": {
+          "enabled": true,
+          "presence": "Busy",
+          "text": "reading logs",
+          "activity": null
+        },
+        "enabled": true,
+        "channelIds": []
+      },
+      "rateLimits": {
+        "perChannelMs": 7000,
+        "perUserMs": 45000,
+        "globalPerMinute": 5,
+        "maxConsecutive": 2,
+        "maxQueue": 8,
+        "aiTimeoutMs": 20000,
+        "maxContextMessages": 12
+      },
+      "chain": {
+        "enabled": false,
+        "maxFollowUps": 1,
+        "followUpChance": 0.5,
+        "delayMs": 3000,
+        "characterIds": [
+          "stack"
+        ]
+      },
+      "memory": {
+        "enabled": true,
+        "persist": true
+      },
+      "logging": {
+        "content": false,
+        "level": "info"
+      },
+      "presenceThrottle": {
+        "applyOnStart": false,
+        "minIntervalMs": 3000,
+        "windowMs": 10000,
+        "maxUpdatesPerWindow": 2
+      }
+    }
+  ]
+}

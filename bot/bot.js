@@ -25,6 +25,9 @@ const execFileP = promisify(execFile);
 const revolt = require(path.join(__dirname, '..', 'revite', 'external', 'revolt.js'));
 const { Client, Permission } = revolt;
 
+const { createConversationEngine } = require('./ai/engine');
+const { loadConfig: loadAiConfig } = require('./ai/config');
+
 // ---------------------------------------------------------------- settings
 const API_URL = process.env.NULLCORD_API || 'http://127.0.0.1:14702';
 const TOKEN =
@@ -74,6 +77,15 @@ const client = new Client({
     autoReconnect: true,
     heartbeat: 20,
 });
+
+let aiEngine = null;
+try {
+    const aiConfig = loadAiConfig();
+    aiEngine = createConversationEngine({ client, config: aiConfig });
+} catch (err) {
+    // A malformed AI config must never take down moderation/tickets/music.
+    console.error('ai init failed:', err?.message ?? err);
+}
 
 // ------------------------------------------------------------------ helpers
 const P = {
@@ -815,6 +827,9 @@ define(
 client.on('ready', () => {
     log(`ready as ${fmtUser(client.user)}`);
     log(`api ${client.apiURL} · servers ${client.servers.size} · commands ${new Set([...commands.values()].map((c) => c.name)).size}`);
+    if (aiEngine) {
+        aiEngine.start().catch((err) => log('ai start failed', err?.message ?? err));
+    }
 });
 
 client.on('message', async (message) => {
@@ -841,7 +856,19 @@ async function handleMessage(message) {
     const prefix = (server && cfg?.prefix) || config.prefix || '!';
 
     const content = message.content.trim();
-    if (!content.startsWith(prefix)) return;
+    if (!content.startsWith(prefix)) {
+        // The AI engine has its own allowlist and is disabled unless
+        // data/ai.json explicitly enables it. Existing commands stay on the
+        // command path below and are never sent to the model.
+        if (aiEngine) {
+            try {
+                await aiEngine.handleMessage(message, { prefix });
+            } catch (err) {
+                log('ai handler failed', err?.message ?? err);
+            }
+        }
+        return;
+    }
 
     const withoutPrefix = content.slice(prefix.length);
     const [name, ...args] = withoutPrefix.split(/\s+/);
@@ -956,15 +983,21 @@ client.on('channel/delete', (id, channel) => {
 });
 
 // --------------------------------------------------------------- lifecycle
-process.on('SIGINT', () => {
-    log('shutting down');
+async function shutdown(signal) {
+    log(`shutting down (${signal})`);
+    try {
+        if (aiEngine) await aiEngine.shutdown();
+    } catch (err) {
+        log('ai shutdown failed', err?.message ?? err);
+    }
     client.websocket.disconnect();
     process.exit(0);
+}
+process.on('SIGINT', () => {
+    shutdown('SIGINT');
 });
 process.on('SIGTERM', () => {
-    log('shutting down');
-    client.websocket.disconnect();
-    process.exit(0);
+    shutdown('SIGTERM');
 });
 
 client.loginBot(TOKEN).catch((err) => {
