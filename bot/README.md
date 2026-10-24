@@ -150,3 +150,17 @@ data/ai-memory.json   optional persisted AI memory (only when enabled)
 data/agents.json      persistent multi-agent config (not published)
 data/agents/          per-agent pid, log and memory files (not published)
 ```
+
+## NullCord component compatibility
+
+`bot/nullcord_compat/` renders discord.py `Select`/`Button` children into
+NullCord component JSON, keeps a live `custom_id -> View` registry, and turns
+incoming component payloads into a constructible `discord.Interaction` shim.
+
+```bash
+cd bot
+python3 -m unittest discover -s nullcord_compat/tests -v
+```
+
+The transport is intentionally separate. Wire its `on_component_event(payload)`
+to the NullCord bridge or HTTP callback. See `bot/nullcord_compat/README.md`.
