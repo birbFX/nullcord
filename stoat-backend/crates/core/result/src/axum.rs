@@ -49,6 +49,7 @@ impl IntoResponse for Error {
             ErrorType::UnknownServer => StatusCode::NOT_FOUND,
             ErrorType::InvalidRole => StatusCode::NOT_FOUND,
             ErrorType::Banned => StatusCode::FORBIDDEN,
+            ErrorType::AccountBanned { .. } => StatusCode::FORBIDDEN,
             ErrorType::AlreadyInServer => StatusCode::CONFLICT,
             ErrorType::CannotTimeoutYourself => StatusCode::BAD_REQUEST,
 

@@ -36,7 +36,19 @@ impl<'r> FromRequest<'r> for User {
             .await;
 
         if let Some(user) = user {
-            Outcome::Success(user.clone())
+            if let Some(error) = user.ban_error() {
+                if let Ok(body) = serde_json::to_string(&error) {
+                    if let Ok(mut slot) = request
+                        .local_cache(|| std::sync::Mutex::new(None::<String>))
+                        .lock()
+                    {
+                        *slot = Some(body);
+                    }
+                }
+                Outcome::Error((Status::Forbidden, error))
+            } else {
+                Outcome::Success(user.clone())
+            }
         } else {
             Outcome::Error((Status::Unauthorized, create_error!(InvalidSession)))
         }

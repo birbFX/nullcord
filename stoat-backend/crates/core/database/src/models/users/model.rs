@@ -64,6 +64,12 @@ auto_derived_partial!(
         /// Time until user is unsuspended
         #[serde(skip_serializing_if = "Option::is_none")]
         pub suspended_until: Option<Timestamp>,
+        /// Message shown to a banned user
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub ban_message: Option<String>,
+        /// Time until a temporary ban expires; None means permanent
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub banned_until: Option<Timestamp>,
         /// Last acknowledged policy change
         pub last_acknowledged_policy_change: Timestamp,
     },
@@ -203,6 +209,8 @@ impl Default for User {
             privileged: Default::default(),
             bot: Default::default(),
             suspended_until: Default::default(),
+            ban_message: Default::default(),
+            banned_until: Default::default(),
             last_acknowledged_policy_change: Timestamp::UNIX_EPOCH,
         }
     }
@@ -351,8 +359,8 @@ impl User {
     /// Find a user and session ID from a given token and hint
     #[async_recursion]
     pub async fn from_token(db: &Database, token: &str, hint: UserHint) -> Result<(User, String)> {
-        match hint {
-            UserHint::Bot => Ok((
+        let (user, session_id) = match hint {
+            UserHint::Bot => (
                 db.fetch_user(
                     &db.fetch_bot_by_token(token)
                         .await
@@ -361,19 +369,24 @@ impl User {
                 )
                 .await?,
                 String::new(),
-            )),
+            ),
             UserHint::User => {
                 let session = db.fetch_session_by_token(token).await?;
-                Ok((db.fetch_user(&session.user_id).await?, session.id))
+                (db.fetch_user(&session.user_id).await?, session.id)
             }
             UserHint::Any => {
                 if let Ok(result) = User::from_token(db, token, UserHint::User).await {
-                    Ok(result)
+                    result
                 } else {
-                    User::from_token(db, token, UserHint::Bot).await
+                    User::from_token(db, token, UserHint::Bot).await?
                 }
             }
+        };
+
+        if let Some(error) = user.ban_error() {
+            return Err(error);
         }
+        Ok((user, session_id))
     }
 
     /// Helper function to fetch many users as a mutually connected user
@@ -794,6 +807,8 @@ impl User {
             PartialUser {
                 flags: Some(0),
                 suspended_until: None,
+                ban_message: None,
+                banned_until: None,
                 ..Default::default()
             },
             vec![],
@@ -809,6 +824,26 @@ impl User {
     pub async fn ban(&mut self, _db: &Database, _reason: Option<String>) -> Result<()> {
         // Send ban email (if reason provided)
         unimplemented!()
+    }
+
+    /// Whether this user currently has an active platform ban.
+    pub fn ban_error(&self) -> Option<revolt_result::Error> {
+        let flags = self.flags.unwrap_or_default();
+        if flags & UserFlags::Banned as i32 == 0 {
+            return None;
+        }
+        if let Some(until) = self.banned_until {
+            if until <= Timestamp::now_utc() {
+                return None;
+            }
+        }
+        Some(revolt_result::Error {
+            error_type: revolt_result::ErrorType::AccountBanned {
+                message: self.ban_message.clone(),
+                expires_at: self.banned_until.map(|until| until.to_string()),
+            },
+            location: Some(format!("{}:{}:{}", file!(), line!(), column!())),
+        })
     }
 
     /// Mark as deleted

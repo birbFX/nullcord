@@ -1,7 +1,16 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function takeError(error: any): string {
     if (error.response) {
-        const type = error.response.data?.type;
+        const data = error.response.data;
+        const type = data?.type;
+        if (type === "AccountBanned") {
+            const until = data.expires_at
+                ? new Date(data.expires_at).toLocaleString()
+                : "permanent";
+            return `AccountBanned: ${
+                data.message || "Your account has been banned."
+            } (${until})`;
+        }
         if (type) {
             return type;
         }

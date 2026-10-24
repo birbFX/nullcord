@@ -1288,6 +1288,8 @@ impl From<User> for crate::User {
             privileged: value.privileged,
             bot: value.bot.map(Into::into),
             suspended_until: None,
+            ban_message: None,
+            banned_until: None,
             last_acknowledged_policy_change: Timestamp::UNIX_EPOCH,
         }
     }

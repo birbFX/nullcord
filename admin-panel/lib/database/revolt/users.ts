@@ -34,6 +34,7 @@ export function revoltUserInfo(user: RevoltUser): RevoltUserInfo {
 }
 
 const userCol = createCollectionFn<RevoltUser>("revolt", "users");
+const sessionCol = createCollectionFn<{ _id: string; user_id: string }>("revolt", "sessions");
 
 /**
  * Fetch a user by given ID
@@ -42,6 +43,42 @@ const userCol = createCollectionFn<RevoltUser>("revolt", "users");
  */
 export function fetchUserById(id: string) {
   return userCol().findOne({ _id: id });
+}
+
+/**
+ * Ban a user at the platform level.
+ *
+ * The API guard reads `flags`, `ban_message` and `banned_until`; disabling the
+ * account and deleting sessions makes the ban effective immediately for both
+ * existing sessions and new logins.
+ */
+export async function banUser(
+  userId: string,
+  message: string,
+  until: Date | null,
+) {
+  await userCol().updateOne(
+    { _id: userId },
+    {
+      $set: {
+        flags: 4,
+        ban_message: message || "Your account has been banned.",
+        ...(until ? { banned_until: until.getTime() } : {}),
+      },
+      ...(until ? {} : { $unset: { banned_until: "" } }),
+    } as never,
+  );
+  await sessionCol().deleteMany({ user_id: userId });
+}
+
+/**
+ * Remove a platform ban and re-enable login.
+ */
+export async function unbanUser(userId: string) {
+  await userCol().updateOne(
+    { _id: userId },
+    { $set: { flags: 0 }, $unset: { ban_message: "", banned_until: "" } },
+  );
 }
 
 /**

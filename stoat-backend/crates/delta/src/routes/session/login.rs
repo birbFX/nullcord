@@ -123,6 +123,13 @@ pub async fn login(
     // Generate a session name
     let name = name.unwrap_or_else(|| "Unknown".to_string());
 
+    // Platform bans take precedence over the generic disabled-account response.
+    if let Ok(user) = db.fetch_user(&account.id).await
+        && let Some(error) = user.ban_error()
+    {
+        return Err(error);
+    }
+
     // Prevent disabled accounts from logging in
     if account.disabled {
         return Ok(Json(v0::ResponseLogin::Disabled {

@@ -9,6 +9,8 @@ export type Strike = {
 
   case_id?: string;
   type?: "strike" | "suspension" | "ban";
+  ban_message?: string;
+  banned_until?: Date | string | null;
 };
 
 const strikesCol = createCollectionFn<Strike>("revolt", "safety_strikes");
@@ -22,6 +24,7 @@ export async function createStrike(
   reason: string,
   type: Strike["type"],
   case_id?: string,
+  extra: Pick<Strike, "ban_message" | "banned_until"> = {},
 ) {
   const strike: Strike = {
     _id: ulid(),
@@ -29,6 +32,7 @@ export async function createStrike(
     reason,
     type,
     case_id,
+    ...extra,
   };
 
   await strikesCol().insertOne(strike);

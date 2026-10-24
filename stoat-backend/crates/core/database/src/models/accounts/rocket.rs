@@ -13,14 +13,25 @@ impl<'r> FromRequest<'r> for Account {
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         match request.guard::<Session>().await {
             Outcome::Success(session) => {
-                if let Ok(account) = request
-                    .rocket()
-                    .state::<Database>()
-                    .expect("`Database`")
-                    .fetch_account(&session.user_id)
-                    .await
-                {
-                    Outcome::Success(account)
+                let db = request.rocket().state::<Database>().expect("`Database`");
+                if let Ok(account) = db.fetch_account(&session.user_id).await {
+                    match db.fetch_user(&session.user_id).await {
+                        Ok(user) => match user.ban_error() {
+                            Some(error) => {
+                                if let Ok(body) = serde_json::to_string(&error) {
+                                    if let Ok(mut slot) = request
+                                        .local_cache(|| std::sync::Mutex::new(None::<String>))
+                                        .lock()
+                                    {
+                                        *slot = Some(body);
+                                    }
+                                }
+                                Outcome::Error((Status::Forbidden, error))
+                            }
+                            None => Outcome::Success(account),
+                        },
+                        Err(_) => Outcome::Error((Status::InternalServerError, create_error!(InternalError))),
+                    }
                 } else {
                     Outcome::Error((Status::InternalServerError, create_error!(InternalError)))
                 }

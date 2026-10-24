@@ -20,7 +20,7 @@ import {
   TextField,
 } from "@radix-ui/themes";
 
-import { strikeUser } from "./actions";
+import { strikeUser, unbanUserAction } from "./actions";
 
 export const USER_FLAG_SUSPENDED = 1;
 export const USER_FLAG_DELETED = 2;
@@ -45,6 +45,10 @@ export function UserStrikeActions({
   const [context, setContext] = useState("");
   const [confirm, setConfirm] = useState(false);
   const [days, setDays] = useState<"7" | "14" | "indefinite">("7");
+  const [banMessage, setBanMessage] = useState("");
+  const [banDuration, setBanDuration] = useState<
+    "permanent" | "7" | "14" | "30"
+  >("permanent");
 
   const reasonEditor = () =>
     reason.map((value, idx) => (
@@ -84,6 +88,8 @@ export function UserStrikeActions({
         context,
         caseId,
         days,
+        banMessage,
+        banDuration,
       );
 
       consumeChangelog(changelog);
@@ -98,6 +104,7 @@ export function UserStrikeActions({
       setReason([""]);
       setContext("");
       setConfirm(false);
+      setBanMessage("");
     },
   });
 
@@ -107,8 +114,25 @@ export function UserStrikeActions({
     },
   });
 
+  const unban = useMutation({
+    mutationFn: async () => {
+      await unbanUserAction(id);
+      setFlags(0);
+    },
+  });
+
   return (
     <>
+      {actualFlags === USER_FLAG_BANNED && (
+        <Button
+          color="green"
+          variant="soft"
+          disabled={unban.isPending}
+          onClick={() => unban.mutate()}
+        >
+          Unban
+        </Button>
+      )}{" "}
       <AlertDialog.Root>
         <AlertDialog.Trigger>
           <Button disabled={mutation.isPending}>Strike</Button>
@@ -234,10 +258,7 @@ export function UserStrikeActions({
         <AlertDialog.Trigger>
           <Button
             color="red"
-            // TODO
-            disabled={
-              true || mutation.isPending || actualFlags === USER_FLAG_BANNED
-            }
+            disabled={mutation.isPending || actualFlags === USER_FLAG_BANNED}
           >
             {actualFlags === USER_FLAG_BANNED ? "Banned" : "Ban"}
           </Button>
@@ -264,7 +285,29 @@ export function UserStrikeActions({
               placeholder="Additional context (only moderators will see this)"
             />
             <br />
-            <Text color="amber">An email will automatically be sent.</Text>
+            <TextField.Root
+              value={banMessage}
+              onChange={(e) => setBanMessage(e.currentTarget.value)}
+              placeholder="Ban message shown to the user"
+            />
+            <br />
+            <Select.Root
+              value={banDuration}
+              onValueChange={(value) => setBanDuration(value as never)}
+            >
+              <Select.Trigger />
+              <Select.Content>
+                <Select.Item value="permanent">Permanent</Select.Item>
+                <Select.Item value="7">7 days</Select.Item>
+                <Select.Item value="14">14 days</Select.Item>
+                <Select.Item value="30">30 days</Select.Item>
+              </Select.Content>
+            </Select.Root>
+            <br />
+            <Text color="amber">
+              The account will receive 403 responses with this message and
+              expiry time.
+            </Text>
           </AlertDialog.Description>
 
           <Flex gap="3" mt="4" justify="end" align="center">
@@ -329,6 +372,16 @@ export function UserStrikes({
                   <Badge color="amber">Suspended</Badge>
                 )}{" "}
                 {strike.type === "ban" && <Badge color="red">Banned</Badge>}{" "}
+                {strike.type === "ban" && strike.ban_message && (
+                  <Text as="div" size="1" color="gray">
+                    {strike.ban_message}
+                  </Text>
+                )}
+                {strike.type === "ban" && strike.banned_until && (
+                  <Text as="div" size="1" color="gray">
+                    Until {dayjs(strike.banned_until).format("YYYY-MM-DD HH:mm")}
+                  </Text>
+                )}
                 <Badge
                   suppressHydrationWarning
                   title={new Date(decodeTime(strike._id)).toISOString()}

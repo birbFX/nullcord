@@ -64,6 +64,7 @@ impl serde::Serialize for Error {
                 | ErrorType::InvalidToken
                 | ErrorType::UnverifiedAccount
                 | ErrorType::LockedOut
+                | ErrorType::AccountBanned { .. }
                 | ErrorType::DisallowedMFAMethod => None,
             _ => Some(self.location.as_deref().unwrap()),
         };
@@ -147,6 +148,10 @@ pub enum ErrorType {
     UnknownServer,
     InvalidRole,
     Banned,
+    AccountBanned {
+        message: Option<String>,
+        expires_at: Option<String>,
+    },
     TooManyServers {
         max: usize,
     },

@@ -202,7 +202,11 @@ export const Form = observer(({ page, callback }: Props) => {
                 )}
                 {error && (
                     <p style={{ fontSize: "0.8em", color: "var(--error)" }}>
-                        <Text id={`error.${error}`} children={error} />
+                        {error.startsWith("AccountBanned:") ? (
+                            error
+                        ) : (
+                            <Text id={`error.${error}`} children={error} />
+                        )}
                     </p>
                 )}
                 <Button>

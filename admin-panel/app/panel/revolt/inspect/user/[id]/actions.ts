@@ -3,7 +3,7 @@
 import { getScopedUser } from "@/lib/auth";
 import { RBAC_PERMISSION_MODERATION_AGENT } from "@/lib/auth/rbacInternal";
 import { createChangelog } from "@/lib/core";
-import { suspendUser } from "@/lib/database/revolt";
+import { banUser, suspendUser, unbanUser } from "@/lib/database/revolt";
 import { createOrFindDM } from "@/lib/database/revolt/channels";
 import { sendMessage } from "@/lib/database/revolt/messages";
 import { findCaseById } from "@/lib/database/revolt/safety_cases";
@@ -16,19 +16,33 @@ export async function strikeUser(
   context: string,
   caseId: string | undefined,
   duration: "7" | "14" | "indefinite",
+  banMessage = "",
+  banDuration: "permanent" | "7" | "14" | "30" = "permanent",
 ) {
   const userEmail = await getScopedUser(RBAC_PERMISSION_MODERATION_AGENT);
   if (caseId && !(await findCaseById(caseId))) throw "Case doesn't exist?";
 
+  const banUntil =
+    type === "ban" && banDuration !== "permanent"
+      ? new Date(Date.now() + Number(banDuration) * 24 * 60 * 60 * 1000)
+      : null;
   const strike = await createStrike(
     userId,
     reason.join(", ") +
       (type === "suspension"
         ? ` (${duration === "indefinite" ? duration : `${duration} day`})`
         : "") +
+      (type === "ban" && banUntil
+        ? ` (until ${banUntil.toISOString()})`
+        : type === "ban"
+          ? " (permanent)"
+          : "") +
       (context ? ` - ${context}` : ""),
     type,
     caseId,
+    type === "ban"
+      ? { ban_message: banMessage, banned_until: banUntil }
+      : {},
   );
 
   const changelog = await createChangelog(userEmail, {
@@ -64,6 +78,14 @@ export async function strikeUser(
     );
   }
 
+  if (type === "ban") {
+    await banUser(
+      userId,
+      banMessage || "Your account has been banned from NullCord.",
+      banUntil,
+    );
+  }
+
   if (type !== "ban") {
     const channel = await createOrFindDM(
       userId,
@@ -89,4 +111,10 @@ export async function strikeUser(
   }
 
   return { changelog, strike };
+}
+
+
+export async function unbanUserAction(userId: string) {
+  await getScopedUser(RBAC_PERMISSION_MODERATION_AGENT);
+  await unbanUser(userId);
 }

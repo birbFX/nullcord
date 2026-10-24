@@ -8,6 +8,17 @@ extern crate serde_json;
 pub mod routes;
 pub mod util;
 
+#[catch(403)]
+fn forbidden(request: &rocket::Request<'_>) -> rocket::response::content::RawJson<String> {
+    let body = request
+        .local_cache(|| std::sync::Mutex::new(None::<String>))
+        .lock()
+        .ok()
+        .and_then(|slot| slot.clone())
+        .unwrap_or_else(|| r#"{"type":"Forbidden"}"#.to_string());
+    rocket::response::content::RawJson(body)
+}
+
 use revolt_config::config;
 use revolt_database::AMQP;
 use revolt_ratelimits::rocket as ratelimiter;
@@ -90,6 +101,7 @@ pub async fn web() -> Rocket<Build> {
         .manage(cors.clone())
         .manage(voice_client)
         .manage(ratelimits)
+        .register("/", catchers![forbidden])
         .attach(ratelimiter::RatelimitFairing)
         .attach(cors)
         .configure(rocket::Config {
