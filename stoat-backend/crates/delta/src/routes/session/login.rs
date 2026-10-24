@@ -11,6 +11,7 @@ use revolt_models::v0;
 use revolt_result::{create_error, Result};
 use rocket::serde::json::Json;
 use rocket::State;
+use std::net::IpAddr;
 use tokio::time::sleep;
 
 /// # Login
@@ -20,6 +21,7 @@ use tokio::time::sleep;
 #[post("/login", data = "<data>")]
 pub async fn login(
     db: &State<Database>,
+    client_addr: IpAddr,
     data: Json<v0::DataLogin>,
 ) -> Result<Json<v0::ResponseLogin>> {
     // Random jitter from 0-1000ms
@@ -120,6 +122,11 @@ pub async fn login(
         }
     };
 
+    // IP bans apply before account/session handling.
+    if let Ok(Some(ip_ban)) = db.fetch_ip_ban(&client_addr.to_string()).await {
+        return Err(ip_ban.ban_error());
+    }
+
     // Generate a session name
     let name = name.unwrap_or_else(|| "Unknown".to_string());
 
@@ -139,7 +146,7 @@ pub async fn login(
 
     // Create and return a new session
     Ok(Json(v0::ResponseLogin::Success(
-        account.create_session(db, name).await?.into(),
+        account.create_session_with_ip(db, name, Some(client_addr.to_string())).await?.into(),
     )))
 }
 

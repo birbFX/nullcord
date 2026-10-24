@@ -3,7 +3,7 @@
 import { getScopedUser } from "@/lib/auth";
 import { RBAC_PERMISSION_MODERATION_AGENT } from "@/lib/auth/rbacInternal";
 import { createChangelog } from "@/lib/core";
-import { banUser, suspendUser, unbanUser } from "@/lib/database/revolt";
+import { banIp, banUser, suspendUser, unbanIp, unbanUser } from "@/lib/database/revolt";
 import { createOrFindDM } from "@/lib/database/revolt/channels";
 import { sendMessage } from "@/lib/database/revolt/messages";
 import { findCaseById } from "@/lib/database/revolt/safety_cases";
@@ -117,4 +117,25 @@ export async function strikeUser(
 export async function unbanUserAction(userId: string) {
   await getScopedUser(RBAC_PERMISSION_MODERATION_AGENT);
   await unbanUser(userId);
+}
+
+export async function banIpAction(
+  ip: string,
+  message: string,
+  reason: string,
+  duration: "permanent" | "1" | "7" | "30",
+) {
+  const moderator = await getScopedUser(RBAC_PERMISSION_MODERATION_AGENT);
+  const { isIP } = await import("node:net");
+  if (!isIP(ip)) throw new Error("Invalid IP address");
+  const until =
+    duration === "permanent"
+      ? null
+      : new Date(Date.now() + Number(duration) * 24 * 60 * 60 * 1000);
+  await banIp(ip, message, reason, until, moderator);
+}
+
+export async function unbanIpAction(ip: string) {
+  await getScopedUser(RBAC_PERMISSION_MODERATION_AGENT);
+  await unbanIp(ip);
 }

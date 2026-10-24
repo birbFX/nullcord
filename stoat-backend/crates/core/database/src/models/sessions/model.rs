@@ -28,6 +28,10 @@ auto_derived_partial!(
         #[serde(skip_serializing_if = "Option::is_none")]
         pub origin: Option<String>,
 
+        /// Last observed client IP for moderation
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub ip: Option<String>,
+
         /// Web Push subscription
         #[serde(skip_serializing_if = "Option::is_none")]
         pub subscription: Option<WebPushSubscription>,

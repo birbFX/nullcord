@@ -1,7 +1,22 @@
 #[cfg(feature = "rocket-impl")]
 pub mod rocket {
     use revolt_config::config;
-    use rocket::Request;
+    use rocket::{
+        Request,
+        request::{FromRequest, Outcome},
+    };
+
+    /// Client IP resolved through the same trusted-proxy logic as ratelimits.
+    pub struct RealIp(pub String);
+
+    #[rocket::async_trait]
+    impl<'r> FromRequest<'r> for RealIp {
+        type Error = ();
+
+        async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+            Outcome::Success(RealIp(to_real_ip(request).await))
+        }
+    }
 
     pub fn to_ip(request: &'_ Request<'_>) -> String {
         request

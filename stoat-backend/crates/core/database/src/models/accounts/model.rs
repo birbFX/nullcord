@@ -340,6 +340,16 @@ impl Account {
 
     /// Create a new session
     pub async fn create_session(&self, db: &Database, name: String) -> Result<Session> {
+        self.create_session_with_ip(db, name, None).await
+    }
+
+    /// Create a new session and record the observed client IP.
+    pub async fn create_session_with_ip(
+        &self,
+        db: &Database,
+        name: String,
+        ip: Option<String>,
+    ) -> Result<Session> {
         let config = config().await;
 
         let session = Session {
@@ -352,6 +362,7 @@ impl Account {
             last_seen: Timestamp::now_utc(),
 
             origin: Some(config.environment),
+            ip,
             subscription: None,
         };
 

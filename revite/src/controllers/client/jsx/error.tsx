@@ -3,12 +3,15 @@ export function takeError(error: any): string {
     if (error.response) {
         const data = error.response.data;
         const type = data?.type;
-        if (type === "AccountBanned") {
+        if (type === "AccountBanned" || type === "IpBanned") {
             const until = data.expires_at
                 ? new Date(data.expires_at).toLocaleString()
                 : "permanent";
-            return `AccountBanned: ${
-                data.message || "Your account has been banned."
+            return `${type}: ${
+                data.message ||
+                (type === "IpBanned"
+                    ? "Your IP address has been banned."
+                    : "Your account has been banned.")
             } (${until})`;
         }
         if (type) {

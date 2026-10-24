@@ -4,7 +4,9 @@ import { getScopedUser } from "@/lib/auth";
 import { RBAC_PERMISSION_MODERATION_AGENT } from "@/lib/auth/rbacInternal";
 import {
   fetchAccountById,
+  fetchIpBans,
   fetchUserById,
+  fetchUserIPs,
   revoltUserInfo,
 } from "@/lib/database/revolt";
 import { fetchStrikes } from "@/lib/database/revolt/safety_strikes";
@@ -29,6 +31,7 @@ import {
   ManageAccountEmail,
   ManageAccountMFA,
 } from "./accountManagement";
+import { IpManagement } from "./ipManagement";
 import { UserStrikes } from "./userManagement";
 
 type Props = { params: { id: string } };
@@ -66,7 +69,11 @@ export default async function User({ params }: Props) {
   const { account, user } = await getUser(params.id);
   if (!account && !user) notFound();
 
-  const strikes = await fetchStrikes(params.id);
+  const [strikes, ips, ipBans] = await Promise.all([
+    fetchStrikes(params.id),
+    fetchUserIPs(params.id),
+    fetchIpBans(),
+  ]);
 
   //   const { messages: recentMessages, authors: recentMessageAuthors } =
   //     await fetchMessages({
@@ -150,6 +157,19 @@ export default async function User({ params }: Props) {
               flags={user?.flags || 0}
               strikes={strikes}
             />
+          </Flex>
+        </Card>
+
+        <Card>
+          <Flex direction="column" gap="3">
+            <Flex direction="column">
+              <Heading size="6">IP Addresses</Heading>
+              <Text color="gray" size="1">
+                Recorded session addresses. IP bans apply to every NullCord API
+                request from the address.
+              </Text>
+            </Flex>
+            <IpManagement ips={ips} bans={ipBans} />
           </Flex>
         </Card>
 

@@ -65,6 +65,7 @@ impl serde::Serialize for Error {
                 | ErrorType::UnverifiedAccount
                 | ErrorType::LockedOut
                 | ErrorType::AccountBanned { .. }
+                | ErrorType::IpBanned { .. }
                 | ErrorType::DisallowedMFAMethod => None,
             _ => Some(self.location.as_deref().unwrap()),
         };
@@ -149,6 +150,10 @@ pub enum ErrorType {
     InvalidRole,
     Banned,
     AccountBanned {
+        message: Option<String>,
+        expires_at: Option<String>,
+    },
+    IpBanned {
         message: Option<String>,
         expires_at: Option<String>,
     },
