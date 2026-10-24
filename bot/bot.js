@@ -279,24 +279,53 @@ function define(name, options, run) {
     for (const alias of entry.aliases) commands.set(alias, entry);
 }
 
-function helpText(ctx) {
-    const groups = {
-        General: ['help', 'ping', 'uptime', 'botinfo', 'userinfo', 'avatar', 'serverinfo'],
-        Moderation: ['kick', 'ban', 'unban', 'warn', 'warnings', 'clearwarns', 'purge', 'say'],
-        Tickets: ['ticket', 'close', 'add', 'remove', 'tickets'],
-        Music: ['play', 'queue', 'nowplaying', 'skip', 'stop'],
-        Config: ['setprefix', 'setlogs', 'setticketrole'],
-    };
+const HELP_GROUPS = {
+    General: ['help', 'ping', 'uptime', 'botinfo', 'userinfo', 'avatar', 'serverinfo'],
+    Moderation: ['kick', 'ban', 'unban', 'warn', 'warnings', 'clearwarns', 'purge', 'say'],
+    Tickets: ['ticket', 'close', 'add', 'remove', 'tickets'],
+    Music: ['play', 'queue', 'nowplaying', 'skip', 'stop'],
+    Config: ['setprefix', 'setlogs', 'setticketrole'],
+};
 
+// Stoat does not expose Discord message components yet. The help browser
+// keeps the same shape as Axiom's AxHelpView (category picker, home,
+// previous and next) but uses reactions instead of a Select + buttons.
+const HELP_CATEGORY_EMOJIS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+const HELP_HOME = '🏠';
+const HELP_PREV = '◀️';
+const HELP_NEXT = '▶️';
+const helpViews = new Map();
+
+function ax_help_categories(prefix) {
+    return Object.entries(HELP_GROUPS)
+        .map(([name, names]) => ({
+            name,
+            commands: names
+                .filter((command) => commands.has(command))
+                .map((command) => {
+                    const entry = commands.get(command);
+                    return {
+                        name: entry.name,
+                        usage: entry.usage ?? '',
+                        description: entry.description ?? '',
+                        aliases: entry.aliases ?? [],
+                    };
+                }),
+        }))
+        .filter((category) => category.commands.length > 0);
+}
+
+function ax_help_pages(prefix) {
+    return ax_help_categories(prefix);
+}
+
+function helpText(ctx) {
     const lines = [`**Canyon Lake Labs bot** — prefix \`${ctx.prefix}\``, ''];
-    for (const [group, names] of Object.entries(groups)) {
-        const visible = names.filter((n) => commands.has(n));
-        if (!visible.length) continue;
-        lines.push(`**${group}**`);
-        for (const name of visible) {
-            const c = commands.get(name);
-            const usage = c.usage ? ` ${c.usage}` : '';
-            lines.push(`\`${ctx.prefix}${name}${usage}\` — ${c.description}`);
+    for (const category of ax_help_categories(ctx.prefix)) {
+        lines.push(`**${category.name}**`);
+        for (const command of category.commands) {
+            const usage = command.usage ? ` ${command.usage}` : '';
+            lines.push(`\`${ctx.prefix}${command.name}${usage}\` — ${command.description}`);
         }
         lines.push('');
     }
@@ -304,14 +333,154 @@ function helpText(ctx) {
     return { content: lines.join('\n') };
 }
 
+class AxHelpView {
+    constructor(ctx) {
+        this.ctx = ctx;
+        this.p = ctx.prefix;
+        this.cats = ax_help_categories(this.p);
+        this.pages = ax_help_pages(this.p);
+        this.index = -1;
+        this._key_first = ctx.author?._id;
+        this.message = null;
+    }
+
+    async start() {
+        this.message = await reply(this.ctx, this._renderPayload());
+        if (!this.message?._id) return this.message;
+
+        helpViews.set(this.message._id, this);
+        for (const emoji of this._reactions()) {
+            await this.message.react(emoji).catch(() => {});
+        }
+        return this.message;
+    }
+
+    _reactions() {
+        const categoryReactions = this.cats
+            .slice(0, HELP_CATEGORY_EMOJIS.length)
+            .map((_, index) => HELP_CATEGORY_EMOJIS[index]);
+
+        return [...categoryReactions, HELP_HOME, HELP_PREV, HELP_NEXT];
+    }
+
+    _renderPayload() {
+        if (this.index < 0 || !this.pages[this.index]) {
+            const lines = [
+                `Prefix: \`${this.p}\``,
+                '',
+                ...this.cats.map((category, index) => {
+                    const emoji = HELP_CATEGORY_EMOJIS[index] ?? `#${index + 1}`;
+                    const count = category.commands.length;
+                    return `${emoji} **${category.name}** — ${count} command${count === 1 ? '' : 's'}`;
+                }),
+                '',
+                'React with a number to browse a category.',
+                `Use \`${this.p}help <command>\` for one command.`,
+            ];
+
+            return {
+                embeds: [
+                    {
+                        title: 'Canyon Lake Labs Help',
+                        description: lines.join('\n'),
+                        colour: '#3ba55c',
+                    },
+                ],
+            };
+        }
+
+        const category = this.pages[this.index];
+        const lines = category.commands.map((command) => {
+            const usage = command.usage ? ` ${command.usage}` : '';
+            const aliases = command.aliases.length
+                ? ` · aliases: ${command.aliases.map((alias) => `\`${alias}\``).join(', ')}`
+                : '';
+            return `\`${this.p}${command.name}${usage}\` — ${command.description}${aliases}`;
+        });
+
+        lines.push('');
+        lines.push(`Page ${this.index + 1}/${this.pages.length} · ${category.name}`);
+        lines.push(`Use \`${this.p}help <command>\` for one command.`);
+
+        return {
+            embeds: [
+                {
+                    title: `${category.name} commands`,
+                    description: lines.join('\n'),
+                    colour: '#3ba55c',
+                },
+            ],
+        };
+    }
+
+    async _render(interaction) {
+        if (!this.message) return;
+
+        try {
+            await this.message.edit(this._renderPayload());
+        } catch (err) {
+            log('help edit failed', err?.message ?? err);
+            // A deleted or unavailable message should not keep a dead view.
+            helpViews.delete(this.message._id);
+        }
+    }
+
+    async _on_select(index) {
+        if (!Number.isInteger(index) || index < 0 || index >= this.cats.length) return;
+        this.index = index;
+        await this._render();
+    }
+
+    async _on_home() {
+        this.index = -1;
+        await this._render();
+    }
+
+    async _on_prev() {
+        this.index = Math.max(-1, this.index - 1);
+        await this._render();
+    }
+
+    async _on_next() {
+        this.index = Math.min(this.cats.length - 1, this.index + 1);
+        await this._render();
+    }
+
+    async handle(packet) {
+        if (!packet || packet.type === 'MessageUnreact') return;
+        if (packet.user_id === client.user?._id) return;
+        if (packet.user_id !== this._key_first) return;
+
+        const emoji = packet.emoji_id;
+        const categoryIndex = HELP_CATEGORY_EMOJIS.indexOf(emoji);
+
+        if (categoryIndex >= 0) return this._on_select(categoryIndex);
+        if (emoji === HELP_HOME) return this._on_home();
+        if (emoji === HELP_PREV) return this._on_prev();
+        if (emoji === HELP_NEXT) return this._on_next();
+    }
+}
+
 define('help', { aliases: ['h', 'commands'], description: 'List commands' }, async (ctx) => {
     if (ctx.args[0]) {
+        const requested = ctx.args.join(' ').toLowerCase();
+        const categoryIndex = ax_help_categories(ctx.prefix).findIndex(
+            (category) => category.name.toLowerCase() === requested,
+        );
+        if (categoryIndex >= 0) {
+            const view = new AxHelpView(ctx);
+            view.index = categoryIndex;
+            return view.start();
+        }
+
         const c = commands.get(ctx.args[0].toLowerCase());
         if (!c) return reply(ctx, `No such command: ${ctx.args[0]}`);
         const usage = c.usage ? ` ${c.usage}` : '';
         return reply(ctx, `\`${ctx.prefix}${c.name}${usage}\`\n${c.description}`);
     }
-    return reply(ctx, helpText(ctx));
+
+    const view = new AxHelpView(ctx);
+    return view.start();
 });
 
 define('ping', { description: 'Gateway and API latency' }, async (ctx) => {
@@ -906,7 +1075,21 @@ async function handleMessage(message) {
 }
 
 // ------------------------------------------------------------------ logging
+client.on('message/updated', async (message, packet) => {
+    if (!packet || packet.type !== 'MessageReact' || !packet.id) return;
+
+    const view = helpViews.get(packet.id);
+    if (!view) return;
+
+    try {
+        await view.handle(packet);
+    } catch (err) {
+        log('help interaction failed', err?.stack ?? err);
+    }
+});
+
 client.on('message/delete', (id, message) => {
+    helpViews.delete(id);
     try {
         const serverId = message?.channel?.server_id;
         if (!serverId) return;
