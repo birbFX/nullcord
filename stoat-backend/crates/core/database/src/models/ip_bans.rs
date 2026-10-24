@@ -1,3 +1,5 @@
+use std::{env, fs, path::PathBuf};
+
 use iso8601_timestamp::Timestamp;
 
 use crate::{Database, ReferenceDb};
@@ -54,14 +56,44 @@ impl IpBan {
     }
 }
 
+fn shared_ip_ban_file() -> PathBuf {
+    PathBuf::from(env::var("NULLCORD_IP_BAN_FILE").unwrap_or_else(|_| {
+        "/mnt/cll-storage/NullCord-legacy/ip-bans.json".to_string()
+    }))
+}
+
+fn shared_ip_ban(ip: &str) -> Option<IpBan> {
+    let raw = fs::read_to_string(shared_ip_ban_file()).ok()?;
+    let value: serde_json::Value = serde_json::from_str(&raw).ok()?;
+    let entry = value.get(ip)?;
+    let expires_at = entry
+        .get("expires_at")
+        .and_then(serde_json::Value::as_i64)
+        .map(Timestamp::from_unix_timestamp_ms);
+    let created_at = entry
+        .get("created_at")
+        .and_then(serde_json::Value::as_i64)
+        .map(Timestamp::from_unix_timestamp_ms);
+    let ban = IpBan {
+        ip: ip.to_string(),
+        reason: entry.get("reason").and_then(serde_json::Value::as_str).map(str::to_string),
+        message: entry.get("message").and_then(serde_json::Value::as_str).map(str::to_string),
+        expires_at,
+        created_by: entry.get("created_by").and_then(serde_json::Value::as_str).map(str::to_string),
+        created_at,
+    };
+    ban.is_active().then_some(ban)
+}
+
 impl Database {
     /// Fetch an IP ban by exact address. Expired rows are returned as None.
     pub async fn fetch_ip_ban(&self, ip: &str) -> Result<Option<IpBan>> {
-        match self {
-            Database::Reference(_reference) => Ok(None),
+        let mongo_ban = match self {
+            Database::Reference(_reference) => None,
             #[cfg(feature = "mongodb")]
-            Database::MongoDb(mongo) => mongo.fetch_ip_ban(ip).await,
-        }
+            Database::MongoDb(mongo) => mongo.fetch_ip_ban(ip).await.ok().flatten(),
+        };
+        Ok(mongo_ban.or_else(|| shared_ip_ban(ip)))
     }
 }
 
