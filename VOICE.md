@@ -99,4 +99,4 @@ JSON probe at `/api/health`.
 | Connects then no audio | Autoplay blocked; click the call area to unlock audio |
 | Camera/screen button errors | Browser permission; token must include `canPublishSources` |
 | Remote users cannot connect | RTC ports unreachable (CGNAT) — see above |
-| `401` on camera publish | Re-join the call; tokens expire after 10 seconds |
+| `401` on camera publish | Re-join the call; tokens expire after 60 seconds |
