@@ -3,11 +3,16 @@ redis:
     address: localhost:6379
     username: ""
     password: ""
+rtc:
+    udp_port: 50000-50015
+    tcp_port: 7881
+    use_external_ip: false
+    enable_loopback_candidate: false
 webhook:
   api_key: worldwide
   urls:
     - 'http://localhost:8500/worldwide'
 logging:
-  level: debug
+  level: info
 keys:
   worldwide: change-me

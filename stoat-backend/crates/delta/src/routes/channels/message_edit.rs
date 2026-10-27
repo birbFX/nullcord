@@ -82,6 +82,10 @@ pub async fn edit(
 
     partial.embeds = Some(new_embeds);
 
+    if edit.components.is_some() {
+        partial.components = edit.components;
+    }
+
     message.update(db, partial, vec![]).await?;
 
     // Queue up a task for processing embeds if the we have sufficient permissions

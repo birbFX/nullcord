@@ -103,6 +103,19 @@ pub enum EventV1 {
     /// New message
     Message(Message),
 
+    /// User interacted with a message component
+    InteractionCreate {
+        id: String,
+        message: Message,
+        user: User,
+        channel_id: String,
+        guild_id: Option<String>,
+        custom_id: String,
+        component_type: String,
+        #[serde(default)]
+        values: Vec<String>,
+    },
+
     /// Update existing message
     MessageUpdate {
         id: String,

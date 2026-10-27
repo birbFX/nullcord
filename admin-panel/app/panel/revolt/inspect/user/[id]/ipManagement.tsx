@@ -20,14 +20,32 @@ export function IpManagement({
   const [selectedIp, setSelectedIp] = useState(ips[0]?.ip || "");
   const [message, setMessage] = useState("");
   const [reason, setReason] = useState("");
-  const [duration, setDuration] = useState<"permanent" | "1" | "7" | "30">(
-    "permanent",
-  );
+  const [duration, setDuration] = useState<
+    "permanent" | "1" | "7" | "30" | "custom"
+  >("permanent");
+  const [customValue, setCustomValue] = useState("1");
+  const [customUnit, setCustomUnit] = useState<
+    "minutes" | "hours" | "days" | "weeks" | "months"
+  >("days");
+
+  const unitSeconds = {
+    minutes: 60,
+    hours: 3600,
+    days: 86400,
+    weeks: 604800,
+    months: 2592000,
+  };
+  const effectiveSeconds =
+    duration === "permanent"
+      ? null
+      : duration === "custom"
+        ? Math.max(1, Number(customValue) || 1) * unitSeconds[customUnit]
+        : Number(duration) * 86400;
 
   const ban = useMutation({
     mutationFn: async () => {
       if (!selectedIp) return;
-      await banIpAction(selectedIp, message, reason, duration);
+      await banIpAction(selectedIp, message, reason, effectiveSeconds);
       router.refresh();
     },
   });
@@ -137,6 +155,7 @@ export function IpManagement({
               <Select.Item value="1">1 day</Select.Item>
               <Select.Item value="7">7 days</Select.Item>
               <Select.Item value="30">30 days</Select.Item>
+              <Select.Item value="custom">Custom</Select.Item>
             </Select.Content>
           </Select.Root>
           <Button
@@ -147,7 +166,43 @@ export function IpManagement({
             Ban IP
           </Button>
         </Flex>
-        {ban.isError && <Text color="red">{String(ban.error)}</Text>}
+        {duration === "custom" && (
+          <Flex gap="2">
+            <TextField.Root
+              type="number"
+              min="1"
+              value={customValue}
+              onChange={(e) => setCustomValue(e.currentTarget.value)}
+              placeholder="Amount"
+              style={{ width: "110px" }}
+            />
+            <Select.Root
+              value={customUnit}
+              onValueChange={(value) => setCustomUnit(value as never)}
+            >
+              <Select.Trigger />
+              <Select.Content>
+                <Select.Item value="minutes">Minutes</Select.Item>
+                <Select.Item value="hours">Hours</Select.Item>
+                <Select.Item value="days">Days</Select.Item>
+                <Select.Item value="weeks">Weeks</Select.Item>
+                <Select.Item value="months">Months</Select.Item>
+              </Select.Content>
+            </Select.Root>
+          </Flex>
+        )}
+        {ban.isError && (
+          <Text color="red">
+            {ban.error instanceof Error ? ban.error.message : String(ban.error)}
+          </Text>
+        )}
+        {unban.isError && (
+          <Text color="red">
+            {unban.error instanceof Error
+              ? unban.error.message
+              : String(unban.error)}
+          </Text>
+        )}
       </Flex>
     </Flex>
   );

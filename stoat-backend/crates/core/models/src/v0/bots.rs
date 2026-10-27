@@ -109,7 +109,7 @@ auto_derived!(
         /// Bot username
         #[cfg_attr(
             feature = "validator",
-            validate(length(min = 2, max = 32), regex = "super::RE_USERNAME")
+            validate(length(min = 2, max = 35), regex = "super::RE_USERNAME")
         )]
         pub name: String,
     }
@@ -121,7 +121,7 @@ auto_derived!(
         /// Bot username
         #[cfg_attr(
             feature = "validator",
-            validate(length(min = 2, max = 32), regex = "super::RE_USERNAME")
+            validate(length(min = 2, max = 35), regex = "super::RE_USERNAME")
         )]
         #[serde(skip_serializing_if = "Option::is_none")]
         pub name: Option<String>,

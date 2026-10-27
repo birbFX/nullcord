@@ -17,6 +17,8 @@ const COLLECTIONS: Record<string, string> = {
   message: "messages",
   channel: "channels",
   server: "servers",
+  report: "safety_reports",
+  case: "safety_cases",
 };
 
 export default async function InspectObject({

@@ -287,9 +287,8 @@ const HELP_GROUPS = {
     Config: ['setprefix', 'setlogs', 'setticketrole'],
 };
 
-// Stoat does not expose Discord message components yet. The help browser
-// keeps the same shape as Axiom's AxHelpView (category picker, home,
-// previous and next) but uses reactions instead of a Select + buttons.
+// Legacy reaction fallback: this Node bot still uses reactions for its help
+// browser. Newer SDK bots can use native selects/buttons via InteractionCreate.
 const HELP_CATEGORY_EMOJIS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
 const HELP_HOME = '🏠';
 const HELP_PREV = '◀️';
@@ -728,16 +727,35 @@ define(
             log('ticket: channel', channel._id);
             role = await createTicketRole(ctx.server, ctx.author.username);
             log('ticket: role', role._id);
-            await assignRole(ctx.server, ctx.author._id, role._id, true);
-            log('ticket: role assigned');
+            try {
+                await assignRole(ctx.server, ctx.author._id, role._id, true);
+                log('ticket: role assigned');
+            } catch (err) {
+                // Server owners and admins already bypass channel overwrites.
+                if (
+                    err?.response?.status === 403 &&
+                    (ctx.author._id === ctx.server.owner ||
+                        isAdmin(ctx.member, ctx.server))
+                ) {
+                    log('ticket: role assignment skipped (not elevated)');
+                } else {
+                    throw err;
+                }
+            }
             await raw.put(`/channels/${channel._id}/permissions/default`, {
                 permissions: { allow: 0, deny: P.ViewChannel },
             });
             log('ticket: locked');
         } catch (err) {
             log('ticket setup failed', err?.message ?? err, err?.response?.status, JSON.stringify(err?.response?.data ?? null));
-            if (channel?._id) await raw.del(`/channels/${channel._id}`).catch(() => {});
-            if (role?._id) await raw.del(`/servers/${sid}/roles/${role._id}`).catch(() => {});
+            if (channel?._id)
+                await raw.del(`/channels/${channel._id}`).catch((cleanupError) =>
+                    log('ticket: channel cleanup failed', cleanupError?.response?.status),
+                );
+            if (role?._id)
+                await raw.del(`/servers/${sid}/roles/${role._id}`).catch((cleanupError) =>
+                    log('ticket: role cleanup failed', cleanupError?.response?.status),
+                );
             return reply(ctx, 'Could not set up the ticket (missing Manage Channel / Role permissions?).');
         }
 

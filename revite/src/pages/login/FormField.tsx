@@ -84,13 +84,18 @@ export default function FormField({
                                           ? "RequiredField"
                                           : value.length < 2
                                           ? "TooShort"
-                                          : value.length > 32
+                                          : value.length > 35
                                           ? "TooLong"
+                                          : !/^[\p{L}\d_.-]+(?: [\p{L}\d_.-]+)*$/u.test(
+                                                value,
+                                            )
+                                          ? "InvalidUsername"
                                           : undefined,
                               }
                             : { required: "RequiredField" },
                     )}
                     {...props}
+                    maxLength={type === "username" ? 35 : props.maxLength}
                 />
             </Localizer>
         </>

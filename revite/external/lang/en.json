@@ -942,6 +942,7 @@
         "RequiredField": "Required",
         "TooShort": "Too short",
         "TooLong": "Too long",
+        "InvalidUsername": "Use only letters, numbers, spaces, dots, dashes and underscores. Spaces cannot be repeated or at the start/end.",
         "InvalidEmail": "Invalid email address",
         "Unavailable": "Unavailable.",
         "FileTooLarge": "File is too large.",

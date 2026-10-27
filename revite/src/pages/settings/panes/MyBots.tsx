@@ -48,6 +48,17 @@ interface Changes {
     remove?: "InteractionsURL"[];
 }
 
+const BOT_NAME = /^[\p{L}\d_.-]+(?: [\p{L}\d_.-]+)*$/u;
+
+function validateBotName(value: string) {
+    const name = value.trim();
+    if (name.length < 2 || name.length > 35)
+        return "Bot username must be between 2 and 35 characters.";
+    if (!BOT_NAME.test(name))
+        return "Use only letters, numbers, spaces, dots, dashes and underscores. Spaces cannot be repeated or at the start/end.";
+    return null;
+}
+
 const BotBadge = styled.div`
     display: inline-block;
     flex-shrink: 0;
@@ -114,11 +125,20 @@ function BotCard({ bot, onDelete, onUpdate }: Props) {
 
     async function save() {
         const changes: Changes = {};
-        if (data.username !== user!.username) changes.name = data.username;
+        const username = data.username.trim();
+        if (username !== user!.username) {
+            const invalid = validateBotName(username);
+            if (invalid) {
+                setError(invalid);
+                return;
+            }
+            changes.name = username;
+        }
         if (data.public !== bot.public) changes.public = data.public;
-        if (data.interactions_url === "") changes.remove = ["InteractionsURL"];
-        else if (data.interactions_url !== bot.interactions_url)
-            changes.interactions_url = data.interactions_url;
+        const interactionsUrl = data.interactions_url?.trim() ?? "";
+        if (interactionsUrl === "") changes.remove = ["InteractionsURL"];
+        else if (interactionsUrl !== bot.interactions_url)
+            changes.interactions_url = interactionsUrl;
         setSaving(true);
         setError("");
         try {
@@ -134,6 +154,11 @@ function BotCard({ bot, onDelete, onUpdate }: Props) {
                 switch (err.response.data.type) {
                     case "UsernameTaken":
                         setError("That username is taken!");
+                        break;
+                    case "FailedValidation":
+                        setError(
+                            "Bot username must be 2-35 characters and use only letters, numbers, spaces, dots, dashes and underscores. Spaces cannot be repeated or at the start/end.",
+                        );
                         break;
                     default:
                         setError(`Error: ${err.response.data.type}`);

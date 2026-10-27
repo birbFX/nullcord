@@ -11,8 +11,8 @@ import Link from "next/link";
 import pkg from "../../package.json";
 
 export const metadata: Metadata = {
-  title: "Stoat Dashboard",
-  description: "Administer the NullCord / Stoat instance.",
+  title: "NullCord Admin",
+  description: "Administer the NullCord instance.",
 };
 
 export default async function Home() {
@@ -76,10 +76,16 @@ export default async function Home() {
         <Link href="/panel/messages">
           <Text>Recent messages</Text>
         </Link>
+        <Link href="/panel/announcements">
+          <Text>Broadcast an announcement to every account</Text>
+        </Link>
+        <Link href="/panel/dev">
+          <Text>Developer tools and service health</Text>
+        </Link>
       </Flex>
 
       <Text as="p" size="1" color="gray" mt="6">
-        Swiss Army Knife {pkg.version} ·{" "}
+        NullCord Admin {pkg.version} ·{" "}
         <RadixLink href="https://github.com/birbFX/nullcord" target="_blank">
           Source code
         </RadixLink>

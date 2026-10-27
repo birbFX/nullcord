@@ -33,11 +33,16 @@ function userToResult(
   };
 }
 
+function escapeRegex(input: string) {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function channelDisplayName(channel: API.Channel) {
-  switch (channel.channel_type) {
-    default:
-      return "Channel";
-  }
+  if (channel.channel_type === "DirectMessage") return "Direct message";
+  if ("name" in channel && channel.name) return channel.name;
+  if (channel.channel_type === "Group") return "Group";
+  if (channel.channel_type === "SavedMessages") return "Saved messages";
+  return "Channel";
 }
 
 function channelToResult(channel: API.Channel): SearchResult {
@@ -127,17 +132,10 @@ export async function search(thing: string) {
     return results; // can't match anything else
   } else {
     await col<API.User>("users")
-      .find(
-        {
-          username: thing,
-        },
-        {
-          collation: {
-            locale: "en",
-            strength: 2,
-          },
-        },
-      )
+      .find({
+        username: new RegExp(escapeRegex(thing), "i"),
+      })
+      .limit(25)
       .toArray()
       .then((users) =>
         users.forEach((user) => results.push(userToResult(user._id, user))),
@@ -194,8 +192,10 @@ export async function search(thing: string) {
   if (thing.length === 26 || thing.length === 6)
     col<ReportDocument>("safety_reports")
       .find({
-        // TODO: no sanitisation into regexp, can inject arbitrary queries
-        _id: thing.length === 26 ? thing : new RegExp(`${thing}$`),
+        _id:
+          thing.length === 26
+            ? thing
+            : new RegExp(`${escapeRegex(thing)}$`),
       })
       .toArray()
       .then((reports) =>
@@ -204,7 +204,7 @@ export async function search(thing: string) {
             id: report._id,
             type: "report",
             title: reportDisplayName(report),
-            link: `/panel/revolt/inspect`,
+            link: `/panel/revolt/inspect/report/${report._id}`,
           }),
         ),
       );
@@ -212,8 +212,10 @@ export async function search(thing: string) {
   if (thing.length === 26 || thing.length === 8)
     await col<CaseDocument>("safety_cases")
       .find({
-        // TODO: no sanitisation into regexp, can inject arbitrary queries
-        _id: thing.length === 26 ? thing : new RegExp(`${thing}$`),
+        _id:
+          thing.length === 26
+            ? thing
+            : new RegExp(`${escapeRegex(thing)}$`),
       })
       .toArray()
       .then((cases) =>
@@ -222,7 +224,7 @@ export async function search(thing: string) {
             id: entry._id,
             type: "case",
             title: entry.title,
-            link: `/panel/mod/legacy/cases/${entry._id}`,
+            link: `/panel/revolt/inspect/case/${entry._id}`,
           }),
         ),
       );

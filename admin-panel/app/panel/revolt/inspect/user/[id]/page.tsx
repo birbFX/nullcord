@@ -4,28 +4,31 @@ import { getScopedUser } from "@/lib/auth";
 import { RBAC_PERMISSION_MODERATION_AGENT } from "@/lib/auth/rbacInternal";
 import {
   fetchAccountById,
+  fetchBotsWithUsers,
   fetchIpBans,
   fetchUserById,
   fetchUserIPs,
   revoltUserInfo,
 } from "@/lib/database/revolt";
 import { fetchStrikes } from "@/lib/database/revolt/safety_strikes";
+import { col } from "@/lib/db";
 import { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 
 import {
-  Box,
-  Button,
+  Badge,
   Card,
   Flex,
   Grid,
   Heading,
-  Skeleton,
+  Table,
   Text,
 } from "@radix-ui/themes";
 
 import { UserCard } from "./UserCard";
+import { BotManagement } from "./botManagement";
 import {
   ManageAccount,
   ManageAccountEmail,
@@ -33,6 +36,8 @@ import {
 } from "./accountManagement";
 import { IpManagement } from "./ipManagement";
 import { UserStrikes } from "./userManagement";
+import { AlertManagement } from "./alertManagement";
+import { ProfileManagement } from "./profileManagement";
 
 type Props = { params: { id: string } };
 
@@ -69,11 +74,38 @@ export default async function User({ params }: Props) {
   const { account, user } = await getUser(params.id);
   if (!account && !user) notFound();
 
-  const [strikes, ips, ipBans] = await Promise.all([
-    fetchStrikes(params.id),
-    fetchUserIPs(params.id),
-    fetchIpBans(),
-  ]);
+  const relationIds = (user?.relations ?? [])
+    .filter((relation) => relation.status === "Friend")
+    .map((relation) => relation._id);
+
+  const [strikes, ips, ipBans, bots, friends, memberships, reports] =
+    await Promise.all([
+      fetchStrikes(params.id),
+      fetchUserIPs(params.id),
+      fetchIpBans(),
+      fetchBotsWithUsers(params.id),
+      relationIds.length
+        ? col("users").find({ _id: { $in: relationIds as never[] } }).toArray()
+        : Promise.resolve([]),
+      col("server_members")
+        .find({ "_id.user": params.id })
+        .limit(100)
+        .toArray(),
+      col("safety_reports")
+        .find({ author_id: params.id })
+        .sort({ _id: -1 })
+        .limit(20)
+        .toArray(),
+    ]);
+
+  const memberServerIds = memberships.map(
+    (membership) => (membership._id as { server?: string }).server,
+  );
+  const memberServers = memberServerIds.length
+    ? await col("servers")
+        .find({ _id: { $in: memberServerIds as never[] } })
+        .toArray()
+    : [];
 
   //   const { messages: recentMessages, authors: recentMessageAuthors } =
   //     await fetchMessages({
@@ -112,6 +144,8 @@ export default async function User({ params }: Props) {
               <ManageAccount
                 id={params.id}
                 attempts={account.lockout?.attempts || 0}
+                disabled={account.disabled}
+                deletion={account.deletion as never}
               />
 
               <Flex direction="column" gap="2">
@@ -140,6 +174,27 @@ export default async function User({ params }: Props) {
                   </pre>
                 </Flex>
               )}
+            </Flex>
+          </Card>
+        )}
+
+        {user && (
+          <Card>
+            <Flex direction="column" gap="3">
+              <Flex direction="column">
+                <Heading size="6">Profile Management</Heading>
+                <Text color="gray" size="1">
+                  Change the username, display name, admin access or sessions
+                  for this account.
+                </Text>
+              </Flex>
+              <ProfileManagement
+                id={params.id}
+                username={user.username}
+                discriminator={user.discriminator}
+                displayName={user.display_name}
+                privileged={user.privileged}
+              />
             </Flex>
           </Card>
         )}
@@ -192,9 +247,7 @@ export default async function User({ params }: Props) {
                 Moderation notices sent to the user.
               </Text>
             </Flex>
-            <Flex gap="2">
-              <Button variant="outline">Send Alert</Button>
-            </Flex>
+            <AlertManagement id={params.id} />
           </Flex>
         </Card>
 
@@ -203,9 +256,11 @@ export default async function User({ params }: Props) {
             <Flex direction="column">
               <Heading size="6">Bots</Heading>
               <Text color="gray" size="1">
-                Bots owned by this user.
+                Bots owned by this user. Verification adds the app checkmark
+                in the NullCord client.
               </Text>
             </Flex>
+            <BotManagement bots={bots} />
           </Flex>
         </Card>
 
@@ -217,6 +272,30 @@ export default async function User({ params }: Props) {
                 Users who are friends with this user.
               </Text>
             </Flex>
+            {friends.length ? (
+              <Table.Root size="1">
+                <Table.Body>
+                  {friends.map((friend) => (
+                    <Table.Row key={String(friend._id)}>
+                      <Table.Cell>
+                        <Link href={`/panel/revolt/inspect/user/${friend._id}`}>
+                          {String(friend.username)}#{String(friend.discriminator)}
+                        </Link>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Text size="1" color="gray">
+                          {String(friend._id)}
+                        </Text>
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Root>
+            ) : (
+              <Text color="gray" size="1">
+                No friends recorded.
+              </Text>
+            )}
           </Flex>
         </Card>
 
@@ -228,6 +307,30 @@ export default async function User({ params }: Props) {
                 Servers this user is in.
               </Text>
             </Flex>
+            {memberServers.length ? (
+              <Table.Root size="1">
+                <Table.Body>
+                  {memberServers.map((server) => (
+                    <Table.Row key={String(server._id)}>
+                      <Table.Cell>
+                        <Link href={`/panel/revolt/inspect/server/${server._id}`}>
+                          {String(server.name)}
+                        </Link>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Text size="1" color="gray">
+                          {String(server._id)}
+                        </Text>
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Root>
+            ) : (
+              <Text color="gray" size="1">
+                Not a member of any servers.
+              </Text>
+            )}
           </Flex>
         </Card>
 
@@ -239,6 +342,38 @@ export default async function User({ params }: Props) {
                 Reports this user has created.
               </Text>
             </Flex>
+            {reports.length ? (
+              <Table.Root size="1">
+                <Table.Body>
+                  {reports.map((report) => (
+                    <Table.Row key={String(report._id)}>
+                      <Table.Cell>
+                        <Badge
+                          color={
+                            report.status === "Resolved"
+                              ? "green"
+                              : report.status === "Rejected"
+                                ? "gray"
+                                : "orange"
+                          }
+                        >
+                          {String(report.status)}
+                        </Badge>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Text size="1">
+                          {String(report.additional_context || "No context")}
+                        </Text>
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Root>
+            ) : (
+              <Text color="gray" size="1">
+                No reports created.
+              </Text>
+            )}
           </Flex>
         </Card>
       </Grid>

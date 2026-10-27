@@ -30,7 +30,7 @@ from .components import ComponentRenderer
 INTERACTION_TYPE_COMPONENT = getattr(
     getattr(_discord, "InteractionType", None),
     "component",
-    2,
+    3,
 )
 
 

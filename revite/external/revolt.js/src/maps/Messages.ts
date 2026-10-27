@@ -38,6 +38,7 @@ export class Message {
     attachments: Nullable<File[]>;
     edited: Nullable<Date>;
     embeds: Nullable<Embed[]>;
+    components: Nullable<any[]>;
     mention_ids: Nullable<string[]>;
     reply_ids: Nullable<string[]>;
     masquerade: Nullable<Masquerade>;
@@ -179,6 +180,7 @@ export class Message {
         this.attachments = toNullable(data.attachments);
         this.edited = toNullableDate(data.edited);
         this.embeds = toNullable(data.embeds);
+        this.components = toNullable((data as any).components);
         this.mention_ids = toNullable(data.mentions);
         this.reply_ids = toNullable(data.replies);
         this.masquerade = toNullable(data.masquerade);
@@ -225,6 +227,7 @@ export class Message {
         apply("attachments");
         apply("edited", undefined, toNullableDate as (obj: unknown) => unknown);
         apply("embeds");
+        apply("components");
         apply("mentions", "mention_ids");
         apply("masquerade");
         apply("reactions", undefined, (reactions) => {

@@ -13,6 +13,66 @@ use iso8601_timestamp::Timestamp;
 
 use super::{Channel, Embed, File, Member, MessageWebhook, User, Webhook, RE_COLOUR};
 
+auto_derived!(
+    /// One option in a select menu.
+    #[derive(Default)]
+    pub struct MessageComponentOption {
+        /// Visible option label
+        pub label: String,
+        /// Value sent with the interaction
+        pub value: String,
+        /// Optional description
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub description: Option<String>,
+        /// Optional emoji
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub emoji: Option<String>,
+        /// Whether this option is selected by default
+        #[serde(skip_serializing_if = "crate::if_false", default)]
+        pub default: bool,
+    }
+
+    /// One NullCord message component.
+    #[derive(Default)]
+    pub struct MessageComponent {
+        /// "button" or "select"
+        #[serde(rename = "type")]
+        pub component_type: String,
+        /// Stable interaction identifier
+        pub custom_id: String,
+        /// Button/select label
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub label: Option<String>,
+        /// Button style: primary, secondary, success, danger, link
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub style: Option<String>,
+        /// Button/select emoji
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub emoji: Option<String>,
+        /// Disabled state
+        #[serde(skip_serializing_if = "crate::if_false", default)]
+        pub disabled: bool,
+        /// Link button URL
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub url: Option<String>,
+        /// Select placeholder
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub placeholder: Option<String>,
+        /// Select options
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub options: Option<Vec<MessageComponentOption>>,
+        /// Select minimum values
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub min_values: Option<u32>,
+        /// Select maximum values
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub max_values: Option<u32>,
+        /// Row / grouping hint
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub row: Option<u32>,
+    }
+);
+
 auto_derived_partial!(
     /// Message
     pub struct Message {
@@ -50,6 +110,9 @@ auto_derived_partial!(
         /// Attached embeds to this message
         #[serde(skip_serializing_if = "Option::is_none")]
         pub embeds: Option<Vec<Embed>>,
+        /// Interactive components attached to this message
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub components: Option<Vec<MessageComponent>>,
         /// Array of user ids mentioned in this message
         #[serde(skip_serializing_if = "Option::is_none")]
         pub mentions: Option<Vec<String>>,
@@ -272,6 +335,8 @@ auto_derived!(
         /// Text embed content contributes to the content length cap
         #[cfg_attr(feature = "validator", validate)]
         pub embeds: Option<Vec<SendableEmbed>>,
+        /// Interactive components to attach to this message
+        pub components: Option<Vec<MessageComponent>>,
         /// Masquerade to apply to this message
         #[cfg_attr(feature = "validator", validate)]
         pub masquerade: Option<Masquerade>,
@@ -341,6 +406,18 @@ auto_derived!(
         pub include_users: Option<bool>,
     }
 
+    /// Interaction with a message component
+    #[cfg_attr(feature = "validator", derive(Validate))]
+    pub struct DataMessageInteract {
+        /// Stable component id
+        #[cfg_attr(feature = "validator", validate(length(min = 1, max = 128)))]
+        pub custom_id: String,
+        /// Selected values for a select menu
+        pub values: Option<Vec<String>>,
+        /// "button" or "select" (optional hint)
+        pub component_type: Option<String>,
+    }
+
     /// Changes to make to message
     #[cfg_attr(feature = "validator", derive(Validate))]
     pub struct DataEditMessage {
@@ -350,6 +427,8 @@ auto_derived!(
         /// Embeds to include in the message
         #[cfg_attr(feature = "validator", validate(length(min = 0, max = 10)))]
         pub embeds: Option<Vec<SendableEmbed>>,
+        /// Interactive components to replace on this message
+        pub components: Option<Vec<MessageComponent>>,
     }
 
     /// Options for bulk deleting messages

@@ -180,7 +180,7 @@ if [ "$SKIP_BACKEND" = 0 ]; then
     echo "[backend] created livekit.yml from livekit.example.yml"
   fi
 
-  BINS="revolt-delta revolt-bonfire revolt-autumn revolt-january revolt-crond revolt-pushd revolt-gifbox"
+  BINS="revolt-delta revolt-bonfire revolt-autumn revolt-january revolt-crond revolt-pushd revolt-gifbox revolt-voice-ingress"
 
   if have mise; then
     echo "[backend] mise run start (docker:start + build + all services) - running in background"

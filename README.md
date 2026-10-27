@@ -51,6 +51,41 @@ variables.
    bun install && bun run build && node server/.build/server/index.js
    ```
 
+## Calls, video and screen sharing
+
+Voice channels and DM/group calls use LiveKit. The web client supports
+microphone, camera, screen share with tab audio where the browser allows it,
+deafen, input/output device selection and a participant video grid. The
+backend mints short-lived LiveKit tokens, and `revolt-voice-ingress` keeps
+channel voice state and call system messages in sync.
+
+See [`VOICE.md`](./VOICE.md) for the port map, required LiveKit config and
+NAT/CGNAT troubleshooting. Signalling goes through the Cloudflare tunnel;
+WebRTC media needs UDP `50000-50015` and TCP `7881` reachable for remote
+participants.
+
+## Usernames
+
+Usernames are 2–35 characters and may contain Unicode letters, numbers,
+spaces, dots, dashes and underscores. Spaces must be single and cannot be at
+the start or end. The API, onboarding form, username-change form and bot names
+all enforce the same rule.
+
+## Admin panel
+
+The Next.js admin panel includes:
+
+- user search by username, display name, email or ID
+- server, channel and recent-message browsers
+- raw object inspection for users, servers, channels, messages, reports and cases
+- account enable/disable, email verification, MFA reset, recovery-code clearing
+- username and display-name editing, admin grants and session revocation
+- strikes, temporary suspensions, permanent/temporary bans and unsuspension
+- IP bans and per-user session IP history
+- bot verification
+- platform announcements
+- service logs, LiveKit/voice health and `/api/health`
+
 ## Licence
 
 NullCord is distributed under the **GNU Affero General Public License v3.0**

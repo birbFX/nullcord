@@ -17,12 +17,13 @@ export enum VoiceStatus {
     // RECONNECTING
 }
 
-// This is an example of how to implement MobX state.
-// * Note for better implementation:
-// * MobX state should be implemented on the VoiceClient itself.
+/**
+ * MobX-facing state for the LiveKit voice client.
+ */
 class VoiceStateReference {
     client?: VoiceClient;
     connecting?: boolean;
+    error?: string;
 
     status: VoiceStatus;
     roomId: Nullable<string>;
@@ -43,8 +44,6 @@ class VoiceStateReference {
         });
     }
 
-    // This takes information from the voice
-    // client and applies it to the state here.
     @action syncState() {
         if (!this.client) return;
         this.roomId = toNullable(this.client.roomId);
@@ -52,7 +51,6 @@ class VoiceStateReference {
         this.client.participants.forEach((v, k) => this.participants.set(k, v));
     }
 
-    // This imports and constructs the voice client.
     @action async loadVoice() {
         if (this.status !== VoiceStatus.UNLOADED) return;
         this.status = VoiceStatus.LOADING;
@@ -67,6 +65,23 @@ class VoiceStateReference {
             client.on("userLeft", this.syncState);
             client.on("userStartProduce", this.syncState);
             client.on("userStopProduce", this.syncState);
+            client.on("close", () => {
+                runInAction(() => {
+                    this.connecting = false;
+                    this.status =
+                        this.status === VoiceStatus.UNAVAILABLE
+                            ? VoiceStatus.UNAVAILABLE
+                            : VoiceStatus.READY;
+                    this.roomId = null;
+                    this.participants.clear();
+                });
+            });
+            client.on("error", (error) => {
+                console.error("Voice error:", error);
+                runInAction(() => {
+                    this.error = error.message;
+                });
+            });
 
             runInAction(() => {
                 if (!client.supported()) {
@@ -84,33 +99,28 @@ class VoiceStateReference {
         }
     }
 
-    // Connect to a voice channel.
     @action async connect(channel: Channel) {
+        if (!this.client) await this.loadVoice();
         if (!this.client?.supported()) throw new Error("RTC is unavailable");
 
-        this.connecting = true;
-        this.status = VoiceStatus.CONNECTING;
-
-        const features = channel.client.configuration?.features as any;
-        if (!features?.voso?.ws) {
-            // This backend uses LiveKit; the legacy Vortex voice client cannot
-            // speak to it. Fail cleanly instead of throwing on every click.
-            console.warn(
-                "Voice is unavailable: backend uses LiveKit, client uses Vortex.",
-            );
-            runInAction(() => {
-                this.status = VoiceStatus.UNAVAILABLE;
-                this.connecting = false;
-            });
+        if (
+            this.roomId === channel._id &&
+            this.status === VoiceStatus.CONNECTED
+        )
             return channel;
-        }
+
+        if (this.roomId) this.disconnect();
+
+        this.connecting = true;
+        this.error = undefined;
+        this.status = VoiceStatus.CONNECTING;
 
         try {
             const call = await channel.joinCall();
 
-            await this.client.connect(features.voso.ws, channel._id);
-
+            await this.client.connect(call.url, channel._id);
             runInAction(() => {
+                this.roomId = channel._id;
                 this.status = VoiceStatus.AUTHENTICATING;
             });
 
@@ -122,28 +132,33 @@ class VoiceStateReference {
             });
 
             await this.client.initializeTransports();
-        } catch (err) {
-            console.error(err);
 
             runInAction(() => {
+                this.status = VoiceStatus.CONNECTED;
+                this.connecting = false;
+            });
+        } catch (err) {
+            console.error("Failed to join voice channel:", err);
+            runInAction(() => {
                 this.status = VoiceStatus.READY;
+                this.connecting = false;
+                this.error = err instanceof Error ? err.message : String(err);
             });
 
-            return channel;
+            try {
+                this.client.disconnect();
+            } catch {
+                // already closed
+            }
         }
 
-        runInAction(() => {
-            this.status = VoiceStatus.CONNECTED;
-            this.connecting = false;
-        });
-
+        this.syncState();
         return channel;
     }
 
-    // Disconnect from current channel.
     @action disconnect() {
         this.connecting = false;
-        this.status = VoiceStatus.READY;
+        this.status = this.client ? VoiceStatus.READY : VoiceStatus.UNLOADED;
 
         this.client?.disconnect();
         this.syncState();
@@ -153,66 +168,102 @@ class VoiceStateReference {
         switch (type) {
             case "audio":
                 return this.client?.audioProducer !== undefined;
+            case "video":
+                return this.client?.cameraPublication !== undefined;
+            case "screen":
+                return this.client?.screenPublication !== undefined;
         }
     }
 
     isDeaf() {
         if (!this.client) return false;
-
         return this.client.isDeaf;
     }
 
+    getVideoTrack(identity: string, source: "camera" | "screen") {
+        return this.client?.getVideoTrack(identity, source);
+    }
+
+    async startAudioPlayback() {
+        await this.client?.startAudioPlayback();
+    }
+
+    async switchDevice(kind: MediaDeviceKind, deviceId: string) {
+        await this.client?.switchDevice(kind, deviceId);
+    }
+
     async startDeafen() {
-        if (!this.client) return console.log("No client object"); // ! TODO: let the user know
+        if (!this.client) return;
         if (this.client.isDeaf) return;
-
-        this.client.isDeaf = true;
-        this.client?.consumers.forEach((consumer) => {
-            consumer.audio?.pause();
-        });
-
+        this.client.setDeafened(true);
         this.syncState();
     }
+
     async stopDeafen() {
-        if (!this.client) return console.log("No client object"); // ! TODO: let the user know
+        if (!this.client) return;
         if (!this.client.isDeaf) return;
-
-        this.client.isDeaf = false;
-        this.client?.consumers.forEach((consumer) => {
-            consumer.audio?.resume();
-        });
-
+        this.client.setDeafened(false);
         this.syncState();
     }
 
     async startProducing(type: ProduceType) {
-        switch (type) {
-            case "audio": {
-                if (this.client?.audioProducer !== undefined)
-                    return console.log("No audio producer."); // ! TODO: let the user know
+        if (!this.client) return;
 
-                if (navigator.mediaDevices === undefined)
-                    return console.log("No media devices."); // ! TODO: let the user know
+        try {
+            switch (type) {
+                case "audio": {
+                    if (this.client.audioProducer !== undefined) return;
 
-                const mediaDevice =
-                    window.localStorage.getItem("audioInputDevice");
+                    if (navigator.mediaDevices === undefined)
+                        throw new Error("No media devices.");
 
-                const mediaStream = await navigator.mediaDevices.getUserMedia({
-                    audio: mediaDevice ? { deviceId: mediaDevice } : true,
-                });
+                    const mediaDevice =
+                        window.localStorage.getItem("audioInputDevice");
 
-                await this.client?.startProduce(
-                    mediaStream.getAudioTracks()[0],
-                    "audio",
-                );
+                    const mediaStream =
+                        await navigator.mediaDevices.getUserMedia({
+                            audio: mediaDevice
+                                ? { deviceId: mediaDevice }
+                                : true,
+                        });
+
+                    await this.client.startProduce(
+                        mediaStream.getAudioTracks()[0],
+                        "audio",
+                    );
+                    break;
+                }
+                case "video":
+                    await this.client.startCamera();
+                    break;
+                case "screen":
+                    await this.client.startScreenShare();
+                    break;
             }
+        } catch (err) {
+            console.error("Failed to start producing:", err);
+            runInAction(() => {
+                this.error = err instanceof Error ? err.message : String(err);
+            });
         }
 
         this.syncState();
     }
 
     async stopProducing(type: ProduceType) {
-        await this.client?.stopProduce(type);
+        if (!this.client) return;
+
+        switch (type) {
+            case "audio":
+                await this.client.stopProduce("audio");
+                break;
+            case "video":
+                await this.client.stopCamera();
+                break;
+            case "screen":
+                await this.client.stopScreenShare();
+                break;
+        }
 
         this.syncState();
     }

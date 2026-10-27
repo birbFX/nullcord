@@ -83,7 +83,7 @@ impl VoiceClient {
             .with_metadata(
                 &serde_json::to_string(&user.clone().into(db, None).await).to_internal_error()?,
             )
-            .with_ttl(Duration::from_secs(10))
+            .with_ttl(Duration::from_secs(60))
             .with_grants(VideoGrants {
                 room_join: true,
                 can_publish: true,

@@ -335,7 +335,8 @@ export default class State {
         this.plugins.init();
 
         // Push authentication information forwards to client controller.
-        clientController.hydrate(this.auth);
+        // Wait for server configuration so the first session login includes it.
+        await clientController.hydrate(this.auth);
     }
 
     /**

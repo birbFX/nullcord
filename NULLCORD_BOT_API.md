@@ -218,6 +218,7 @@ Server → client packets use the same `type` tag. Important events:
 
 `Authenticated`, `Ready`, `Error`, `Logout`, `Pong`, `Bees`, `Bulk`,
 `Message`, `MessageUpdate`, `MessageAppend`, `MessageDelete`, `MessageReact`,
+`InteractionCreate`,
 `MessageUnreact`, `MessageRemoveReaction`, `BulkMessageDelete`,
 `ServerCreate`, `ServerUpdate`, `ServerDelete`, `ServerMemberUpdate`,
 `ServerMemberJoin`, `ServerMemberLeave`, `ServerRoleUpdate`,
@@ -237,13 +238,10 @@ through `on_event(event_type, payload)`.
 
 ## Components
 
-The current NullCord server has **no native message-component field or
-interaction event**. The Python compatibility layer in
-`bot/nullcord_compat/` can render Select/Button payloads and construct a
-`discord.Interaction` shim, but it needs a transport to deliver component
-interactions. Reaction-based help remains the native fallback in `bot.js`.
-Do not claim component delivery works until the NullCord API/client transport
-is implemented.
+NullCord now has native message components and an `InteractionCreate` gateway
+event. See **Native message components** at the end of this document for the
+current schema and route. The old reaction renderer is retained only as an
+explicit fallback (`NULLCORD_COMPONENT_MODE=reactions`).
 
 ## `nullcord.py` quick start
 
@@ -271,3 +269,180 @@ client.run()
 `Client` uses `aiohttp` for REST and WebSocket. `Embed`, model classes, and
 exceptions import without it; network/gateway calls raise a clear
 `RuntimeError` if `aiohttp` is missing.
+
+## Discord.py-compatible SDK
+
+`nullcord.py` now includes the Discord-shaped surface directly, and the
+repository also ships a `discord/` compatibility package:
+
+```python
+import discord
+from discord.ext import commands
+from discord import app_commands
+```
+
+`discord` re-exports the NullCord SDK so existing bot modules can keep
+`discord.Embed`, `discord.ui.View`, `discord.ui.Button`,
+`discord.ui.Select`, `discord.Interaction`, and
+`discord.ext.commands.Bot` imports.
+
+### Native embeds
+
+`discord.Embed` keeps the Discord API, but emits a **flat** NullCord
+`SendableEmbed`:
+
+```python
+embed = discord.Embed(title="Title", description="Body", colour=discord.Color.dark_teal())
+embed.add_field(name="Field", value="Value", inline=False)
+embed.set_footer(text="footer")
+await channel.send(embed=embed)
+```
+
+The wire payload never contains `"type": "Text"`. Fields, footer, author,
+timestamp, image URL, and thumbnail URL are folded into the native embed
+description as Markdown; a file ID set through `media` becomes the native
+`media` card. Descriptions longer than 2,000 characters are split into
+additional native embeds (up to 10), not flattened into raw message text.
+
+### Views, buttons, selects, interactions
+
+NullCord now stores and renders native `components` on messages. The SDK
+serializes `discord.ui.View` children directly:
+
+- `Button` becomes a native button with label, emoji, style, disabled, URL,
+  and row.
+- `Select` becomes a native dropdown with placeholder, options (label, value,
+  description, emoji, default), min/max, disabled, and row.
+- Selecting an option or pressing a button POSTs to the message interaction
+  route; the server emits `InteractionCreate` to the bot gateway.
+- The SDK constructs `discord.Interaction` with
+  `type == InteractionType.component`.
+- `interaction.response.edit_message(embed=..., view=self)`,
+  `interaction.edit_original_response(...)`, `.message`, `.user`, `.data`,
+  `.channel`, and `.guild` work.
+- `timeout=None` views remain registered for the life of the process;
+  timed views expire and unregister.
+- `on_interaction` receives every component interaction.
+
+The old reaction transport remains available only with
+`NULLCORD_COMPONENT_MODE=reactions`. The 25-option AxHelpView uses native
+components; it no longer needs reaction pagination.
+
+Modal classes are present, but `InteractionResponse.send_modal` raises
+`NotImplementedError` because NullCord has no native modal transport.
+
+### Commands
+
+`discord.ext.commands` implements prefix commands, groups, subcommands,
+aliases, checks, cooldowns, `Greedy`, `Optional`, converters, and
+keyword-only `reason`/`args` consumption. `Bot` verifies the token is a real
+bot before starting and uses `x-bot-token` only.
+
+## Bot verification badge (admin panel)
+
+The admin user page has a **Bots** section. Platform admins can press
+**Verify app** to set bot flag `1`; **Remove verification** clears it.
+Verification is written to both:
+
+- `revolt.bots.flags`
+- `revolt.users.bot.flags`
+
+The NullCord client renders a green checkmark next to verified bot usernames.
+The route is protected by the admin-panel session and
+`RBAC_PERMISSION_MODERATION_AGENT`.
+
+## Compatibility test command
+
+```bash
+cd /mnt/cll-storage/NullCord-legacy
+PYTHONPATH=/mnt/cll-storage/oracleturret/venv/lib/python3.14/site-packages \
+  python3 -m unittest test_nullcord -v
+```
+
+The suite covers token verification, Ready caching, gateway dispatch,
+duplicate/self-message suppression, status mapping, idempotency, 429 retry,
+blocked APIs, native embed folding/splitting, AxHelpView select/Home/Prev/Next,
+commands/groups/Greedy/Optional/keyword-only args, and mocked Autumn upload.
+
+## Native message components (dropdowns and buttons)
+
+NullCord now stores real components on messages. This is the preferred path
+for views; reactions remain only as an explicit fallback
+(`NULLCORD_COMPONENT_MODE=reactions`).
+
+Message send/edit accepts:
+
+```json
+{
+  "content": "Choose a category",
+  "embeds": [{"title": "Help", "description": "..."}],
+  "components": [
+    {
+      "type": "select",
+      "custom_id": "help:category",
+      "placeholder": "Browse a category...",
+      "min_values": 1,
+      "max_values": 1,
+      "row": 0,
+      "options": [
+        {
+          "label": "Core",
+          "value": "core",
+          "description": "Runtime, ping, prefix",
+          "emoji": "⚙️"
+        }
+      ]
+    },
+    {
+      "type": "button",
+      "custom_id": "help:home",
+      "label": "Home",
+      "emoji": "🏠",
+      "style": "primary",
+      "disabled": false,
+      "row": 1
+    }
+  ]
+}
+```
+
+Message responses include the same `components` array. The NullCord client
+renders selects as a real dropdown and buttons as styled controls. Button
+styles are `primary`, `secondary`, `success`, `danger`, and `link`; buttons
+support label, emoji, disabled, URL, and row. Selects support placeholder,
+options with label/value/description/emoji/default, min/max, disabled, and
+row.
+
+### Interaction route
+
+```http
+POST /channels/{channel_id}/messages/{message_id}/interactions
+x-bot-token: ...        # or user session token
+Content-Type: application/json
+
+{"custom_id":"help:category","component_type":"select","values":["core"]}
+```
+
+The server validates the component and select values, then emits
+`InteractionCreate` to the message author's bot gateway. The SDK constructs
+`discord.Interaction`, invokes the live view callback, and a callback can
+call `interaction.response.edit_message(embed=..., view=self)`.
+
+SDK usage:
+
+```python
+view = discord.ui.View(timeout=None)
+view.add_item(discord.ui.Select(
+    placeholder="Browse a category...",
+    options=[discord.SelectOption(label="Core", value="core", emoji="⚙️")],
+))
+view.add_item(discord.ui.Button(
+    label="Home", emoji="🏠", style=discord.ButtonStyle.primary,
+))
+
+await channel.send(embed=embed, view=view)
+```
+
+`Message.interact(custom_id, values=[...])` is also available for manual
+interaction calls. Components are sent directly; bots do not need to add
+reactions by default.

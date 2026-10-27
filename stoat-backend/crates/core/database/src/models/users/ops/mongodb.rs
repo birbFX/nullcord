@@ -1,4 +1,5 @@
 use ::mongodb::options::{Collation, CollationStrength, FindOneOptions, FindOptions};
+use bson::to_bson;
 use futures::StreamExt;
 use revolt_result::Result;
 
@@ -65,6 +66,21 @@ impl AbstractUsers for MongoDb {
             })
             .collect()
             .await)
+    }
+
+    /// Fetch users whose temporary suspension has expired
+    async fn fetch_users_due_for_unsuspension(&self) -> Result<Vec<User>> {
+        query!(
+            self,
+            find,
+            COL,
+            doc! {
+                "flags": { "$bitsAllSet": 1 },
+                "suspended_until": {
+                    "$lte": to_bson(&crate::iso8601_timestamp::Timestamp::now_utc()).unwrap()
+                }
+            }
+        )
     }
 
     /// Fetch all discriminators in use for a username

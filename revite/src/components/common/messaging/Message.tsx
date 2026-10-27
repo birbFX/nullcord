@@ -28,6 +28,7 @@ import { MessageReply } from "./attachments/MessageReply";
 import { Reactions } from "./attachments/Reactions";
 import { MessageOverlayBar } from "./bars/MessageOverlayBar";
 import Embed from "./embed/Embed";
+import MessageComponents from "./Components";
 import InviteList from "./embed/EmbedInvite";
 
 interface Props {
@@ -193,6 +194,9 @@ const Message = observer(
                         {message.embeds?.map((embed, index) => (
                             <Embed key={index} embed={embed} />
                         ))}
+                        {((message as unknown as { components?: unknown[] }).components?.length ?? 0) > 0 && (
+                            <MessageComponents message={message} />
+                        )}
                         <Reactions message={message} />
                         {(mouseHovering || reactionsOpen) &&
                             !replacement &&

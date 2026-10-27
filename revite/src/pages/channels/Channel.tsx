@@ -28,6 +28,7 @@ import { useClient } from "../../controllers/client/ClientController";
 import ChannelHeader from "./ChannelHeader";
 import { MessageArea } from "./messaging/MessageArea";
 import VoiceHeader from "./voice/VoiceHeader";
+import { voiceState } from "../../lib/vortex/VoiceState";
 
 const ChannelMain = styled.div.attrs({ "data-component": "channel" })`
     flex-grow: 1;
@@ -233,12 +234,23 @@ const TextChannel = observer(({ channel }: { channel: ChannelI }) => {
             <ChannelMain>
                 <ErrorBoundary section="renderer">
                     <ChannelContent>
-                        <VoiceHeader id={channel._id} />
-                        <NewMessages channel={channel} last_id={lastId} />
-                        <MessageArea channel={channel} last_id={lastId} />
-                        <TypingIndicator channel={channel} />
-                        <JumpToBottom channel={channel} />
-                        <MessageBox channel={channel} />
+                        {voiceState.roomId === channel._id ? (
+                            <VoiceHeader id={channel._id} />
+                        ) : (
+                            <>
+                                <NewMessages
+                                    channel={channel}
+                                    last_id={lastId}
+                                />
+                                <MessageArea
+                                    channel={channel}
+                                    last_id={lastId}
+                                />
+                                <TypingIndicator channel={channel} />
+                                <JumpToBottom channel={channel} />
+                                <MessageBox channel={channel} />
+                            </>
+                        )}
                     </ChannelContent>
                 </ErrorBoundary>
                 {!isTouchscreenDevice &&

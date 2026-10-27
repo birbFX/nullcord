@@ -62,7 +62,7 @@ export interface VoiceError {
     message: string;
 }
 
-export type ProduceType = "audio"; //| "video" | "saudio" | "svideo";
+export type ProduceType = "audio" | "video" | "screen";
 
 export interface AuthenticationResult {
     userId: string;
@@ -78,9 +78,9 @@ export interface Room {
 
 export interface VoiceUser {
     audio?: boolean;
-    //video?: boolean,
-    //saudio?: boolean,
-    //svideo?: boolean,
+    video?: boolean;
+    screen?: boolean;
+    speaking?: boolean;
 }
 
 export interface ConsumerList {

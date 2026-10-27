@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import path from "node:path";
+import { Document } from "mongodb";
 import Revolt from "revolt-nodejs-bindings";
 import { API } from "revolt.js";
 
@@ -51,6 +51,10 @@ export function revoltUserInfo(user: RevoltUser): RevoltUserInfo {
 
 const userCol = createCollectionFn<RevoltUser>("revolt", "users");
 const sessionCol = createCollectionFn<{ _id: string; user_id: string; ip?: string; last_seen?: string }>("revolt", "sessions");
+const accountCol = createCollectionFn<Document & { _id: string; disabled?: boolean }>(
+  "revolt",
+  "accounts",
+);
 const ipBanCol = createCollectionFn<IpBan>("revolt", "ip_bans");
 const IP_BAN_FILE =
   process.env.NULLCORD_IP_BAN_FILE ||
@@ -77,11 +81,14 @@ export async function banUser(
   message: string,
   until: Date | null,
 ) {
+  const existing = await userCol().findOne({ _id: userId });
+  const flags = Number((existing as { flags?: number } | null)?.flags ?? 0);
   await userCol().updateOne(
     { _id: userId },
     {
       $set: {
-        flags: 4,
+        // Clear suspension, set banned, preserve unrelated flags.
+        flags: (flags & ~1) | 4,
         ban_message: message || "Your account has been banned.",
         ...(until ? { banned_until: until.getTime() } : {}),
       },
@@ -95,9 +102,14 @@ export async function banUser(
  * Remove a platform ban and re-enable login.
  */
 export async function unbanUser(userId: string) {
+  const existing = await userCol().findOne({ _id: userId });
+  const flags = Number((existing as { flags?: number } | null)?.flags ?? 0);
   await userCol().updateOne(
     { _id: userId },
-    { $set: { flags: 0 }, $unset: { ban_message: "", banned_until: "" } },
+    {
+      $set: { flags: flags & ~4 },
+      $unset: { ban_message: "", banned_until: "" },
+    },
   );
 }
 
@@ -120,6 +132,69 @@ export async function suspendUser(
     duration,
     reasons.join("|"),
   );
+}
+
+/**
+ * Remove a suspension and re-enable the account.
+ */
+export async function unsuspendUser(userId: string) {
+  await userCol().updateOne(
+    { _id: userId },
+    {
+      $set: { flags: 0 },
+      $unset: {
+        suspended_until: "",
+        ban_message: "",
+        banned_until: "",
+      },
+    } as never,
+  );
+  await accountCol().updateOne(
+    { _id: userId },
+    { $set: { disabled: false } } as never,
+  );
+  // Sessions were revoked by the suspension, so delete leftovers as well.
+  await sessionCol().deleteMany({ user_id: userId });
+}
+
+const USERNAME_RE = /^[\p{L}\d_.-]+(?: [\p{L}\d_.-]+)*$/u;
+
+export async function setUsername(userId: string, username: string) {
+  const value = username.trim();
+  if (value.length < 2 || value.length > 35)
+    throw new Error("Username must be between 2 and 35 characters");
+  if (!USERNAME_RE.test(value))
+    throw new Error(
+      "Username may only contain letters, numbers, spaces, dots, dashes and underscores. Spaces cannot be repeated or at the start/end.",
+    );
+  await userCol().updateOne(
+    { _id: userId },
+    { $set: { username: value } } as never,
+  );
+}
+
+export async function setDisplayName(userId: string, displayName: string) {
+  const value = displayName.trim();
+  if (value.length > 32) throw new Error("Display name is too long");
+  if (/[\u200B\n\r]/.test(value))
+    throw new Error("Display name cannot contain newlines or zero-width spaces");
+  await userCol().updateOne(
+    { _id: userId },
+    value
+      ? ({ $set: { display_name: value } } as never)
+      : ({ $unset: { display_name: "" } } as never),
+  );
+}
+
+export async function setUserPrivileged(userId: string, privileged: boolean) {
+  await userCol().updateOne(
+    { _id: userId },
+    { $set: { privileged } } as never,
+  );
+}
+
+export async function forceLogout(userId: string) {
+  await sessionCol().deleteMany({ user_id: userId });
 }
 
 export async function fetchUserIPs(userId: string): Promise<UserIP[]> {

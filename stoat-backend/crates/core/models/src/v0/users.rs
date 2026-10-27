@@ -11,7 +11,8 @@ use validator::Validate;
 ///
 /// Block zero width space
 /// Block lookalike characters
-pub static RE_USERNAME: Lazy<Regex> = Lazy::new(|| Regex::new(r"^(\p{L}|[\d_.-])+$").unwrap());
+pub static RE_USERNAME: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^[\p{L}\d_.-]+(?: [\p{L}\d_.-]+)*$").unwrap());
 
 /// Regex for valid display names
 ///
@@ -278,6 +279,9 @@ auto_derived!(
         /// Id of the owner of this bot
         #[cfg_attr(feature = "serde", serde(rename = "owner"))]
         pub owner_id: String,
+        /// Bitfield of bot flags (1 = verified, 2 = official)
+        #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+        pub flags: Option<i32>,
     }
 
     /// User lookup information

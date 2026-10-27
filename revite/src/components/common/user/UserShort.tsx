@@ -34,6 +34,23 @@ const BotBadge = styled.div`
     border-radius: calc(var(--border-radius) / 2);
 `;
 
+const VerifiedBotBadge = styled.span`
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.25em;
+    height: 1.25em;
+    margin-inline-start: 4px;
+    border-radius: 50%;
+    background: #3ba55c;
+    color: #fff;
+    font-size: 0.68em;
+    font-weight: 800;
+    line-height: 1;
+    user-select: none;
+`;
+
 type UsernameProps = Omit<
     JSX.HTMLAttributes<HTMLElement>,
     "children" | "as"
@@ -176,6 +193,7 @@ export const Username = observer(
         );
 
         if (user?.bot) {
+            const verified = Boolean(((user.bot as unknown as { flags?: number }).flags ?? 0) & 1);
             return (
                 <>
                     {el}
@@ -186,6 +204,9 @@ export const Username = observer(
                             <Text id="app.main.channel.bot" />
                         )}
                     </BotBadge>
+                    {verified && (
+                        <VerifiedBotBadge title="Verified app">✓</VerifiedBotBadge>
+                    )}
                 </>
             );
         }

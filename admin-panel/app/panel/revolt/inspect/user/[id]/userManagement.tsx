@@ -4,8 +4,8 @@ import { consumeChangelog } from "@/components/core/admin/changelogs/helpers";
 import { Strike } from "@/lib/database/revolt/safety_strikes";
 import { useMutation } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import relativeTime from "dayjs";
-import { useState } from "react";
+import relativeTime from "dayjs/plugin/relativeTime";
+import { Fragment, useState } from "react";
 import { decodeTime } from "ulid";
 
 import {
@@ -20,7 +20,7 @@ import {
   TextField,
 } from "@radix-ui/themes";
 
-import { strikeUser, unbanUserAction } from "./actions";
+import { strikeUser, unbanUserAction, unsuspendUserAction } from "./actions";
 
 export const USER_FLAG_SUSPENDED = 1;
 export const USER_FLAG_DELETED = 2;
@@ -47,14 +47,17 @@ export function UserStrikeActions({
   const [days, setDays] = useState<"7" | "14" | "indefinite">("7");
   const [banMessage, setBanMessage] = useState("");
   const [banDuration, setBanDuration] = useState<
-    "permanent" | "7" | "14" | "30"
+    "permanent" | "7" | "14" | "30" | "custom"
   >("permanent");
+  const [customBanValue, setCustomBanValue] = useState("1");
+  const [customBanUnit, setCustomBanUnit] = useState<
+    "minutes" | "hours" | "days" | "weeks" | "months"
+  >("days");
 
   const reasonEditor = () =>
     reason.map((value, idx) => (
-      <>
+      <Fragment key={idx}>
         <TextField.Root
-          key={idx}
           value={value}
           onChange={(e) =>
             setReason((r) => r.map((v, i) => (i === idx ? e.target.value : v)))
@@ -73,7 +76,7 @@ export function UserStrikeActions({
           }
         />
         <br />
-      </>
+      </Fragment>
     ));
 
   const mutation = useMutation({
@@ -90,6 +93,8 @@ export function UserStrikeActions({
         days,
         banMessage,
         banDuration,
+        customBanValue,
+        customBanUnit,
       );
 
       consumeChangelog(changelog);
@@ -110,6 +115,9 @@ export function UserStrikeActions({
 
   const unsuspend = useMutation({
     mutationFn: async () => {
+      await unsuspendUserAction(id);
+    },
+    onSuccess: () => {
       setFlags(0);
     },
   });
@@ -301,8 +309,36 @@ export function UserStrikeActions({
                 <Select.Item value="7">7 days</Select.Item>
                 <Select.Item value="14">14 days</Select.Item>
                 <Select.Item value="30">30 days</Select.Item>
+                <Select.Item value="custom">Custom time</Select.Item>
               </Select.Content>
             </Select.Root>
+            {banDuration === "custom" && (
+              <Flex gap="2" mt="2">
+                <TextField.Root
+                  type="number"
+                  min="1"
+                  value={customBanValue}
+                  onChange={(e) => setCustomBanValue(e.currentTarget.value)}
+                  style={{ width: "90px" }}
+                  aria-label="Custom ban duration"
+                />
+                <Select.Root
+                  value={customBanUnit}
+                  onValueChange={(value) =>
+                    setCustomBanUnit(value as typeof customBanUnit)
+                  }
+                >
+                  <Select.Trigger />
+                  <Select.Content>
+                    <Select.Item value="minutes">Minutes</Select.Item>
+                    <Select.Item value="hours">Hours</Select.Item>
+                    <Select.Item value="days">Days</Select.Item>
+                    <Select.Item value="weeks">Weeks</Select.Item>
+                    <Select.Item value="months">Months</Select.Item>
+                  </Select.Content>
+                </Select.Root>
+              </Flex>
+            )}
             <br />
             <Text color="amber">
               The account will receive 403 responses with this message and

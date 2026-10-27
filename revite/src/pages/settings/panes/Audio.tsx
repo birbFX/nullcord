@@ -93,12 +93,6 @@ export function Audio() {
     return (
         <>
             <div className={styles.audio}>
-                <Tip palette="warning">
-                    <span>
-                        Legacy voice is no longer supported.
-                    </span>
-                </Tip>
-
                 {!permission && (
                     <Tip palette="error">
                         <Text id="app.settings.pages.audio.tip_grant_permission" />
@@ -227,6 +221,39 @@ export function Audio() {
                         </div>*/}
                     </div>
                 </div>
+                <div className={styles.audioRow}>
+                    <div className={styles.select}>
+                        <h3>Camera</h3>
+                        <div className={styles.audioBox}>
+                            <ComboBox
+                                value={
+                                    window.localStorage.getItem(
+                                        "videoInputDevice",
+                                    ) ?? 0
+                                }
+                                onChange={(e) =>
+                                    changeVideoDevice(e.currentTarget.value)
+                                }>
+                                {mediaDevices
+                                    ?.filter(
+                                        (device) =>
+                                            device.kind === "videoinput",
+                                    )
+                                    .map((device) => {
+                                        return (
+                                            <option
+                                                value={device.deviceId}
+                                                key={device.deviceId}>
+                                                {device.label || (
+                                                    <Text id="app.settings.pages.audio.device_label_NA" />
+                                                )}
+                                            </option>
+                                        );
+                                    })}
+                            </ComboBox>
+                        </div>
+                    </div>
+                </div>
             </div>
             <hr />
             <div className={styles.opus}>
@@ -240,11 +267,24 @@ export function Audio() {
 function changeAudioDevice(deviceId: string, deviceType: string) {
     if (deviceType === "input") {
         window.localStorage.setItem("audioInputDevice", deviceId);
+        void voiceState.switchDevice("audioinput", deviceId);
         if (voiceState.isProducing("audio")) {
-            voiceState.stopProducing("audio");
-            voiceState.startProducing("audio");
+            void voiceState.stopProducing("audio").then(() =>
+                voiceState.startProducing("audio"),
+            );
         }
     } else if (deviceType === "output") {
         window.localStorage.setItem("audioOutputDevice", deviceId);
+        void voiceState.switchDevice("audiooutput", deviceId);
+    }
+}
+
+function changeVideoDevice(deviceId: string) {
+    window.localStorage.setItem("videoInputDevice", deviceId);
+    void voiceState.switchDevice("videoinput", deviceId);
+    if (voiceState.isProducing("video")) {
+        void voiceState.stopProducing("video").then(() =>
+            voiceState.startProducing("video"),
+        );
     }
 }

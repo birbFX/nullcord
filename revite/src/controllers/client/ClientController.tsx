@@ -22,6 +22,11 @@ class ClientController {
     private apiClient: Client;
 
     /**
+     * Resolves once the anonymous client has fetched server configuration.
+     */
+    private ready: Promise<void>;
+
+    /**
      * Server configuration
      */
     private configuration: API.RevoltConfig | null;
@@ -37,20 +42,30 @@ class ClientController {
     private current: Nullable<string>;
 
     constructor() {
-        this.apiClient = new Client({
-            apiURL: import.meta.env.VITE_API_URL,
-        });
-
-        // ! FIXME: loop until success infinitely
-        this.apiClient
-            .fetchConfiguration()
-            .then(() => (this.configuration = this.apiClient.configuration!));
-
         this.configuration = null;
         this.sessions = new ObservableMap();
         this.current = null;
 
-        makeAutoObservable(this);
+        this.apiClient = new Client({
+            apiURL: import.meta.env.VITE_API_URL,
+        });
+
+        // Hydrating a saved session before this resolves meant the session
+        // lifecycle received a null configuration and never sent the login
+        // requests. Keep the promise so hydrate() can wait for it.
+        this.ready = this.apiClient
+            .fetchConfiguration()
+            .then(() => {
+                this.configuration = this.apiClient.configuration!;
+            })
+            .catch((error) => {
+                console.error("Failed to fetch server configuration:", error);
+            });
+
+        makeAutoObservable(this, {
+            apiClient: false,
+            ready: false,
+        });
 
         this.login = this.login.bind(this);
         this.logoutCurrent = this.logoutCurrent.bind(this);
@@ -69,7 +84,9 @@ class ClientController {
      * Hydrate sessions and start client lifecycles.
      * @param auth Authentication store
      */
-    @action hydrate(auth: Auth) {
+    @action async hydrate(auth: Auth) {
+        await this.ready;
+
         for (const entry of auth.getAccounts()) {
             this.addSession(entry, "existing");
         }

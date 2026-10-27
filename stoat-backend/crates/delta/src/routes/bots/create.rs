@@ -18,7 +18,9 @@ pub async fn create_bot(
     let info = info.into_inner();
     info.validate().map_err(|error| {
         create_error!(FailedValidation {
-            error: error.to_string()
+            error: format!(
+                "Bot username must be 2-32 characters and use only letters, numbers, dots, dashes and underscores. ({error})"
+            )
         })
     })?;
 

@@ -6,16 +6,20 @@ import { usePathname, useSearchParams } from "next/navigation";
 
 import {
   BackpackIcon,
+  ChatBubbleIcon,
+  CodeIcon,
   ExclamationTriangleIcon,
+  FileTextIcon,
+  GearIcon,
   GlobeIcon,
   GroupIcon,
   HomeIcon,
-  IdCardIcon,
   InfoCircledIcon,
   Link1Icon,
   MagnifyingGlassIcon,
   PersonIcon,
   ReaderIcon,
+  TableIcon,
 } from "@radix-ui/react-icons";
 import { Badge, Button, Flex, Heading, Text } from "@radix-ui/themes";
 
@@ -42,9 +46,9 @@ export function Sidebar({
         <Image
           src="/wide.svg"
           width={240}
-          height={32}
-          className="m-4"
-          alt="Logo"
+          height={40}
+          className="m-4 text-white dark:invert-0"
+          alt="NullCord"
         />
         <AuthorisedUserCard />
 
@@ -85,6 +89,17 @@ export function Sidebar({
           </Link>
         </Button>
         <Button
+          variant={
+            pathname === "/panel/announcements" ? "solid" : "surface"
+          }
+          className="!justify-start"
+          asChild
+        >
+          <Link href="/panel/announcements">
+            <ChatBubbleIcon /> Announcements
+          </Link>
+        </Button>
+        <Button
           variant={pathname.startsWith("/panel/revolt/inspect") ? "solid" : "surface"}
           className="!justify-start"
           asChild
@@ -93,15 +108,54 @@ export function Sidebar({
             <MagnifyingGlassIcon /> Search &amp; inspect
           </Link>
         </Button>
-        {/* <Button
-          variant={pathname === "/panel/profile" ? "solid" : "surface"}
+        <Heading size="2" color="gray" className="pt-4">
+          Developer
+        </Heading>
+        <Button
+          variant={pathname === "/panel/dev" ? "solid" : "surface"}
           className="!justify-start"
           asChild
         >
-          <Link href="/panel">
-            <IdCardIcon /> My Profile
+          <Link href="/panel/dev">
+            <GearIcon /> System status
           </Link>
-        </Button> -- WIP */}
+        </Button>
+        <Button
+          variant={pathname === "/panel/dev/database" ? "solid" : "surface"}
+          className="!justify-start"
+          asChild
+        >
+          <Link href="/panel/dev/database">
+            <TableIcon /> Database
+          </Link>
+        </Button>
+        <Button
+          variant={pathname === "/panel/dev/bots" ? "solid" : "surface"}
+          className="!justify-start"
+          asChild
+        >
+          <Link href="/panel/dev/bots">
+            <CodeIcon /> Bot management
+          </Link>
+        </Button>
+        <Button
+          variant={pathname === "/panel/dev/ip-bans" ? "solid" : "surface"}
+          className="!justify-start"
+          asChild
+        >
+          <Link href="/panel/dev/ip-bans">
+            <GlobeIcon /> IP bans
+          </Link>
+        </Button>
+        <Button
+          variant={pathname === "/panel/dev/logs" ? "solid" : "surface"}
+          className="!justify-start"
+          asChild
+        >
+          <Link href="/panel/dev/logs">
+            <FileTextIcon /> Service logs
+          </Link>
+        </Button>
 
         {modules.hr && (
           <>

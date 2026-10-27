@@ -23,9 +23,15 @@ pub async fn create_invite(
     user: User,
     reason: AuditLogReason,
     target: Reference<'_>,
-    data: Json<v0::DataCreateInvite>,
+    data: Option<Json<v0::DataCreateInvite>>,
 ) -> Result<Json<v0::Invite>> {
-    let data = data.into_inner();
+    let data = data
+        .map(|data| data.into_inner())
+        .unwrap_or(v0::DataCreateInvite {
+            max_uses: None,
+            expires: None,
+            code: None,
+        });
 
     if user.bot.is_some() {
         return Err(create_error!(IsBot));

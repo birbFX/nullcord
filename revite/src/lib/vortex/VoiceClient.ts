@@ -1,22 +1,17 @@
 import EventEmitter from "eventemitter3";
-import * as mediasoupClient from "mediasoup-client";
-import { types } from "mediasoup-client";
-
-import { Device, Producer, Transport } from "mediasoup-client/lib/types";
+import {
+    ConnectionState,
+    LocalTrackPublication,
+    Participant,
+    Room,
+    RoomEvent,
+    Track,
+    VideoPresets,
+} from "livekit-client";
 
 import { useApplicationState } from "../../mobx/State";
 
-import Signaling from "./Signaling";
-import {
-    ProduceType,
-    WSEventType,
-    VoiceError,
-    VoiceUser,
-    ConsumerList,
-    WSErrorCode,
-} from "./Types";
-
-const UnsupportedError = types.UnsupportedError;
+import { ProduceType, VoiceError, VoiceUser } from "./Types";
 
 interface VoiceEvents {
     ready: () => void;
@@ -33,308 +28,446 @@ interface VoiceEvents {
     userStopProduce: (userId: string, type: ProduceType) => void;
 }
 
+type VideoSource = "camera" | "screen";
+
+function sourceType(source: Track.Source): ProduceType | undefined {
+    switch (source) {
+        case Track.Source.Microphone:
+        case Track.Source.ScreenShareAudio:
+            return "audio";
+        case Track.Source.Camera:
+            return "video";
+        case Track.Source.ScreenShare:
+            return "screen";
+        default:
+            return undefined;
+    }
+}
+
+/**
+ * LiveKit voice/video client.
+ *
+ * The old client spoke the mediasoup-based Vortex protocol. NullCord's
+ * backend is Stoat, which uses LiveKit, so this class wraps the official
+ * `livekit-client` SDK while keeping the small event surface the rest of the
+ * app already consumes.
+ */
 export default class VoiceClient extends EventEmitter<VoiceEvents> {
     private _supported: boolean;
+    private address?: string;
+    private attachedAudio = new Map<string, HTMLMediaElement>();
 
-    device?: Device;
-    signaling: Signaling;
+    room: Room;
 
-    sendTransport?: Transport;
-    recvTransport?: Transport;
-
-    isDeaf?: boolean;
-
+    isDeaf = false;
     userId?: string;
     roomId?: string;
-    participants: Map<string, VoiceUser>;
-    consumers: Map<string, ConsumerList>;
 
-    audioProducer?: Producer;
+    participants = new Map<string, VoiceUser>();
+
+    audioProducer?: LocalTrackPublication;
+    cameraPublication?: LocalTrackPublication;
+    screenPublication?: LocalTrackPublication;
+
     constructor() {
         super();
-        this._supported = mediasoupClient.detectDevice() !== undefined;
-        this.signaling = new Signaling();
 
-        this.participants = new Map();
-        this.consumers = new Map();
+        this._supported =
+            typeof window !== "undefined" &&
+            typeof window.RTCPeerConnection !== "undefined" &&
+            !!navigator.mediaDevices?.getUserMedia;
 
-        this.isDeaf = false;
+        const audioDevice = window.localStorage.getItem("audioInputDevice");
+        const videoDevice = window.localStorage.getItem("videoInputDevice");
 
-        const state = useApplicationState();
-
-        this.signaling.on(
-            "data",
-            (json) => {
-                const data = json.data;
-                switch (json.type) {
-                    case WSEventType.UserJoined: {
-                        this.participants.set(data.id, {});
-                        state.settings.sounds.playSound("call_join");
-                        this.emit("userJoined", data.id);
-                        break;
-                    }
-                    case WSEventType.UserLeft: {
-                        this.participants.delete(data.id);
-                        state.settings.sounds.playSound("call_leave");
-                        this.emit("userLeft", data.id);
-
-                        if (this.recvTransport) this.stopConsume(data.id);
-                        break;
-                    }
-                    case WSEventType.UserStartProduce: {
-                        const user = this.participants.get(data.id);
-                        if (user === undefined) return;
-                        switch (data.type) {
-                            case "audio":
-                                user.audio = true;
-                                break;
-                            default:
-                                throw new Error(
-                                    `Invalid produce type ${data.type}`,
-                                );
-                        }
-
-                        if (this.recvTransport)
-                            this.startConsume(data.id, data.type);
-                        this.emit("userStartProduce", data.id, data.type);
-                        break;
-                    }
-                    case WSEventType.UserStopProduce: {
-                        const user = this.participants.get(data.id);
-                        if (user === undefined) return;
-                        switch (data.type) {
-                            case "audio":
-                                user.audio = false;
-                                break;
-                            default:
-                                throw new Error(
-                                    `Invalid produce type ${data.type}`,
-                                );
-                        }
-
-                        if (this.recvTransport)
-                            this.stopConsume(data.id, data.type);
-                        this.emit("userStopProduce", data.id, data.type);
-                        break;
-                    }
-                }
+        this.room = new Room({
+            adaptiveStream: true,
+            dynacast: true,
+            audioCaptureDefaults: {
+                ...(audioDevice ? { deviceId: audioDevice } : {}),
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
             },
-            this,
-        );
-
-        this.signaling.on(
-            "error",
-            () => {
-                this.emit("error", new Error("Signaling error"));
+            videoCaptureDefaults: {
+                ...(videoDevice ? { deviceId: videoDevice } : {}),
+                resolution: VideoPresets.h720.resolution,
             },
-            this,
-        );
+        });
 
-        this.signaling.on(
-            "close",
-            (error) => {
-                this.disconnect(
-                    {
-                        error: error.code,
-                        message: error.reason,
-                    },
-                    true,
+        this.room
+            .on(RoomEvent.ParticipantConnected, (participant) => {
+                this.sync();
+                useApplicationState().settings.sounds.playSound("call_join");
+                this.emit("userJoined", participant.identity);
+            })
+            .on(RoomEvent.ParticipantDisconnected, (participant) => {
+                this.detachParticipantAudio(participant.identity);
+                this.sync();
+                useApplicationState().settings.sounds.playSound("call_leave");
+                this.emit("userLeft", participant.identity);
+            })
+            .on(
+                RoomEvent.TrackSubscribed,
+                (track, publication, participant) => {
+                    if (track.kind === Track.Kind.Audio) {
+                        this.attachAudio(track, publication.trackSid, participant);
+                    }
+
+                    this.sync();
+
+                    const type = sourceType(publication.source);
+                    if (type)
+                        this.emit("userStartProduce", participant.identity, type);
+                },
+            )
+            .on(
+                RoomEvent.TrackUnsubscribed,
+                (track, publication, participant) => {
+                    if (track.kind === Track.Kind.Audio) {
+                        this.detachAudio(
+                            audioKey(participant.identity, publication.trackSid),
+                        );
+                    }
+
+                    this.sync();
+
+                    const type = sourceType(publication.source);
+                    if (type)
+                        this.emit("userStopProduce", participant.identity, type);
+                },
+            )
+            .on(RoomEvent.TrackMuted, () => this.sync())
+            .on(RoomEvent.TrackUnmuted, () => this.sync())
+            .on(RoomEvent.LocalTrackPublished, (publication) => {
+                this.trackLocalPublication(publication);
+                this.sync();
+                const type = sourceType(publication.source);
+                if (type) this.emit("startProduce", type);
+            })
+            .on(RoomEvent.LocalTrackUnpublished, (publication) => {
+                this.trackLocalPublication(publication, true);
+                this.sync();
+                const type = sourceType(publication.source);
+                if (type) this.emit("stopProduce", type);
+            })
+            .on(RoomEvent.ActiveSpeakersChanged, () => this.sync())
+            .on(RoomEvent.Disconnected, () => {
+                if (this.roomId) this.disconnect(undefined, true);
+            })
+            .on(RoomEvent.TrackSubscriptionFailed, (_sid, participant) => {
+                console.warn(
+                    `Could not subscribe to ${participant?.identity ?? "unknown"}'s track`,
                 );
-            },
-            this,
-        );
+            })
+            .on(RoomEvent.MediaDevicesError, (error) => {
+                this.emit("error", error);
+            });
+    }
+
+    private trackLocalPublication(
+        publication: LocalTrackPublication,
+        removed = false,
+    ) {
+        switch (publication.source) {
+            case Track.Source.Microphone:
+                this.audioProducer = removed ? undefined : publication;
+                break;
+            case Track.Source.Camera:
+                this.cameraPublication = removed ? undefined : publication;
+                break;
+            case Track.Source.ScreenShare:
+                this.screenPublication = removed ? undefined : publication;
+                break;
+        }
+    }
+
+    private attachAudio(
+        track: Track,
+        sid: string,
+        participant: Participant,
+    ) {
+        const key = audioKey(participant.identity, sid);
+        if (this.attachedAudio.has(key)) return;
+
+        const element = track.attach() as HTMLMediaElement;
+        element.autoplay = true;
+        element.style.display = "none";
+        element.muted = this.isDeaf;
+        document.body.appendChild(element);
+        this.attachedAudio.set(key, element);
+    }
+
+    private detachAudio(key: string) {
+        const element = this.attachedAudio.get(key);
+        if (!element) return;
+        element.pause();
+        element.srcObject = null;
+        element.remove();
+        this.attachedAudio.delete(key);
+    }
+
+    private detachParticipantAudio(identity: string) {
+        for (const key of [...this.attachedAudio.keys()]) {
+            if (key.startsWith(`${identity}:`)) this.detachAudio(key);
+        }
+    }
+
+    private detachAllAudio() {
+        for (const key of [...this.attachedAudio.keys()]) this.detachAudio(key);
+    }
+
+    private stateFor(participant: Participant): VoiceUser {
+        let audio = false;
+        let video = false;
+        let screen = false;
+
+        for (const publication of participant.getTrackPublications()) {
+            if (publication.isMuted || !publication.track) continue;
+            switch (publication.source) {
+                case Track.Source.Microphone:
+                case Track.Source.ScreenShareAudio:
+                    audio = true;
+                    break;
+                case Track.Source.Camera:
+                    video = true;
+                    break;
+                case Track.Source.ScreenShare:
+                    screen = true;
+                    break;
+            }
+        }
+
+        return {
+            audio,
+            video,
+            screen,
+            speaking: participant.isSpeaking,
+        };
+    }
+
+    private sync() {
+        const participants = new Map<string, VoiceUser>();
+        const local = this.room.localParticipant;
+
+        if (local?.identity) {
+            participants.set(local.identity, this.stateFor(local));
+        }
+
+        this.room.remoteParticipants.forEach((participant) => {
+            participants.set(participant.identity, this.stateFor(participant));
+        });
+
+        this.participants = participants;
     }
 
     supported() {
         return this._supported;
     }
-    throwIfUnsupported() {
-        if (!this._supported) throw new UnsupportedError("RTC not supported");
-    }
 
-    connect(address: string, roomId: string) {
-        this.throwIfUnsupported();
-        this.device = new Device();
+    async connect(address: string, roomId: string) {
+        this.address = address.replace(/^http/, "ws");
         this.roomId = roomId;
-        return this.signaling.connect(address);
     }
 
-    disconnect(error?: VoiceError, ignoreDisconnected?: boolean) {
-        if (!this.signaling.connected() && !ignoreDisconnected) return;
-        this.signaling.disconnect();
+    async authenticate(token: string) {
+        if (!this.address) throw new ReferenceError("Voice client is not configured");
+        if (!this.roomId) throw new ReferenceError("Voice client has no room");
+
+        await this.room.connect(this.address, token, {
+            autoSubscribe: true,
+        });
+
+        this.userId = this.room.localParticipant.identity;
+
+        try {
+            await this.room.startAudio();
+        } catch {
+            // Autoplay can still be blocked on strict browsers. The call UI
+            // calls startAudio again from a user gesture when needed.
+        }
+
+        this.sync();
+    }
+
+    async initializeTransports() {
+        this.emit("ready");
+    }
+
+    disconnect(error?: VoiceError, ignoreDisconnected = false) {
+        if (
+            !ignoreDisconnected &&
+            this.room.state === ConnectionState.Disconnected
+        )
+            return;
+
+        this.detachAllAudio();
+        void this.room.disconnect();
+
         this.participants = new Map();
-        this.consumers = new Map();
         this.userId = undefined;
         this.roomId = undefined;
 
         this.audioProducer = undefined;
-
-        if (this.sendTransport) this.sendTransport.close();
-        if (this.recvTransport) this.recvTransport.close();
-        this.sendTransport = undefined;
-        this.recvTransport = undefined;
+        this.cameraPublication = undefined;
+        this.screenPublication = undefined;
 
         this.emit("close", error);
     }
 
-    async authenticate(token: string) {
-        this.throwIfUnsupported();
-        if (this.device === undefined || this.roomId === undefined)
-            throw new ReferenceError("Voice Client is in an invalid state");
-        const result = await this.signaling.authenticate(token, this.roomId);
-        const [room] = await Promise.all([
-            this.signaling.roomInfo(),
-            this.device.load({ routerRtpCapabilities: result.rtpCapabilities }),
-        ]);
-
-        this.userId = result.userId;
-        this.participants = room.users;
-    }
-
-    async initializeTransports() {
-        this.throwIfUnsupported();
-        if (this.device === undefined)
-            throw new ReferenceError("Voice Client is in an invalid state");
-        const initData = await this.signaling.initializeTransports(
-            this.device.rtpCapabilities,
-        );
-
-        this.sendTransport = this.device.createSendTransport(
-            initData.sendTransport,
-        );
-        this.recvTransport = this.device.createRecvTransport(
-            initData.recvTransport,
-        );
-
-        const connectTransport = (transport: Transport) => {
-            transport.on("connect", ({ dtlsParameters }, callback, errback) => {
-                this.signaling
-                    .connectTransport(transport.id, dtlsParameters)
-                    .then(callback)
-                    .catch(errback);
-            });
-        };
-
-        connectTransport(this.sendTransport);
-        connectTransport(this.recvTransport);
-
-        this.sendTransport.on("produce", (parameters, callback, errback) => {
-            const type = parameters.appData.type;
-            if (
-                parameters.kind === "audio" &&
-                type !== "audio" &&
-                type !== "saudio"
-            )
-                return errback();
-            if (
-                parameters.kind === "video" &&
-                type !== "video" &&
-                type !== "svideo"
-            )
-                return errback();
-            this.signaling
-                .startProduce(type, parameters.rtpParameters)
-                .then((id) => callback({ id }))
-                .catch(errback);
+    setDeafened(deaf: boolean) {
+        this.isDeaf = deaf;
+        this.attachedAudio.forEach((element) => {
+            element.muted = deaf;
         });
 
-        this.emit("ready");
-        for (const user of this.participants) {
-            if (user[1].audio && user[0] !== this.userId)
-                this.startConsume(user[0], "audio");
-        }
-    }
+        this.room.remoteParticipants.forEach((participant) => {
+            participant.getTrackPublications().forEach((publication) => {
+                const track = publication.audioTrack;
+                if (track) track.setVolume(deaf ? 0 : 1);
+            });
+        });
 
-    private async startConsume(userId: string, type: ProduceType) {
-        if (this.recvTransport === undefined)
-            throw new Error("Receive transport undefined");
-        const consumers = this.consumers.get(userId) || {};
-        const consumerParams = await this.signaling.startConsume(userId, type);
-        const consumer = await this.recvTransport.consume(consumerParams);
-        switch (type) {
-            case "audio":
-                consumers.audio = consumer;
-        }
-
-        const mediaStream = new MediaStream([consumer.track]);
-        const audio = new Audio();
-        audio.srcObject = mediaStream;
-        await this.signaling.setConsumerPause(consumer.id, false);
-        audio.play();
-        this.consumers.set(userId, consumers);
-    }
-
-    private async stopConsume(userId: string, type?: ProduceType) {
-        const consumers = this.consumers.get(userId);
-        if (consumers === undefined) return;
-        if (type === undefined) {
-            if (consumers.audio !== undefined) consumers.audio.close();
-            this.consumers.delete(userId);
-        } else {
-            switch (type) {
-                case "audio": {
-                    if (consumers.audio !== undefined) {
-                        consumers.audio.close();
-                        this.signaling.stopConsume(consumers.audio.id);
-                    }
-                    consumers.audio = undefined;
-                    break;
-                }
-            }
-
-            this.consumers.set(userId, consumers);
-        }
+        this.sync();
     }
 
     async startProduce(track: MediaStreamTrack, type: ProduceType) {
-        if (this.sendTransport === undefined)
-            throw new Error("Send transport undefined");
-        const producer = await this.sendTransport.produce({
-            track,
-            appData: { type },
-        });
-
         switch (type) {
-            case "audio":
-                this.audioProducer = producer;
+            case "audio": {
+                if (this.audioProducer) return;
+                this.audioProducer =
+                    await this.room.localParticipant.publishTrack(track, {
+                        source: Track.Source.Microphone,
+                    });
+                break;
+            }
+            case "video":
+                await this.startCamera();
+                break;
+            case "screen":
+                await this.startScreenShare();
                 break;
         }
 
-        const participant = this.participants.get(this.userId || "");
-        if (participant !== undefined) {
-            participant[type] = true;
-            this.participants.set(this.userId || "", participant);
-        }
-
+        this.sync();
         this.emit("startProduce", type);
     }
 
     async stopProduce(type: ProduceType) {
-        let producer;
         switch (type) {
-            case "audio":
-                producer = this.audioProducer;
+            case "audio": {
+                await this.room.localParticipant
+                    .setMicrophoneEnabled(false)
+                    .catch(() => undefined);
                 this.audioProducer = undefined;
                 break;
+            }
+            case "video":
+                await this.stopCamera();
+                return;
+            case "screen":
+                await this.stopScreenShare();
+                return;
         }
 
-        if (producer !== undefined) {
-            producer.close();
-            this.emit("stopProduce", type);
-        }
+        this.sync();
+        this.emit("stopProduce", type);
+    }
 
-        const participant = this.participants.get(this.userId || "");
-        if (participant !== undefined) {
-            participant[type] = false;
-            this.participants.set(this.userId || "", participant);
-        }
-
+    async startCamera() {
         try {
-            await this.signaling.stopProduce(type);
+            this.cameraPublication =
+                await this.room.localParticipant.setCameraEnabled(
+                    true,
+                    this.room.options.videoCaptureDefaults,
+                );
+            this.sync();
+            this.emit("startProduce", "video");
         } catch (error) {
-            // eslint-disable-next-line
-            if ((error as any).error === WSErrorCode.ProducerNotFound) return;
+            this.emit("error", error as Error);
             throw error;
         }
     }
+
+    async stopCamera() {
+        await this.room.localParticipant
+            .setCameraEnabled(false)
+            .catch(() => undefined);
+        this.cameraPublication = undefined;
+        this.sync();
+        this.emit("stopProduce", "video");
+    }
+
+    async startScreenShare() {
+        try {
+            try {
+                this.screenPublication =
+                    await this.room.localParticipant.setScreenShareEnabled(
+                        true,
+                        { audio: true },
+                    );
+            } catch {
+                // Some browsers cannot capture tab audio; share video only.
+                this.screenPublication =
+                    await this.room.localParticipant.setScreenShareEnabled(
+                        true,
+                        { audio: false },
+                    );
+            }
+            this.sync();
+            this.emit("startProduce", "screen");
+        } catch (error) {
+            this.emit("error", error as Error);
+            throw error;
+        }
+    }
+
+    async stopScreenShare() {
+        await this.room.localParticipant
+            .setScreenShareEnabled(false)
+            .catch(() => undefined);
+        this.screenPublication = undefined;
+        this.sync();
+        this.emit("stopProduce", "screen");
+    }
+
+    getVideoTrack(identity: string, source: VideoSource) {
+        const trackSource =
+            source === "camera" ? Track.Source.Camera : Track.Source.ScreenShare;
+
+        if (identity === this.userId) {
+            return this.room.localParticipant.getTrackPublication(trackSource)
+                ?.videoTrack;
+        }
+
+        return this.room.remoteParticipants
+            .get(identity)
+            ?.getTrackPublication(trackSource)?.videoTrack;
+    }
+
+    async startAudioPlayback() {
+        try {
+            await this.room.startAudio();
+        } catch {
+            this.emit(
+                "error",
+                new Error("Tap the call to enable audio playback."),
+            );
+        }
+    }
+
+    async switchDevice(kind: MediaDeviceKind, deviceId: string) {
+        if (!deviceId) return;
+        try {
+            await this.room.switchActiveDevice(kind, deviceId);
+        } catch (error) {
+            // No active track for that kind yet; the stored preference is
+            // picked up when the device is first used.
+            console.warn("Could not switch device:", error);
+        }
+    }
+}
+
+function audioKey(identity: string, sid: string) {
+    return `${identity}:${sid}`;
 }

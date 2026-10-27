@@ -21,6 +21,8 @@ start() {
     [ -f "$DIR/server/.build/server/index.js" ] || { log "not built: run bun run build"; return 1; }
     mkdir -p "$DIR/.run" "$DIR/server/.build/server/modules"
     setsid nohup env NODE_ENV=production HOST=0.0.0.0 PORT="${PORT:-3000}" \
+        NODE_EXTRA_CA_CERTS="$DIR/revolt.crt" \
+        NODE_OPTIONS="--max-old-space-size=4096" \
         node "$DIR/server/.build/server/index.js" >> "$LOGFILE" 2>&1 < /dev/null &
     pid=$!
     echo "$pid" > "$PIDFILE"

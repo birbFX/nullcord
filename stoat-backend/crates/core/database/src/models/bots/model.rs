@@ -101,6 +101,7 @@ impl Bot {
             Some(PartialUser {
                 bot: Some(BotInformation {
                     owner: owner.id.to_string(),
+                    flags: None,
                 }),
                 ..Default::default()
             }),

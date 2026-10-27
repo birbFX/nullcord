@@ -52,6 +52,9 @@ auto_derived_partial!(
         /// Attached embeds to this message
         #[serde(skip_serializing_if = "Option::is_none")]
         pub embeds: Option<Vec<Embed>>,
+        /// Interactive components attached to this message
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub components: Option<Vec<v0::MessageComponent>>,
         /// Array of user ids mentioned in this message
         #[serde(skip_serializing_if = "Option::is_none")]
         pub mentions: Option<Vec<String>>,
@@ -247,6 +250,7 @@ impl Default for Message {
             attachments: None,
             edited: None,
             embeds: None,
+            components: None,
             mentions: None,
             role_mentions: None,
             replies: None,
@@ -363,6 +367,7 @@ impl Message {
                 .interactions
                 .map(|interactions| interactions.into())
                 .unwrap_or_default(),
+            components: data.components,
             author: author_id,
             webhook: webhook.map(|w| w.into()),
             flags: data.flags,

@@ -12,13 +12,14 @@ use validator::Validate;
 ///
 /// Block zero width space
 /// Block lookalike characters
-pub static RE_USERNAME: Lazy<Regex> = Lazy::new(|| Regex::new(r"^(\p{L}|[\d_.-])+$").unwrap());
+pub static RE_USERNAME: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^[\p{L}\d_.-]+(?: [\p{L}\d_.-]+)*$").unwrap());
 
 /// # New User Data
 #[derive(Validate, Serialize, Deserialize, JsonSchema)]
 pub struct DataOnboard {
     /// New username which will be used to identify the user on the platform
-    #[validate(length(min = 2, max = 32), regex = "RE_USERNAME")]
+    #[validate(length(min = 2, max = 35), regex = "RE_USERNAME")]
     username: String,
 }
 

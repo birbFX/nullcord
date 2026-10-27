@@ -30,11 +30,22 @@ export default async function UsersPage({
   const raw = Array.isArray(sp.q) ? sp.q[0] : sp.q;
   const q = (raw ?? "").trim();
 
+  const emailMatches = q.includes("@")
+    ? await col<{ _id: string }>("accounts")
+        .find({ email: new RegExp(escapeRegex(q), "i") })
+        .limit(50)
+        .toArray()
+    : [];
+
   const filter = q
     ? {
         $or: [
           { username: new RegExp(escapeRegex(q), "i") },
+          { display_name: new RegExp(escapeRegex(q), "i") },
           { _id: q },
+          ...(emailMatches.length
+            ? [{ _id: { $in: emailMatches.map((account) => account._id) } }]
+            : []),
         ],
       }
     : {};
@@ -61,7 +72,7 @@ export default async function UsersPage({
           <Flex gap="2">
             <TextField.Root
               name="q"
-              placeholder="Username or user ID"
+              placeholder="Username, display name, email or user ID"
               defaultValue={q}
               size="2"
             />

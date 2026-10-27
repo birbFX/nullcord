@@ -150,6 +150,9 @@ auto_derived!(
     pub struct BotInformation {
         /// Id of the owner of this bot
         pub owner: String,
+        /// Bitfield of bot flags (1 = verified, 2 = official)
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub flags: Option<i32>,
     }
 
     /// Enumeration providing a hint to the type of user we are handling
@@ -185,7 +188,7 @@ static BLOCKED_USERNAME_PATTERNS: Lazy<Regex> = Lazy::new(|| {
 });
 
 static USERNAME_CODEPOINT_REGEX: Lazy<Regex> = Lazy::new(|| {
-    RegexBuilder::new("^(\\p{L}|[\\d_.-])+$")
+    RegexBuilder::new("^[\\p{L}\\d_.-]+(?: [\\p{L}\\d_.-]+)*$")
         .case_insensitive(true)
         .build()
         .unwrap()
@@ -316,7 +319,7 @@ impl User {
     /// This will check if the username is a blocked name or contains a blocked pattern.
     fn validate_username(username: &str) -> Result<()> {
         if !USERNAME_CODEPOINT_REGEX.is_match(username)
-            || !validator::validate_length(username, Some(2), Some(32), None)
+            || !validator::validate_length(username, Some(2), Some(35), None)
         {
             return Err(create_error!(InvalidUsername));
         }
@@ -339,16 +342,24 @@ impl User {
     /// This will clean up Unicode homoglyphs and pad to the min username length with underscores.
     async fn sanitise_username(username: &str) -> Result<String> {
         let options = decancer::Options::default().retain_capitalization();
-        let mut username = decancer::cure(username, options)
+        let username = decancer::cure(username, options)
             .map_err(|_| create_error!(InvalidUsername))?
             .to_string();
+
+        // Collapse runs of whitespace, trim the ends, then enforce the same
+        // 35-character cap the API validates against.
+        let mut username = username.split_whitespace().collect::<Vec<_>>().join(" ");
+        if username.chars().count() > 35 {
+            username = username.chars().take(35).collect();
+            username = username.trim_end().to_string();
+        }
 
         let config = revolt_config::config().await;
         let username_length_diff = config
             .api
             .users
             .min_username_length
-            .saturating_sub(username.len());
+            .saturating_sub(username.chars().count());
         if username_length_diff > 0 {
             username.push_str(&"_".repeat(username_length_diff))
         }
@@ -815,7 +826,12 @@ impl User {
         )
         .await?;
 
-        unimplemented!()
+        // Suspensions disable the account and revoke every session. Re-enable
+        // it so the user can sign back in once the suspension expires.
+        let mut account = db.fetch_account(&self.id).await?;
+        account.enable(db).await?;
+
+        Ok(())
     }
 
     /// Permanently ban the user
@@ -949,6 +965,18 @@ mod tests {
         assert!(User::validate_username(username_revolt).is_err());
         assert!(User::validate_username(username_stoat).is_err());
         assert!(User::validate_username(username_allowed).is_ok());
+    }
+
+    #[test]
+    fn username_validation_spaces_and_length() {
+        assert!(User::validate_username("John Doe").is_ok());
+        assert!(User::validate_username("Jean-Luc Picard").is_ok());
+        assert!(User::validate_username("a".repeat(35).as_str()).is_ok());
+        assert!(User::validate_username("a".repeat(36).as_str()).is_err());
+        assert!(User::validate_username("John  Doe").is_err());
+        assert!(User::validate_username(" John").is_err());
+        assert!(User::validate_username("John ").is_err());
+        assert!(User::validate_username(" ").is_err());
     }
 
     #[test]

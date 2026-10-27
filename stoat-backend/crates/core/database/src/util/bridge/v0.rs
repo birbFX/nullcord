@@ -531,6 +531,7 @@ impl crate::Message {
                 .map(|v| v.into_iter().map(|f| f.into()).collect()),
             edited: self.edited,
             embeds: self.embeds,
+            components: self.components,
             mentions: self.mentions,
             role_mentions: self.role_mentions,
             replies: self.replies,
@@ -560,6 +561,7 @@ impl From<crate::PartialMessage> for PartialMessage {
                 .map(|v| v.into_iter().map(|f| f.into()).collect()),
             edited: value.edited,
             embeds: value.embeds,
+            components: value.components,
             mentions: value.mentions,
             role_mentions: value.role_mentions,
             replies: value.replies,
@@ -1453,6 +1455,7 @@ impl From<crate::BotInformation> for BotInformation {
     fn from(value: crate::BotInformation) -> Self {
         BotInformation {
             owner_id: value.owner,
+            flags: value.flags,
         }
     }
 }
@@ -1461,6 +1464,7 @@ impl From<BotInformation> for crate::BotInformation {
     fn from(value: BotInformation) -> crate::BotInformation {
         crate::BotInformation {
             owner: value.owner_id,
+            flags: value.flags,
         }
     }
 }

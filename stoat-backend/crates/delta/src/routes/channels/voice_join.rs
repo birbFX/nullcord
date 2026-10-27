@@ -24,7 +24,7 @@ pub async fn call(
     voice_client: &State<VoiceClient>,
     user: User,
     target: Reference<'_>,
-    data: Json<v0::DataJoinCall>,
+    data: Option<Json<v0::DataJoinCall>>,
 ) -> Result<Json<v0::CreateVoiceUserResponse>> {
     if !voice_client.is_enabled() {
         return Err(create_error!(LiveKitUnavailable));
@@ -34,7 +34,13 @@ pub async fn call(
         node,
         force_disconnect,
         recipients,
-    } = data.into_inner();
+    } = data
+        .map(|data| data.into_inner())
+        .unwrap_or(v0::DataJoinCall {
+            node: None,
+            force_disconnect: None,
+            recipients: None,
+        });
 
     if user.bot.is_some() && force_disconnect == Some(true) {
         return Err(create_error!(IsBot));

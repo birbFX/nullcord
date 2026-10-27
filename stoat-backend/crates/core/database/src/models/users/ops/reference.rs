@@ -53,6 +53,22 @@ impl AbstractUsers for ReferenceDb {
             .collect()
     }
 
+    /// Fetch users whose temporary suspension has expired
+    async fn fetch_users_due_for_unsuspension(&self) -> Result<Vec<User>> {
+        let now = crate::iso8601_timestamp::Timestamp::now_utc();
+        let users = self.users.lock().await;
+        Ok(users
+            .values()
+            .filter(|user| {
+                user.flags.unwrap_or_default() & 1 != 0
+                    && user
+                        .suspended_until
+                        .is_some_and(|until| until <= now)
+            })
+            .cloned()
+            .collect())
+    }
+
     /// Fetch all discriminators in use for a username
     async fn fetch_discriminators_in_use(&self, username: &str) -> Result<Vec<String>> {
         let users = self.users.lock().await;

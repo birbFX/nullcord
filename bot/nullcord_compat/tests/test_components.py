@@ -119,7 +119,7 @@ class ComponentInteractionTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsNotNone(interaction)
         self.assertIs(seen["interaction"], interaction)
-        self.assertEqual(interaction.type, 2)
+        self.assertEqual(interaction.type, 3)
         self.assertEqual(interaction.data.custom_id, "home")
         self.assertEqual(interaction.user.id, "u1")
         self.assertEqual(interaction.message.id, "m1")

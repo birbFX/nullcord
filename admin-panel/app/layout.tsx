@@ -16,7 +16,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Stoat Admin Panel",
+  title: "NullCord Admin Panel",
   description: "Platform management and moderation tools.",
 };
 

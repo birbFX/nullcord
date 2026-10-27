@@ -15,6 +15,7 @@ mod message_clear_reactions;
 mod message_delete;
 mod message_edit;
 mod message_fetch;
+mod message_interact;
 mod message_pin;
 mod message_query;
 mod message_react;
@@ -42,6 +43,7 @@ pub fn routes() -> (Vec<Route>, OpenApi) {
         message_search::search,
         message_pin::message_pin,
         message_fetch::fetch,
+        message_interact::interact,
         message_edit::edit,
         message_bulk_delete::bulk_delete_messages,
         message_delete::delete,

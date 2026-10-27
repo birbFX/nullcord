@@ -660,6 +660,12 @@ impl Account {
         self.save(db).await
     }
 
+    /// Re-enable a disabled account
+    pub async fn enable(&mut self, db: &Database) -> Result<()> {
+        self.disabled = false;
+        self.save(db).await
+    }
+
     /// Schedule an account for deletion
     pub async fn schedule_deletion(&mut self, db: &Database) -> Result<()> {
         self.deletion = Some(DeletionInfo::Scheduled {
