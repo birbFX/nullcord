@@ -2182,12 +2182,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@livekit/protocol@npm:1.52.1":
-  version: 1.52.1
-  resolution: "@livekit/protocol@npm:1.52.1"
+"@livekit/protocol@npm:1.39.3":
+  version: 1.39.3
+  resolution: "@livekit/protocol@npm:1.39.3"
   dependencies:
     "@bufbuild/protobuf": ^1.10.0
-  checksum: 021e67628da8ffdb09a111e4a3b8514d99b4f580e9fd605e4f541143cd209fdc8ad7872c8ef794e881dc558d8ac1d6c313b91e99d8f5b0ee0ab8b9ac52e1779a
+  checksum: 72aa3b9e82203ccec039047518d841d65b10dcc11ab9d661f269eab8a8672aed7b2d072f4f09cc6fb94a2579542b0a9216d7f66476d34cd1675c13e1ebcc119f
   languageName: node
   linkType: hard
 
@@ -5800,13 +5800,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jose@npm:^6.1.0":
-  version: 6.2.13
-  resolution: "jose@npm:6.2.13"
-  checksum: 14d95b97a5575e662f020a96295527620bec7c221623f6dcd7280653ef94f287beef5f54f4970670bc6f55223800808b1d89b6e61d59cc8e2c3464e86288a902
-  languageName: node
-  linkType: hard
-
 "js-tokens@npm:^3.0.0 || ^4.0.0, js-tokens@npm:^4.0.0":
   version: 4.0.0
   resolution: "js-tokens@npm:4.0.0"
@@ -6050,23 +6043,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"livekit-client@npm:2.23.0":
-  version: 2.23.0
-  resolution: "livekit-client@npm:2.23.0"
+"livekit-client@npm:2.15.3":
+  version: 2.15.3
+  resolution: "livekit-client@npm:2.15.3"
   dependencies:
     "@livekit/mutex": 1.1.1
-    "@livekit/protocol": 1.52.1
+    "@livekit/protocol": 1.39.3
     events: ^3.3.0
-    jose: ^6.1.0
     loglevel: ^1.9.2
-    machina: ^7.0.0
     sdp-transform: ^2.15.0
+    ts-debounce: ^4.0.0
     tslib: 2.8.1
     typed-emitter: ^2.1.0
-    webrtc-adapter: 9.0.6
+    webrtc-adapter: ^9.0.1
   peerDependencies:
     "@types/dom-mediacapture-record": ^1
-  checksum: 22dfdd6b8bb766e069984835852385f94133e1dfdd398792beedfae23286c5504fbad9f481e4b1e4d26a4997a0604710a6068fb08924a3e8e3adb8c3cddb31c5
+  checksum: 30331983847b8abf1d050214f7f672ebb44075cd4dc56833565b25ec5158560cf747228b403e6da8cdd0e39799ec91e75119267eb9f6070ec0813f99bd3c9839
   languageName: node
   linkType: hard
 
@@ -6236,13 +6228,6 @@ __metadata:
   version: 7.8.1
   resolution: "lru-cache@npm:7.8.1"
   checksum: 31ea67388c9774300331d70f4affd5a433869bcf0fae5405f967d19d7b447930b713b0566a2e95362c9082034a8b496f3671ccf8f0c061d8e8048412663f9432
-  languageName: node
-  linkType: hard
-
-"machina@npm:^7.0.0":
-  version: 7.0.1
-  resolution: "machina@npm:7.0.1"
-  checksum: f895a7ab8c0489b90208c2872567250736de7f46150fcb30572ec86249d63abffd3737cc7b0d94ca7529efd38c27d27747bd5f7dec7281fd88a19ec04da3bf58
   languageName: node
   linkType: hard
 
@@ -7202,7 +7187,7 @@ __metadata:
     history: 4
     json-stringify-deterministic: ^1.0.2
     klaw: ^3.0.0
-    livekit-client: 2.23.0
+    livekit-client: 2.15.3
     localforage: ^1.9.0
     lodash: ^4.17.21
     lodash.defaultsdeep: ^4.6.1
@@ -9081,6 +9066,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ts-debounce@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "ts-debounce@npm:4.0.0"
+  checksum: e1e509632c5aa09c40d3fa315b3a95b2c2e8813ccc706a400aa08e41f691e658061f34b42a1e8a578a043540d6db198e6ecf3ce26a5356a02a0940985fb1e379
+  languageName: node
+  linkType: hard
+
 "tslib@npm:2.8.1":
   version: 2.8.1
   resolution: "tslib@npm:2.8.1"
@@ -9600,7 +9592,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"webrtc-adapter@npm:9.0.6":
+"webrtc-adapter@npm:^9.0.1":
   version: 9.0.6
   resolution: "webrtc-adapter@npm:9.0.6"
   dependencies:

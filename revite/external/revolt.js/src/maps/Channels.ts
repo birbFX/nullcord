@@ -617,6 +617,10 @@ export class Channel {
             // Delta picks the voice node from this field when the channel
             // has no node assigned yet; an empty body yields UnknownNode.
             node: "worldwide",
+            // A crashed tab or a missed LiveKit webhook can leave a stale
+            // vc:<user> entry in Redis, which makes every later join fail with
+            // AlreadyConnected. Force-disconnect removes the old state first.
+            force_disconnect: true,
         });
     }
 

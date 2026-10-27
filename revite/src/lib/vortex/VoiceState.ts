@@ -1,6 +1,9 @@
 import { action, makeAutoObservable, runInAction } from "mobx";
 import { Channel, Nullable, toNullable } from "revolt.js";
 
+import { takeError } from "../../controllers/client/jsx/error";
+import { modalController } from "../../controllers/modals/ModalController";
+
 import type { ProduceType, VoiceUser } from "./Types";
 import type VoiceClient from "./VoiceClient";
 
@@ -95,13 +98,27 @@ class VoiceStateReference {
             console.error("Failed to load voice library!", err);
             runInAction(() => {
                 this.status = VoiceStatus.UNAVAILABLE;
+                this.error =
+                    "Voice failed to load. Reload the page and try again.";
+            });
+            modalController.push({
+                type: "error",
+                error: "Voice failed to load. Reload the page and try again.",
             });
         }
     }
 
     @action async connect(channel: Channel) {
         if (!this.client) await this.loadVoice();
-        if (!this.client?.supported()) throw new Error("RTC is unavailable");
+        if (!this.client?.supported()) {
+            this.error =
+                "This browser cannot make calls (WebRTC is unavailable).";
+            modalController.push({
+                type: "error",
+                error: this.error,
+            });
+            return channel;
+        }
 
         if (
             this.roomId === channel._id &&
@@ -139,10 +156,23 @@ class VoiceStateReference {
             });
         } catch (err) {
             console.error("Failed to join voice channel:", err);
+            const raw = takeError(err);
+            const message =
+                raw === "AlreadyConnected"
+                    ? "You are already in a call. Leave it and try again."
+                    : raw === "NetworkError"
+                      ? "Could not reach the voice server. Check your connection."
+                      : raw;
+
             runInAction(() => {
                 this.status = VoiceStatus.READY;
                 this.connecting = false;
-                this.error = err instanceof Error ? err.message : String(err);
+                this.error = message;
+            });
+
+            modalController.push({
+                type: "error",
+                error: message,
             });
 
             try {
