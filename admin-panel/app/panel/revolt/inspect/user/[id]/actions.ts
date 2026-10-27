@@ -26,6 +26,7 @@ import {
 } from "@/lib/database/revolt";
 import { findCaseById } from "@/lib/database/revolt/safety_cases";
 import { createStrike } from "@/lib/database/revolt/safety_strikes";
+import { col } from "@/lib/db";
 
 export async function strikeUser(
   userId: string,
@@ -259,4 +260,83 @@ export async function sendAlertAction(userId: string, content: string) {
   if (!process.env.PLATFORM_ACCOUNT_ID)
     throw new Error("PLATFORM_ACCOUNT_ID is not configured");
   await sendPlatformAlert(userId, message);
+}
+
+export type ClearProfileField =
+  | "avatar"
+  | "banner"
+  | "display_name"
+  | "bio"
+  | "status"
+  | "all";
+
+export async function clearProfileAction(
+  userId: string,
+  field: ClearProfileField,
+) {
+  await getScopedUser(RBAC_PERMISSION_MODERATION_AGENT);
+
+  const unset: Record<string, string> = {};
+  const add = (key: string) => {
+    unset[key] = "";
+  };
+
+  if (field === "avatar" || field === "all") add("avatar");
+  if (field === "banner" || field === "all") add("profile.background");
+  if (field === "display_name" || field === "all") add("display_name");
+  if (field === "bio" || field === "all") add("profile.content");
+  if (field === "status" || field === "all") add("status");
+
+  if (!Object.keys(unset).length) return;
+  await col("users").updateOne(
+    { _id: userId as never },
+    { $unset: unset } as never,
+  );
+}
+
+/**
+ * Build a portable JSON export for a user. This includes account metadata,
+ * memberships and their 500 most recent messages; it deliberately excludes
+ * secrets such as password hashes and session tokens.
+ */
+export async function exportUserAction(userId: string) {
+  await getScopedUser(RBAC_PERMISSION_MODERATION_AGENT);
+
+  const [user, account, memberships, messages] = await Promise.all([
+    col("users").findOne({ _id: userId as never }),
+    col("accounts").findOne({ _id: userId as never }),
+    col("server_members")
+      .find({ "_id.user": userId })
+      .limit(500)
+      .toArray(),
+    col("messages")
+      .find({ author: userId })
+      .sort({ _id: -1 })
+      .limit(500)
+      .toArray(),
+  ]);
+
+  if (!user && !account) throw new Error("User not found");
+
+  const safeAccount = account
+    ? {
+        _id: account._id,
+        email: account.email,
+        disabled: account.disabled,
+        verification: account.verification,
+        deletion: account.deletion,
+      }
+    : null;
+
+  return JSON.stringify(
+    {
+      exported_at: new Date().toISOString(),
+      user,
+      account: safeAccount,
+      memberships,
+      messages,
+    },
+    null,
+    2,
+  );
 }

@@ -6,6 +6,8 @@ import { col } from "@/lib/db";
 import { CaseDocument, ReportDocument } from "@/lib/db/types";
 import { API } from "revolt.js";
 
+const AUTUMN = process.env.NEXT_PUBLIC_AUTUMN_URL?.replace(/\/$/, "");
+
 export type SearchResult = {
   id: string;
   type: "user" | "channel" | "server" | "message" | "report" | "case";
@@ -23,12 +25,10 @@ function userToResult(
     id,
     type: "user",
     title: (user ? user.username + "#" + user.discriminator : email)!,
-    // TODO hard link
-    iconURL: user
-      ? user.avatar
-        ? `https://cdn.stoatusercontent.com/avatars/${user.avatar._id}`
-        : `https://api.stoat.chat/users/${user._id}/default_avatar`
-      : undefined,
+    iconURL:
+      user?.avatar && AUTUMN
+        ? `${AUTUMN}/avatars/${user.avatar._id}`
+        : undefined,
     link: `/panel/revolt/inspect/user/${id}`,
   };
 }
@@ -50,10 +50,10 @@ function channelToResult(channel: API.Channel): SearchResult {
     id: channel._id,
     type: "channel",
     title: channelDisplayName(channel),
-    // TODO: hard link
-    iconURL: (channel as any).icon
-      ? `https://cdn.stoatusercontent.com/icons/${(channel as any).icon._id}`
-      : "",
+    iconURL:
+      (channel as any).icon && AUTUMN
+        ? `${AUTUMN}/icons/${(channel as any).icon._id}`
+        : "",
     link: `/panel/revolt/inspect/channel/${channel._id}`,
   };
 }
@@ -63,10 +63,10 @@ function serverToResult(server: API.Server): SearchResult {
     id: server._id,
     type: "server",
     title: server.name,
-    // TODO: hard link
-    iconURL: (server as any).icon
-      ? `https://cdn.stoatusercontent.com/icons/${(server as any).icon._id}`
-      : "",
+    iconURL:
+      (server as any).icon && AUTUMN
+        ? `${AUTUMN}/icons/${(server as any).icon._id}`
+        : "",
     link: `/panel/revolt/inspect/server/${server._id}`,
   };
 }
