@@ -15,22 +15,31 @@ The NullCord call view is the official Jitsi IFrame API:
 ## How a call works
 
 1. Clicking the phone icon calls `voiceState.connect(channel)`.
-2. NullCord opens a Jitsi room named `nullcord-<channelId>` in the call view.
+2. NullCord registers the caller with `POST /channels/:id/voice/join` and then
+   opens a Jitsi room named `nullcord<channelId>` in the call view.
 3. Jitsi joins the room with the user's display name.
-4. The Jitsi toolbar provides microphone, camera, screen share, settings,
-   participant list and hang-up.
-5. Jitsi's `videoConferenceLeft` event closes the NullCord call view.
+4. For a DM or group, the API sends a `VoiceCallUpdate` event to the other
+   recipients. Their client shows an **Incoming call** card and plays the ring
+   sound.
+5. Accepting the card joins the same Jitsi room. Declining dismisses the card.
+6. The Jitsi toolbar provides microphone, camera, screen share, settings and
+   the participant list.
+7. Jitsi's `videoConferenceLeft` event closes the NullCord call view.
 
-Because every participant opens the same deterministic room name, no
-NullCord-side signalling or peer registry is needed.
+Because every participant opens the same deterministic room name, Jitsi does
+the signalling and media relay. NullCord only tracks call presence for the
+incoming-call ring and stale-session cleanup.
 
 ## Features
 
-- microphone, camera and screen share (Jitsi toolbar)
+- incoming call card with caller name, ringtone, **Join** and **Decline**
+- persistent in-call bar with participant count and call duration
+- quick mute, camera, screen-share and leave buttons
+- microphone, camera and screen share (Jitsi toolbar and NullCord bar)
 - remote participants and audio/video through Jitsi's global SFU
 - device selection in Jitsi settings
-- participant count in the NullCord overlay
 - hang-up synchronises back to NullCord
+- 60-second presence heartbeat and automatic stale-call pruning
 - works from remote networks without port forwarding, UPnP or a public IP
 
 ## Requirements
@@ -42,6 +51,23 @@ The browser must reach:
 
 No inbound ports are required on the NullCord host. `meet.element.io`
 allows anonymous, embedded rooms; no Jitsi account is required.
+
+## Incoming calls and presence
+
+The API keeps a short-lived call record in Redis:
+
+- `vc:<user>` — rooms the user has registered
+- `vc_members:<channel>` — users currently registered in the call
+- `vc_alive:<user>:<channel>` — 90-second presence heartbeat
+- `p2p_peer:*` / `p2p_members:*` — legacy peer registry used by `/voice/peers`
+
+While a call is open, the client POSTs `/channels/:id/voice/heartbeat` every
+60 seconds. A member whose heartbeat has expired is pruned the next time the
+call is read, so a crashed tab cannot keep a room "busy" forever. Closing the
+tab also sends a best-effort `/voice/leave` from the `pagehide` handler.
+
+Only DM and group recipients receive the ring event; server voice channels
+still work, but they do not push a ring to every member of a large server.
 
 ## Privacy note
 
@@ -70,6 +96,8 @@ LAN or public-SFU deployments, but the web client uses Jitsi.
 |---|---|
 | "Could not load the call relay" | `meet.element.io` blocked by network/VPN/firewall |
 | Joined but no camera/mic | Browser permission; Jitsi toolbar settings |
+| Incoming call card does not appear | Both users online; API/gateway reachable; check `/api/health` |
+| Incoming card appears late or never | The caller's heartbeat is stale; retry after ~90 seconds |
 | Another tab says the call is already open | Close the other call tab |
 | Screen share black | Browser display-capture permission |
 | Call view remains after hang-up | Click the NullCord phone/leave button |

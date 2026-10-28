@@ -33,6 +33,9 @@ class VoiceStateReference {
 
     private selfId?: string;
     private supported = false;
+    private clientChannel?: Channel;
+    private heartbeat?: number;
+    private unloadHandler?: () => void;
 
     constructor() {
         this.roomId = null;
@@ -47,6 +50,9 @@ class VoiceStateReference {
             connecting: false,
             supported: false,
             selfId: false,
+            clientChannel: false,
+            heartbeat: false,
+            unloadHandler: false,
         });
     }
 
@@ -88,6 +94,34 @@ class VoiceStateReference {
         this.disconnect();
         this.error = undefined;
         this.selfId = channel.client.user?._id;
+        this.clientChannel = channel;
+
+        // Register the call so other DM/group recipients receive the
+        // VoiceCallUpdate ring event. Jitsi handles the media itself, so a
+        // failure here must not prevent the call from opening.
+        try {
+            const api = channel.client.api as unknown as {
+                post: (
+                    path: string,
+                    params?: unknown,
+                    config?: { data?: unknown },
+                ) => Promise<unknown>;
+            };
+            await api.post(
+                `/channels/${channel._id}/voice/join`,
+                undefined,
+                {
+                    data: {
+                        peer_id: `jitsi-${Date.now().toString(36)}${Math.random()
+                            .toString(36)
+                            .slice(2, 8)}`,
+                    },
+                },
+            );
+        } catch (err) {
+            console.warn("Could not register the call for ringing:", err);
+        }
+
         this.roomId = channel._id;
         this.participantCount = 1;
         this.participants = new Map(
@@ -95,11 +129,72 @@ class VoiceStateReference {
         );
         this.status = VoiceStatus.CONNECTED;
         this.connecting = false;
+        this.startHeartbeat(channel);
 
         return channel;
     }
 
+    private startHeartbeat(channel: Channel) {
+        this.stopHeartbeat();
+        const api = channel.client.api as unknown as {
+            post: (path: string) => Promise<unknown>;
+        };
+
+        this.heartbeat = window.setInterval(() => {
+            void api
+                .post(`/channels/${channel._id}/voice/heartbeat`)
+                .catch(() => undefined);
+        }, 60_000);
+
+        const session = (channel.client as unknown as {
+            session?: { token?: string } | string;
+        }).session;
+        const token =
+            typeof session === "string" ? session : session?.token;
+        const baseURL = (channel.client.api as unknown as { baseURL?: string })
+            .baseURL;
+
+        if (token && baseURL) {
+            this.unloadHandler = () => {
+                fetch(`${baseURL}/channels/${channel._id}/voice/leave`, {
+                    method: "POST",
+                    headers: { "x-session-token": token },
+                    keepalive: true,
+                }).catch(() => undefined);
+            };
+            window.addEventListener("pagehide", this.unloadHandler);
+        }
+    }
+
+    private stopHeartbeat() {
+        if (this.heartbeat !== undefined) {
+            window.clearInterval(this.heartbeat);
+            this.heartbeat = undefined;
+        }
+        if (this.unloadHandler) {
+            window.removeEventListener("pagehide", this.unloadHandler);
+            this.unloadHandler = undefined;
+        }
+    }
+
     @action disconnect() {
+        this.stopHeartbeat();
+        const roomId = this.roomId;
+        const channel = this.clientChannel;
+
+        if (roomId && channel) {
+            try {
+                const api = channel.client.api as unknown as {
+                    post: (path: string) => Promise<unknown>;
+                };
+                void api
+                    .post(`/channels/${roomId}/voice/leave`)
+                    .catch(() => undefined);
+            } catch {
+                // best effort cleanup
+            }
+        }
+
         this.connecting = false;
         this.status = this.supported
             ? VoiceStatus.READY
@@ -107,6 +202,7 @@ class VoiceStateReference {
         this.roomId = null;
         this.participants = new Map();
         this.participantCount = 0;
+        this.clientChannel = undefined;
     }
 
     @action setParticipantCount(count: number) {

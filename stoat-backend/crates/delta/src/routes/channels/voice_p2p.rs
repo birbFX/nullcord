@@ -4,15 +4,17 @@ use revolt_database::{
     util::{permissions::perms, reference::Reference},
     voice::{
         create_voice_state, delete_voice_state, get_user_voice_channels, get_voice_channel_members,
-        get_voice_peers, refresh_voice_peer, remove_voice_peer, set_voice_peer, UserVoiceChannel,
+        get_voice_peers, refresh_voice_alive, refresh_voice_peer, remove_voice_peer,
+        set_voice_peer, UserVoiceChannel,
     },
-    Database, User,
+    Channel, Database, User,
 };
 use revolt_models::v0;
 use revolt_permissions::{calculate_channel_permissions, ChannelPermission};
 use revolt_result::{create_error, Result};
 
 use rocket::{serde::json::Json, State};
+use rocket_empty::EmptyResponse;
 
 fn validate_peer_id(peer_id: &str) -> Result<&str> {
     let peer_id = peer_id.trim();
@@ -29,6 +31,19 @@ fn validate_peer_id(peer_id: &str) -> Result<&str> {
     }
 
     Ok(peer_id)
+}
+
+fn call_recipients(channel: &Channel, user_id: &str) -> Option<Vec<String>> {
+    match channel {
+        Channel::DirectMessage { recipients, .. } | Channel::Group { recipients, .. } => Some(
+            recipients
+                .iter()
+                .filter(|recipient| recipient.as_str() != user_id)
+                .cloned()
+                .collect(),
+        ),
+        _ => None,
+    }
 }
 
 async fn peers_response(channel: &UserVoiceChannel) -> Result<v0::VoicePeersResponse> {
@@ -99,6 +114,24 @@ pub async fn join(
     .p(voice_channel.id.clone())
     .await;
 
+    let members = get_voice_channel_members(&voice_channel)
+        .await?
+        .unwrap_or_default();
+
+    // First participant starts the ring for DM/group recipients.
+    if members.len() == 1 {
+        if let Some(recipients) = call_recipients(&channel, &user.id) {
+            EventV1::VoiceCallUpdate {
+                initiator_id: user.id.clone(),
+                channel_id: voice_channel.id.clone(),
+                started_at: Some(Timestamp::now_utc()),
+                ended: false,
+            }
+            .p_broadcast(recipients)
+            .await;
+        }
+    }
+
     Ok(Json(peers_response(&voice_channel).await?))
 }
 
@@ -123,7 +156,52 @@ pub async fn leave(
     .p(voice_channel.id.clone())
     .await;
 
+    let members = get_voice_channel_members(&voice_channel)
+        .await?
+        .unwrap_or_default();
+
+    // Last participant ends the ring. Broadcast directly so recipients see it
+    // even when they are not viewing the channel.
+    if members.is_empty() {
+        if let Some(recipients) = call_recipients(&channel, &user.id) {
+            EventV1::VoiceCallUpdate {
+                initiator_id: user.id.clone(),
+                channel_id: voice_channel.id.clone(),
+                started_at: None,
+                ended: true,
+            }
+            .p_broadcast(recipients)
+            .await;
+        }
+    }
+
     Ok(Json(peers_response(&voice_channel).await?))
+}
+
+/// # Voice Heartbeat
+///
+/// Keeps the caller's voice state alive while the Jitsi call is open.
+#[openapi(tag = "Voice")]
+#[post("/<target>/voice/heartbeat")]
+pub async fn heartbeat(
+    db: &State<Database>,
+    user: User,
+    target: Reference<'_>,
+) -> Result<EmptyResponse> {
+    let channel = target.as_channel(db).await?;
+    let Some(_voice) = channel.voice() else {
+        return Err(create_error!(NotAVoiceChannel));
+    };
+
+    let mut permissions = perms(db, &user).channel(&channel);
+    let current_permissions = calculate_channel_permissions(&mut permissions).await;
+    current_permissions.throw_if_lacking_channel_permission(ChannelPermission::Connect)?;
+
+    let voice_channel = UserVoiceChannel::from_channel(&channel);
+    refresh_voice_alive(&voice_channel.id, &user.id).await?;
+    refresh_voice_peer(&voice_channel.id, &user.id).await?;
+
+    Ok(EmptyResponse)
 }
 
 /// # Fetch Peer-to-Peer Voice Peers

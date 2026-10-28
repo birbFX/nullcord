@@ -55,8 +55,10 @@ variables.
 
 Voice channels and DM/group calls are embedded through the Jitsi IFrame API
 on the public `meet.element.io` relay. Jitsi provides the SFU/TURN path for
-remote participants, microphone, camera and screen sharing; NullCord tracks
-the participant count and syncs hang-up back to the call view.
+remote participants, microphone, camera and screen sharing. DM/group
+recipients get an incoming-call card with a ringtone and Join/Decline actions;
+the in-call bar shows participant count, call duration and quick
+mute/camera/screen/leave controls, and syncs hang-up back to the call view.
 
 This relay exists because the reference host is behind CGNAT and cannot accept
 inbound WebRTC media. See [`VOICE.md`](./VOICE.md) for the architecture,

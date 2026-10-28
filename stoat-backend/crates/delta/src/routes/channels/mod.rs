@@ -55,6 +55,7 @@ pub fn routes() -> (Vec<Route>, OpenApi) {
         voice_join::call,
         voice_p2p::join,
         voice_p2p::leave,
+        voice_p2p::heartbeat,
         voice_p2p::peers,
         voice_stop_ring::stop_ring,
         permissions_set::set_role_permissions,

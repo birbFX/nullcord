@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import styled from "styled-components/macro";
 
-import { BarChartAlt2, PhoneOff } from "@styled-icons/boxicons-solid";
+import {
+    BarChartAlt2,
+    Microphone,
+    MicrophoneOff,
+    PhoneOff,
+    Video,
+    VideoOff,
+} from "@styled-icons/boxicons-solid";
+import { Desktop } from "@styled-icons/boxicons-regular";
 
 import { Button } from "@revoltchat/ui";
 
@@ -52,6 +60,15 @@ function loadJitsiApi() {
     return window.__nullcordJitsiPromise;
 }
 
+function formatDuration(total: number) {
+    const hours = Math.floor(total / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    const seconds = total % 60;
+    return hours > 0
+        ? `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+        : `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 const Wrap = styled.div`
     position: relative;
     flex-grow: 1;
@@ -73,18 +90,66 @@ const Wrap = styled.div`
         position: absolute;
         top: 12px;
         left: 12px;
+        right: 12px;
         z-index: 2;
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 8px 10px;
-        border-radius: 999px;
+        gap: 10px;
+        padding: 7px 10px;
+        border-radius: 12px;
         color: #fff;
-        background: rgba(0, 0, 0, 0.65);
-        backdrop-filter: blur(6px);
+        background: rgba(0, 0, 0, 0.68);
+        backdrop-filter: blur(8px);
         font-size: 13px;
         font-weight: 600;
         user-select: none;
+        pointer-events: none;
+    }
+
+    .count {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+
+    .controls {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        pointer-events: auto;
+    }
+
+    .control {
+        all: unset;
+        box-sizing: border-box;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        color: #fff;
+        cursor: pointer;
+        background: rgba(255, 255, 255, 0.14);
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.24);
+        }
+
+        &.active {
+            background: var(--error);
+        }
+
+        &.leave {
+            background: var(--error);
+        }
+
+        &[disabled] {
+            opacity: 0.45;
+            cursor: default;
+        }
     }
 
     .error {
@@ -112,7 +177,13 @@ export function JitsiCall({
 }) {
     const ref = useRef<HTMLDivElement>(null);
     const apiRef = useRef<any>(null);
+    const [api, setApi] = useState<any>(null);
+    const [joined, setJoined] = useState(false);
     const [count, setCount] = useState(1);
+    const [seconds, setSeconds] = useState(0);
+    const [audioMuted, setAudioMuted] = useState(false);
+    const [videoMuted, setVideoMuted] = useState(true);
+    const [sharing, setSharing] = useState(false);
     const [error, setError] = useState<string>();
 
     useEffect(() => {
@@ -123,7 +194,7 @@ export function JitsiCall({
                 if (disposed || !ref.current || !window.JitsiMeetExternalAPI)
                     return;
 
-                const api = new window.JitsiMeetExternalAPI(JITSI_HOST, {
+                const instance = new window.JitsiMeetExternalAPI(JITSI_HOST, {
                     roomName: `nullcord${id}`,
                     parentNode: ref.current,
                     userInfo: { displayName },
@@ -144,11 +215,12 @@ export function JitsiCall({
                     },
                 });
 
-                apiRef.current = api;
+                apiRef.current = instance;
+                setApi(instance);
 
-                const update = () => {
+                const updateCount = () => {
                     try {
-                        const next = api.getNumberOfParticipants();
+                        const next = instance.getNumberOfParticipants();
                         setCount(next);
                         voiceState.setParticipantCount(next);
                     } catch {
@@ -156,13 +228,26 @@ export function JitsiCall({
                     }
                 };
 
-                api.addEventListener("videoConferenceJoined", update);
-                api.addEventListener("participantJoined", update);
-                api.addEventListener("participantLeft", update);
-                api.addEventListener("videoConferenceLeft", () => {
+                instance.addEventListener("videoConferenceJoined", () => {
+                    setJoined(true);
+                    updateCount();
+                });
+                instance.addEventListener("participantJoined", updateCount);
+                instance.addEventListener("participantLeft", updateCount);
+                instance.addEventListener("audioMuteStatusChanged", (event: any) =>
+                    setAudioMuted(!!event.muted),
+                );
+                instance.addEventListener("videoMuteStatusChanged", (event: any) =>
+                    setVideoMuted(!!event.muted),
+                );
+                instance.addEventListener(
+                    "screenSharingStatusChanged",
+                    (event: any) => setSharing(!!event.on),
+                );
+                instance.addEventListener("videoConferenceLeft", () => {
                     if (!disposed) voiceState.disconnect();
                 });
-                api.addEventListener("readyToClose", () => {
+                instance.addEventListener("readyToClose", () => {
                     if (!disposed) voiceState.disconnect();
                 });
             })
@@ -183,8 +268,32 @@ export function JitsiCall({
                 // already disposed
             }
             apiRef.current = null;
+            setApi(null);
         };
     }, [id, displayName]);
+
+    useEffect(() => {
+        if (!joined) {
+            setSeconds(0);
+            return;
+        }
+
+        const start = Date.now();
+        const timer = window.setInterval(
+            () => setSeconds(Math.floor((Date.now() - start) / 1000)),
+            1000,
+        );
+        return () => window.clearInterval(timer);
+    }, [joined]);
+
+    const command = (name: string) => {
+        if (!joined) return;
+        try {
+            api?.executeCommand(name);
+        } catch (err) {
+            console.warn(`Jitsi command ${name} failed:`, err);
+        }
+    };
 
     return (
         <Wrap>
@@ -198,11 +307,51 @@ export function JitsiCall({
                 </div>
             ) : (
                 <div className="status">
-                    <BarChartAlt2 size={15} />
-                    {count} connected
-                    <Button palette="error" onClick={voiceState.disconnect}>
-                        <PhoneOff width={16} />
-                    </Button>
+                    <div className="count">
+                        <BarChartAlt2 size={15} />
+                        {count} connected · {formatDuration(seconds)}
+                    </div>
+                    <div className="controls">
+                        <button
+                            type="button"
+                            className={`control ${audioMuted ? "active" : ""}`}
+                            title={audioMuted ? "Unmute" : "Mute"}
+                            disabled={!joined}
+                            onClick={() => command("toggleAudio")}>
+                            {audioMuted ? (
+                                <MicrophoneOff size={16} />
+                            ) : (
+                                <Microphone size={16} />
+                            )}
+                        </button>
+                        <button
+                            type="button"
+                            className={`control ${videoMuted ? "active" : ""}`}
+                            title={videoMuted ? "Start camera" : "Stop camera"}
+                            disabled={!joined}
+                            onClick={() => command("toggleVideo")}>
+                            {videoMuted ? (
+                                <VideoOff size={16} />
+                            ) : (
+                                <Video size={16} />
+                            )}
+                        </button>
+                        <button
+                            type="button"
+                            className={`control ${sharing ? "active" : ""}`}
+                            title={sharing ? "Stop sharing" : "Share screen"}
+                            disabled={!joined}
+                            onClick={() => command("toggleShareScreen")}>
+                            <Desktop size={16} />
+                        </button>
+                        <button
+                            type="button"
+                            className="control leave"
+                            title="Leave call"
+                            onClick={voiceState.disconnect}>
+                            <PhoneOff size={16} />
+                        </button>
+                    </div>
                 </div>
             )}
         </Wrap>

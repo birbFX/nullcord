@@ -213,6 +213,7 @@ pub async fn create_voice_state(
             voice_state.screensharing,
         )
         .set(format!("camera:{unique_key}"), voice_state.camera)
+        .set_ex(format!("vc_alive:{user_id}:{}", &channel.id), 1, 90)
         .query_async::<_, ()>(&mut get_connection().await?.into_inner())
         .await
         .to_internal_error()?;
@@ -237,6 +238,7 @@ pub async fn delete_voice_state(channel: &UserVoiceChannel, user_id: &str) -> Re
             format!("screensharing:{unique_key}"),
             format!("camera:{unique_key}"),
             unique_key.clone(),
+            format!("vc_alive:{user_id}:{}", &channel.id),
         ])
         .query_async(&mut get_connection().await?.into_inner())
         .await
@@ -264,6 +266,8 @@ pub async fn delete_channel_voice_state(
             format!("camera:{unique_key}"),
             unique_key.clone(),
         ]);
+
+        pipeline.del(format!("vc_alive:{user_id}:{}", &channel.id));
     }
 
     pipeline
@@ -406,13 +410,46 @@ pub async fn get_voice_peers(channel_id: &str) -> Result<Vec<(String, String)>> 
     Ok(peers)
 }
 
-pub async fn get_voice_channel_members(channel: &UserVoiceChannel) -> Result<Option<Vec<String>>> {
+pub async fn refresh_voice_alive(channel_id: &str, user_id: &str) -> Result<()> {
     get_connection()
         .await?
-        .smembers::<_, Option<Vec<String>>>(format!("vc_members:{}", &channel.id))
+        .set_ex(format!("vc_alive:{user_id}:{channel_id}"), 1, 90)
         .await
         .to_internal_error()
-        .map(|opt| opt.and_then(|v| if v.is_empty() { None } else { Some(v) }))
+}
+
+pub async fn get_voice_channel_members(channel: &UserVoiceChannel) -> Result<Option<Vec<String>>> {
+    let mut conn = get_connection().await?;
+
+    let members: Vec<String> = conn
+        .smembers(format!("vc_members:{}", &channel.id))
+        .await
+        .to_internal_error()?;
+
+    let mut alive = Vec::with_capacity(members.len());
+
+    for user_id in members {
+        let connected: i32 = conn
+            .exists(format!("vc_alive:{user_id}:{}", &channel.id))
+            .await
+            .unwrap_or(0);
+
+        if connected > 0 {
+            alive.push(user_id);
+        } else {
+            // Session died without a leave call; prune the stale member.
+            let _: i32 = conn
+                .srem(format!("vc_members:{}", &channel.id), &user_id)
+                .await
+                .unwrap_or(0);
+            let _: i32 = conn
+                .srem(format!("vc:{user_id}"), channel)
+                .await
+                .unwrap_or(0);
+        }
+    }
+
+    Ok(if alive.is_empty() { None } else { Some(alive) })
 }
 
 pub async fn get_voice_state(

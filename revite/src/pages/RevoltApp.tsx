@@ -5,6 +5,7 @@ import styled, { css } from "styled-components/macro";
 import { useEffect, useState } from "preact/hooks";
 
 import QuestTracker from "../components/QuestTracker";
+import { IncomingCall } from "../components/navigation/IncomingCall";
 import ContextMenus from "../lib/ContextMenus";
 import { isTouchscreenDevice } from "../lib/isTouchscreenDevice";
 
@@ -231,6 +232,7 @@ export default function App() {
                     <QuestTracker />
                 </OverlappingPanels>
             </AppContainer>
+            <IncomingCall />
         </>
     );
 }
