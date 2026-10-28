@@ -53,16 +53,15 @@ variables.
 
 ## Calls, video and screen sharing
 
-Voice channels and DM/group calls use LiveKit. The web client supports
-microphone, camera, screen share with tab audio where the browser allows it,
-deafen, input/output device selection and a participant video grid. The
-backend mints short-lived LiveKit tokens, and `revolt-voice-ingress` keeps
-channel voice state and call system messages in sync.
+Voice channels and DM/group calls are embedded through the Jitsi IFrame API
+on the public `meet.element.io` relay. Jitsi provides the SFU/TURN path for
+remote participants, microphone, camera and screen sharing; NullCord tracks
+the participant count and syncs hang-up back to the call view.
 
-See [`VOICE.md`](./VOICE.md) for the port map, required LiveKit config and
-NAT/CGNAT troubleshooting. Signalling goes through the Cloudflare tunnel;
-WebRTC media needs UDP `50000-50015` and TCP `7881` reachable for remote
-participants.
+This relay exists because the reference host is behind CGNAT and cannot accept
+inbound WebRTC media. See [`VOICE.md`](./VOICE.md) for the architecture,
+privacy notes, self-hosting instructions and troubleshooting. The backend
+still contains the legacy LiveKit path for LAN/public-SFU deployments.
 
 ## Usernames
 

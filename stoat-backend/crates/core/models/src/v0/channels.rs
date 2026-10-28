@@ -302,6 +302,28 @@ auto_derived!(
         pub participants: Vec<UserVoiceState>,
     }
 
+    /// A peer-to-peer voice peer
+    pub struct VoicePeer {
+        /// User this peer belongs to
+        pub user_id: String,
+        /// PeerJS peer id
+        pub peer_id: String,
+    }
+
+    /// Peer-to-peer voice room state
+    pub struct VoicePeersResponse {
+        /// Users currently in the call
+        pub members: Vec<String>,
+        /// Registered PeerJS peers
+        pub peers: Vec<VoicePeer>,
+    }
+
+    /// Join a peer-to-peer voice call
+    pub struct DataVoicePeer {
+        /// PeerJS peer id for this browser
+        pub peer_id: String,
+    }
+
     /// Join a voice channel
     pub struct DataJoinCall {
         /// Name of the node to join

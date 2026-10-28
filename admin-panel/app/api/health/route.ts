@@ -51,7 +51,8 @@ function tcpCheck(name: string, host: string, port: number): Promise<Check> {
 export async function GET() {
   const apiUrl = process.env.NULLCORD_API_URL || "http://127.0.0.1:14702";
 
-  const [database, api, livekit, gateway, redis, voice] = await Promise.all([
+  const [database, api, livekit, gateway, redis, voice, jitsi] =
+    await Promise.all([
     db()
       .command({ ping: 1 })
       .then(() => ({
@@ -69,9 +70,21 @@ export async function GET() {
     tcpCheck("Gateway", "127.0.0.1", 14703),
     tcpCheck("Redis", "127.0.0.1", 6379),
     tcpCheck("Voice webhook", "127.0.0.1", 8500),
+    httpCheck(
+      "Jitsi call relay",
+      "https://meet.element.io/external_api.js",
+    ),
   ]);
 
-  const checks = [database, api, livekit, gateway, redis, voice];
+  const checks = [
+    database,
+    api,
+    livekit,
+    gateway,
+    redis,
+    voice,
+    jitsi,
+  ];
   const ok = checks.every((check) => check.ok);
 
   return NextResponse.json(

@@ -76,6 +76,7 @@ export default async function DeveloperOverview() {
     livekit,
     livekitTcp,
     voiceIngress,
+    jitsi,
   ] = await Promise.all([
     httpCheck("NullCord API", apiUrl),
     httpCheck("Open WebUI", "http://127.0.0.1:8080/"),
@@ -95,6 +96,10 @@ export default async function DeveloperOverview() {
     httpCheck("LiveKit voice", "http://127.0.0.1:7880/"),
     tcpCheck("LiveKit RTC/TCP", "127.0.0.1", 7881),
     tcpCheck("Voice webhook", "127.0.0.1", 8500),
+    httpCheck(
+        "Jitsi call relay",
+        "https://meet.element.io/external_api.js",
+    ),
   ]);
 
   const checks = [
@@ -106,6 +111,7 @@ export default async function DeveloperOverview() {
     livekit,
     livekitTcp,
     voiceIngress,
+    jitsi,
     webui,
     loader,
     searxng,
@@ -204,9 +210,8 @@ export default async function DeveloperOverview() {
 
       <Text as="p" size="1" color="gray" mt="6">
         API: <Code>{apiUrl}</Code> · Gateway: <Code>127.0.0.1:14703</Code> ·
-        LiveKit: <Code>127.0.0.1:7880</Code> (RTC TCP{" "}
-        <Code>7881</Code>, UDP <Code>50000-50015</Code>) · Voice webhook:{" "}
-        <Code>127.0.0.1:8500</Code>
+        Calls: Jitsi relay <Code>meet.element.io</Code> · Legacy LiveKit:{" "}
+        <Code>127.0.0.1:7880</Code> / <Code>8500</Code>
       </Text>
     </>
   );

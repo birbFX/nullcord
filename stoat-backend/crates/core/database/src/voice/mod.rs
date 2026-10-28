@@ -338,6 +338,74 @@ pub async fn update_voice_state(
         .to_internal_error()
 }
 
+pub async fn set_voice_peer(channel_id: &str, user_id: &str, peer_id: &str) -> Result<()> {
+    let mut conn = get_connection().await?;
+
+    let _: i32 = conn
+        .sadd(format!("p2p_members:{channel_id}"), user_id)
+        .await
+        .to_internal_error()?;
+
+    conn.set_ex(
+        format!("p2p_peer:{channel_id}:{user_id}"),
+        peer_id,
+        180,
+    )
+    .await
+    .to_internal_error()
+}
+
+pub async fn refresh_voice_peer(channel_id: &str, user_id: &str) -> Result<()> {
+    let mut conn = get_connection().await?;
+
+    conn.expire(format!("p2p_peer:{channel_id}:{user_id}"), 180)
+        .await
+        .to_internal_error()
+}
+
+pub async fn remove_voice_peer(channel_id: &str, user_id: &str) -> Result<()> {
+    let mut conn = get_connection().await?;
+
+    let _: i32 = conn
+        .srem(format!("p2p_members:{channel_id}"), user_id)
+        .await
+        .to_internal_error()?;
+
+    conn.del(format!("p2p_peer:{channel_id}:{user_id}"))
+        .await
+        .to_internal_error()
+}
+
+pub async fn get_voice_peers(channel_id: &str) -> Result<Vec<(String, String)>> {
+    let mut conn = get_connection().await?;
+
+    let members: Vec<String> = conn
+        .smembers(format!("p2p_members:{channel_id}"))
+        .await
+        .to_internal_error()?;
+
+    let mut peers = Vec::with_capacity(members.len());
+
+    for user_id in members {
+        let peer_id: Option<String> = conn
+            .get(format!("p2p_peer:{channel_id}:{user_id}"))
+            .await
+            .to_internal_error()?;
+
+        match peer_id {
+            Some(peer_id) => peers.push((user_id, peer_id)),
+            None => {
+                let _: i32 = conn
+                    .srem(format!("p2p_members:{channel_id}"), &user_id)
+                    .await
+                    .unwrap_or_default();
+            }
+        }
+    }
+
+    Ok(peers)
+}
+
 pub async fn get_voice_channel_members(channel: &UserVoiceChannel) -> Result<Option<Vec<String>>> {
     get_connection()
         .await?

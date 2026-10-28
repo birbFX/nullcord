@@ -1,11 +1,7 @@
 import { action, makeAutoObservable, runInAction } from "mobx";
-import { Channel, Nullable, toNullable } from "revolt.js";
+import { Channel, Nullable } from "revolt.js";
 
-import { takeError } from "../../controllers/client/jsx/error";
 import { modalController } from "../../controllers/modals/ModalController";
-
-import type { ProduceType, VoiceUser } from "./Types";
-import type VoiceClient from "./VoiceClient";
 
 export enum VoiceStatus {
     LOADING = 0,
@@ -17,20 +13,26 @@ export enum VoiceStatus {
     AUTHENTICATING,
     RTC_CONNECTING,
     CONNECTED,
-    // RECONNECTING
 }
 
 /**
- * MobX-facing state for the LiveKit voice client.
+ * Call state for the Jitsi-relayed voice room.
+ *
+ * Media, screen sharing and NAT traversal are handled by Jitsi's public
+ * infrastructure (meet.element.io). NullCord only tracks whether the call
+ * view is open and how many people Jitsi reports in the room.
  */
 class VoiceStateReference {
-    client?: VoiceClient;
     connecting?: boolean;
     error?: string;
 
     status: VoiceStatus;
     roomId: Nullable<string>;
-    participants: Map<string, VoiceUser>;
+    participants: Map<string, Record<string, never>>;
+    participantCount = 0;
+
+    private selfId?: string;
+    private supported = false;
 
     constructor() {
         this.roomId = null;
@@ -42,261 +44,102 @@ class VoiceStateReference {
         this.disconnect = this.disconnect.bind(this);
 
         makeAutoObservable(this, {
-            client: false,
             connecting: false,
+            supported: false,
+            selfId: false,
         });
     }
 
     @action syncState() {
-        if (!this.client) return;
-        this.roomId = toNullable(this.client.roomId);
-        this.participants.clear();
-        this.client.participants.forEach((v, k) => this.participants.set(k, v));
+        this.participantCount = Math.max(1, this.participantCount);
     }
 
     @action async loadVoice() {
         if (this.status !== VoiceStatus.UNLOADED) return;
-        this.status = VoiceStatus.LOADING;
 
-        try {
-            const { default: VoiceClient } = await import("./VoiceClient");
-            const client = new VoiceClient();
+        this.supported =
+            typeof window !== "undefined" &&
+            typeof window.RTCPeerConnection !== "undefined";
 
-            client.on("startProduce", this.syncState);
-            client.on("stopProduce", this.syncState);
-            client.on("userJoined", this.syncState);
-            client.on("userLeft", this.syncState);
-            client.on("userStartProduce", this.syncState);
-            client.on("userStopProduce", this.syncState);
-            client.on("close", () => {
-                runInAction(() => {
-                    this.connecting = false;
-                    this.status =
-                        this.status === VoiceStatus.UNAVAILABLE
-                            ? VoiceStatus.UNAVAILABLE
-                            : VoiceStatus.READY;
-                    this.roomId = null;
-                    this.participants.clear();
-                });
-            });
-            client.on("error", (error) => {
-                console.error("Voice error:", error);
-                runInAction(() => {
-                    this.error = error.message;
-                });
-            });
+        runInAction(() => {
+            this.status = this.supported
+                ? VoiceStatus.READY
+                : VoiceStatus.UNAVAILABLE;
+        });
 
-            runInAction(() => {
-                if (!client.supported()) {
-                    this.status = VoiceStatus.UNAVAILABLE;
-                } else {
-                    this.status = VoiceStatus.READY;
-                    this.client = client;
-                }
-            });
-        } catch (err) {
-            console.error("Failed to load voice library!", err);
-            runInAction(() => {
-                this.status = VoiceStatus.UNAVAILABLE;
-                this.error =
-                    "Voice failed to load. Reload the page and try again.";
-            });
-            modalController.push({
-                type: "error",
-                error: "Voice failed to load. Reload the page and try again.",
-            });
+        if (!this.supported) {
+            this.error =
+                "This browser cannot make calls (WebRTC is unavailable).";
+            modalController.push({ type: "error", error: this.error });
         }
     }
 
     @action async connect(channel: Channel) {
-        if (!this.client) await this.loadVoice();
-        if (!this.client?.supported()) {
+        if (!this.supported) await this.loadVoice();
+        if (!this.supported) {
             this.error =
                 "This browser cannot make calls (WebRTC is unavailable).";
-            modalController.push({
-                type: "error",
-                error: this.error,
-            });
+            modalController.push({ type: "error", error: this.error });
             return channel;
         }
 
-        if (
-            this.roomId === channel._id &&
-            this.status === VoiceStatus.CONNECTED
-        )
-            return channel;
+        if (this.roomId === channel._id) return channel;
 
-        if (this.roomId) this.disconnect();
-
-        this.connecting = true;
+        this.disconnect();
         this.error = undefined;
-        this.status = VoiceStatus.CONNECTING;
+        this.selfId = channel.client.user?._id;
+        this.roomId = channel._id;
+        this.participantCount = 1;
+        this.participants = new Map(
+            this.selfId ? [[this.selfId, {}]] : [],
+        );
+        this.status = VoiceStatus.CONNECTED;
+        this.connecting = false;
 
-        try {
-            const call = await channel.joinCall();
-
-            await this.client.connect(call.url, channel._id);
-            runInAction(() => {
-                this.roomId = channel._id;
-                this.status = VoiceStatus.AUTHENTICATING;
-            });
-
-            await this.client.authenticate(call.token);
-            this.syncState();
-
-            runInAction(() => {
-                this.status = VoiceStatus.RTC_CONNECTING;
-            });
-
-            await this.client.initializeTransports();
-
-            runInAction(() => {
-                this.status = VoiceStatus.CONNECTED;
-                this.connecting = false;
-            });
-        } catch (err) {
-            console.error("Failed to join voice channel:", err);
-            const raw = takeError(err);
-            const message =
-                raw === "AlreadyConnected"
-                    ? "You are already in a call. Leave it and try again."
-                    : raw === "NetworkError"
-                      ? "Could not reach the voice server. Check your connection."
-                      : raw;
-
-            runInAction(() => {
-                this.status = VoiceStatus.READY;
-                this.connecting = false;
-                this.error = message;
-            });
-
-            modalController.push({
-                type: "error",
-                error: message,
-            });
-
-            try {
-                this.client.disconnect();
-            } catch {
-                // already closed
-            }
-        }
-
-        this.syncState();
         return channel;
     }
 
     @action disconnect() {
         this.connecting = false;
-        this.status = this.client ? VoiceStatus.READY : VoiceStatus.UNLOADED;
-
-        this.client?.disconnect();
-        this.syncState();
+        this.status = this.supported
+            ? VoiceStatus.READY
+            : VoiceStatus.UNLOADED;
+        this.roomId = null;
+        this.participants = new Map();
+        this.participantCount = 0;
     }
 
-    isProducing(type: ProduceType) {
-        switch (type) {
-            case "audio":
-                return this.client?.audioProducer !== undefined;
-            case "video":
-                return this.client?.cameraPublication !== undefined;
-            case "screen":
-                return this.client?.screenPublication !== undefined;
+    @action setParticipantCount(count: number) {
+        this.participantCount = Math.max(1, count);
+        const next = new Map<string, Record<string, never>>();
+        if (this.selfId) next.set(this.selfId, {});
+        for (let i = 1; i < this.participantCount; i += 1) {
+            next.set(`remote-${i}`, {});
         }
+        this.participants = next;
+    }
+
+    isProducing(_type: "audio" | "video" | "screen") {
+        // Jitsi owns the media tracks and its own mute/camera controls.
+        return false;
     }
 
     isDeaf() {
-        if (!this.client) return false;
-        return this.client.isDeaf;
-    }
-
-    getVideoTrack(identity: string, source: "camera" | "screen") {
-        return this.client?.getVideoTrack(identity, source);
+        return false;
     }
 
     async startAudioPlayback() {
-        await this.client?.startAudioPlayback();
+        // Jitsi handles audio playback inside its iframe.
     }
 
-    async switchDevice(kind: MediaDeviceKind, deviceId: string) {
-        await this.client?.switchDevice(kind, deviceId);
+    async switchDevice(_kind: MediaDeviceKind, _deviceId: string) {
+        // Use Jitsi's own device settings inside the call.
     }
 
-    async startDeafen() {
-        if (!this.client) return;
-        if (this.client.isDeaf) return;
-        this.client.setDeafened(true);
-        this.syncState();
-    }
-
-    async stopDeafen() {
-        if (!this.client) return;
-        if (!this.client.isDeaf) return;
-        this.client.setDeafened(false);
-        this.syncState();
-    }
-
-    async startProducing(type: ProduceType) {
-        if (!this.client) return;
-
-        try {
-            switch (type) {
-                case "audio": {
-                    if (this.client.audioProducer !== undefined) return;
-
-                    if (navigator.mediaDevices === undefined)
-                        throw new Error("No media devices.");
-
-                    const mediaDevice =
-                        window.localStorage.getItem("audioInputDevice");
-
-                    const mediaStream =
-                        await navigator.mediaDevices.getUserMedia({
-                            audio: mediaDevice
-                                ? { deviceId: mediaDevice }
-                                : true,
-                        });
-
-                    await this.client.startProduce(
-                        mediaStream.getAudioTracks()[0],
-                        "audio",
-                    );
-                    break;
-                }
-                case "video":
-                    await this.client.startCamera();
-                    break;
-                case "screen":
-                    await this.client.startScreenShare();
-                    break;
-            }
-        } catch (err) {
-            console.error("Failed to start producing:", err);
-            runInAction(() => {
-                this.error = err instanceof Error ? err.message : String(err);
-            });
-        }
-
-        this.syncState();
-    }
-
-    async stopProducing(type: ProduceType) {
-        if (!this.client) return;
-
-        switch (type) {
-            case "audio":
-                await this.client.stopProduce("audio");
-                break;
-            case "video":
-                await this.client.stopCamera();
-                break;
-            case "screen":
-                await this.client.stopScreenShare();
-                break;
-        }
-
-        this.syncState();
-    }
+    async startDeafen() {}
+    async stopDeafen() {}
+    async startProducing(_type: "audio" | "video" | "screen") {}
+    async stopProducing(_type: "audio" | "video" | "screen") {}
 }
 
 export const voiceState = new VoiceStateReference();
