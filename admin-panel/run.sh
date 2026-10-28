@@ -20,6 +20,7 @@ start() {
     if pid="$(running_pid)"; then log "already running (pid $pid)"; return 0; fi
     [ -f "$DIR/server/.build/server/index.js" ] || { log "not built: run bun run build"; return 1; }
     mkdir -p "$DIR/.run" "$DIR/server/.build/server/modules"
+    cd "$DIR" || return 1
     setsid nohup env NODE_ENV=production HOST=0.0.0.0 PORT="${PORT:-3000}" \
         NODE_EXTRA_CA_CERTS="$DIR/revolt.crt" \
         NODE_OPTIONS="--max-old-space-size=4096" \

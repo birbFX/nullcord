@@ -2,6 +2,7 @@ services:
   # Redis
   redis:
     image: mirror.gcr.io/eqalpha/keydb
+    restart: unless-stopped
     ports:
       - "6379:6379"
 
@@ -9,6 +10,7 @@ services:
   database:
     image: mirror.gcr.io/mongo
     command: mongod --replSet rs0
+    restart: unless-stopped
     ports:
       - "27017:27017"
     volumes:
@@ -31,16 +33,16 @@ services:
   minio:
     image: mirror.gcr.io/pgsty/silo
     command: server /data --console-address ":9001"
+    restart: unless-stopped
     environment:
       MINIO_ROOT_USER: minioautumn
       MINIO_ROOT_PASSWORD: minioautumn
       MINIO_REGION: minio
     volumes:
-      - ./.data/minio:/data
+      - ${MINIO_DATA_DIR:-./.data/minio}:/data
     ports:
       - "14009:9000"
       - "14010:9001"
-    restart: always
 
   # Create buckets for Silo.
   createbuckets:
@@ -56,6 +58,7 @@ services:
   # Rabbit
   rabbit:
     image: mirror.gcr.io/rabbitmq:4-management
+    restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: rabbituser
       RABBITMQ_DEFAULT_PASS: rabbitpass
@@ -71,6 +74,7 @@ services:
   # Mock SMTP server
   maildev:
     image: mirror.gcr.io/maildev/maildev:2.2.1
+    restart: unless-stopped
     ports:
       - "14025:25"
       - "14080:8080"
@@ -82,6 +86,7 @@ services:
 
   livekit:
     image: ghcr.io/stoatchat/livekit-server:v1.9.13
+    restart: unless-stopped
     # LiveKit exits if it cannot reach Redis on boot; start it after Redis.
     depends_on:
       - redis
