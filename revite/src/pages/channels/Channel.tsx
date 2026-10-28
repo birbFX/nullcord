@@ -235,7 +235,7 @@ const TextChannel = observer(({ channel }: { channel: ChannelI }) => {
                 <ErrorBoundary section="renderer">
                     <ChannelContent>
                         {voiceState.roomId === channel._id ? (
-                            <VoiceHeader id={channel._id} />
+                            <VoiceHeader id={channel._id} embedded />
                         ) : (
                             <>
                                 <NewMessages

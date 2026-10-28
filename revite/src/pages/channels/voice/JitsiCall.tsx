@@ -124,7 +124,7 @@ export function JitsiCall({
                     return;
 
                 const api = new window.JitsiMeetExternalAPI(JITSI_HOST, {
-                    roomName: `nullcord-${id}`,
+                    roomName: `nullcord${id}`,
                     parentNode: ref.current,
                     userInfo: { displayName },
                     configOverwrite: {
