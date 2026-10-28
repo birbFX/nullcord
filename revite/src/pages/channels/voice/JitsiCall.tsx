@@ -309,7 +309,12 @@ export function JitsiCall({
                 <div className="status">
                     <div className="count">
                         <BarChartAlt2 size={15} />
-                        {count} connected · {formatDuration(seconds)}
+                        {!joined
+                            ? "Connecting to relay…"
+                            : count <= 1
+                              ? "Waiting for others"
+                              : `${count} connected`}
+                        {joined && ` · ${formatDuration(seconds)}`}
                     </div>
                     <div className="controls">
                         <button
