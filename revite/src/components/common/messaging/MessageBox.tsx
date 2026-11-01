@@ -9,7 +9,7 @@ import { Text } from "preact-i18n";
 import { memo } from "preact/compat";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
-import { IconButton, Picker } from "@revoltchat/ui";
+import { Button, IconButton, Picker } from "@revoltchat/ui";
 
 import TextAreaAutoSize from "../../../lib/TextAreaAutoSize";
 import { debounce } from "../../../lib/debounce";
@@ -78,6 +78,25 @@ const Base = styled.div`
             overflow: hidden;
             text-overflow: ellipsis;
         }
+    }
+`;
+
+const BlockedComposer = styled(Base)`
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: linear-gradient(
+        90deg,
+        rgba(237, 66, 69, 0.16),
+        var(--message-box) 65%
+    );
+    border-top: 1px solid rgba(237, 66, 69, 0.25);
+
+    .text {
+        flex-grow: 1;
+        padding: 8px 4px;
+        color: var(--foreground);
+        font-size: var(--text-size);
     }
 `;
 
@@ -230,6 +249,12 @@ export default observer(({ channel }: Props) => {
 
     const renderer = getRenderer(channel);
 
+    // The blocker cannot send to the person they blocked. Show an explicit
+    // composer state with a direct Unblock action instead of an input.
+    const blockedByMe =
+        channel.channel_type === "DirectMessage" &&
+        channel.recipient?.relationship === "Blocked";
+
     // A read-only DM is usually the result of the other user blocking us.
     // Keep the composer available so the attempted send can surface the
     // server's 403 in a local, dismissible Clyde notice.
@@ -262,6 +287,24 @@ export default observer(({ channel }: Props) => {
                     </div>
                 </Blocked>
             </Base>
+        );
+    }
+
+    if (blockedByMe) {
+        return (
+            <BlockedComposer>
+                <div className="text">
+                    You cannot send messages to a user you have blocked.
+                </div>
+                <Button
+                    palette="secondary"
+                    compact
+                    onClick={() => {
+                        void channel.recipient?.unblockUser();
+                    }}>
+                    Unblock
+                </Button>
+            </BlockedComposer>
         );
     }
 
