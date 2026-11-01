@@ -647,7 +647,7 @@ export default observer(({ channel }: Props) => {
                 )}
             </FloatingLayer>
             <Base>
-                {channel.havePermission("UploadFiles") ? (
+                {channel.havePermission("UploadFiles") && !readOnlyDm ? (
                     <FileAction>
                         <FileUploader
                             size={24}
@@ -760,7 +760,7 @@ export default observer(({ channel }: Props) => {
                     }
                     onChange={(e) => {
                         setMessage(e.currentTarget.value);
-                        startTyping();
+                        if (!readOnlyDm) startTyping();
                         onChange(e);
                     }}
                     onFocus={onFocus}
