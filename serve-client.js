@@ -14,10 +14,6 @@ const sirv = require(path.join(__dirname, "revite", "node_modules", "sirv"));
 const DIST = path.join(__dirname, "revite", "dist");
 const FORWEB_DIST = path.join(__dirname, "for-web", "dist");
 const PORT = Number(process.env.CLIENT_PORT || 5173);
-const SUPPORT_HOST = (
-    process.env.SUPPORT_HOST || "support.canyonlakelabs.com"
-).toLowerCase();
-const SUPPORT_PAGE = path.join(__dirname, "support.html");
 
 function headers(res, pathname) {
     res.setHeader("X-Content-Type-Options", "nosniff");
@@ -53,31 +49,6 @@ const forwebHandler = fs.existsSync(path.join(FORWEB_DIST, "index.html"))
     : null;
 
 const server = http.createServer((req, res) => {
-    const host = (req.headers.host || "").split(":")[0].toLowerCase();
-
-    // Dedicated help centre for failed-message / blocking notices.
-    if (host === SUPPORT_HOST) {
-        if (req.method === "HEAD") {
-            res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-            res.end();
-            return;
-        }
-
-        res.writeHead(200, {
-            "Content-Type": "text/html; charset=utf-8",
-            "Cache-Control": "no-cache",
-            "X-Content-Type-Options": "nosniff",
-        });
-        fs.createReadStream(SUPPORT_PAGE)
-            .on("error", () => {
-                res.end(
-                    "<h1>Canyon Lake Labs Support</h1><p>Support page unavailable.</p>",
-                );
-            })
-            .pipe(res);
-        return;
-    }
-
     // Health check without touching disk.
     const cookies = req.headers.cookie || "";
     const stoatMode = /(?:^|;\s*)nullcord_client=stoat(?:;|$)/.test(cookies);
