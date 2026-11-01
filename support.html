@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content="#191919" />
+        <title>Message Not Delivered • Canyon Lake Labs Support</title>
+        <style>
+            :root {
+                color-scheme: dark;
+                --background: #191919;
+                --surface: #232323;
+                --border: #343434;
+                --foreground: #f3f3f3;
+                --muted: #a7a7a7;
+                --accent: #5865f2;
+                --danger: #ed4245;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                min-height: 100vh;
+                display: flex;
+                justify-content: center;
+                padding: 32px 18px;
+                color: var(--foreground);
+                background:
+                    radial-gradient(circle at 20% 0%, #2b2d6e 0, transparent 34rem),
+                    var(--background);
+                font-family:
+                    Inter, ui-sans-serif, system-ui, -apple-system,
+                    BlinkMacSystemFont, "Segoe UI", sans-serif;
+                line-height: 1.55;
+            }
+
+            main {
+                width: 100%;
+                max-width: 760px;
+            }
+
+            .brand {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 32px;
+                font-weight: 700;
+                letter-spacing: 0.01em;
+            }
+
+            .brand-mark {
+                width: 36px;
+                height: 36px;
+                display: grid;
+                place-items: center;
+                border-radius: 10px;
+                color: #fff;
+                background: linear-gradient(135deg, #5865f2, #8b5cf6);
+                font-size: 18px;
+            }
+
+            .card {
+                overflow: hidden;
+                border: 1px solid var(--border);
+                border-radius: 18px;
+                background: color-mix(in srgb, var(--surface) 92%, transparent);
+                box-shadow: 0 30px 90px rgba(0, 0, 0, 0.35);
+            }
+
+            .card-head {
+                padding: 30px 32px 24px;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .eyebrow {
+                margin: 0 0 8px;
+                color: #aeb4ff;
+                font-size: 12px;
+                font-weight: 700;
+                letter-spacing: 0.14em;
+                text-transform: uppercase;
+            }
+
+            h1 {
+                margin: 0;
+                font-size: clamp(26px, 4vw, 38px);
+                line-height: 1.15;
+            }
+
+            .lead {
+                margin: 12px 0 0;
+                color: var(--muted);
+            }
+
+            .content {
+                padding: 26px 32px 34px;
+            }
+
+            h2 {
+                margin: 26px 0 10px;
+                font-size: 17px;
+            }
+
+            h2:first-child {
+                margin-top: 0;
+            }
+
+            p {
+                margin: 0 0 12px;
+                color: #d7d7d7;
+            }
+
+            ul {
+                margin: 0 0 18px;
+                padding-left: 22px;
+                color: #d7d7d7;
+            }
+
+            li + li {
+                margin-top: 6px;
+            }
+
+            strong {
+                color: var(--foreground);
+            }
+
+            .reason {
+                display: inline-block;
+                margin-right: 6px;
+                padding: 1px 7px;
+                border: 1px solid #4b4b4b;
+                border-radius: 999px;
+                color: var(--muted);
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+            }
+
+            .blocked {
+                margin: 22px 0;
+                padding: 16px 18px;
+                border: 1px solid rgba(237, 66, 69, 0.35);
+                border-radius: 12px;
+                background: rgba(237, 66, 69, 0.08);
+            }
+
+            .blocked p {
+                margin: 0;
+                color: #ffd6d7;
+            }
+
+            .footer {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-top: 24px;
+                color: var(--muted);
+                font-size: 13px;
+            }
+
+            a {
+                color: #aeb4ff;
+            }
+
+            .back {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 9px 14px;
+                border-radius: 9px;
+                color: #fff;
+                background: var(--accent);
+                font-weight: 600;
+                text-decoration: none;
+            }
+
+            @media (max-width: 560px) {
+                .card-head,
+                .content {
+                    padding-inline: 20px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <div class="brand">
+                <span class="brand-mark">C</span>
+                <span>Canyon Lake Labs Support</span>
+            </div>
+
+            <section class="card">
+                <header class="card-head">
+                    <p class="eyebrow">Message delivery</p>
+                    <h1>Your message could not be delivered.</h1>
+                    <p class="lead">
+                        NullCord stopped this message before it reached the other
+                        person. Here are the most common reasons.
+                    </p>
+                </header>
+
+                <div class="content">
+                    <h2>Why did this happen?</h2>
+                    <ul>
+                        <li>
+                            <strong>You are blocked.</strong> The person you are
+                            trying to message has blocked your account. Blocking
+                            also removes any friendship between the two accounts.
+                        </li>
+                        <li>
+                            <strong>Privacy settings.</strong> The other person
+                            only accepts messages from friends or mutual
+                            connections.
+                        </li>
+                        <li>
+                            <strong>No shared conversation.</strong> Direct
+                            messages can only be opened when the other person
+                            allows messages from you.
+                        </li>
+                        <li>
+                            <strong>Server permissions.</strong> In a server, a
+                            role, timeout or channel override may prevent you
+                            from sending messages.
+                        </li>
+                        <li>
+                            <strong>Account state.</strong> The recipient may be
+                            suspended, deleted or otherwise unavailable.
+                        </li>
+                    </ul>
+
+                    <div class="blocked">
+                        <p>
+                            <strong>Blocked?</strong> A block is one-way. The
+                            blocked account can still see your username and
+                            profile picture in existing conversations, but cannot
+                            view your profile or send you new messages. The block
+                            also removes the friendship automatically.
+                        </p>
+                    </div>
+
+                    <h2>What can I do?</h2>
+                    <p>
+                        If you believe this is a mistake, contact the person
+                        outside NullCord. Only the person who blocked you can
+                        remove the block. For server permission issues, ask a
+                        server administrator to check your roles and channel
+                        overrides.
+                    </p>
+
+                    <div class="footer">
+                        <span>Only you can see the failed-message notice.</span>
+                        <a class="back" href="https://nullcord.canyonlakelabs.com/">
+                            Return to NullCord
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </body>
+</html>

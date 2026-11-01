@@ -1,4 +1,4 @@
-import { ListUl } from "@styled-icons/boxicons-regular";
+import { Block, ListUl } from "@styled-icons/boxicons-regular";
 import {
     Envelope,
     Edit,
@@ -98,8 +98,12 @@ export const UserProfile = observer(
             let cancelled = false;
             if (isPlaceholder) return;
             if (session.state === "Online" && typeof mutual === "undefined") {
-                if (user._id === client.user?._id) {
-                    // The API rejects mutual lookup for yourself (400).
+                if (
+                    user._id === client.user?._id ||
+                    user.relationship === "Blocked" ||
+                    user.relationship === "BlockedOther"
+                ) {
+                    // Blocked profiles cannot reveal mutual communities.
                     setMutual({ users: [], servers: [], channels: [] });
                     return;
                 }
@@ -153,6 +157,9 @@ export const UserProfile = observer(
 
         const badges = user.badges ?? 0;
         const flags = user.flags ?? 0;
+        const blocked =
+            user.relationship === "Blocked" ||
+            user.relationship === "BlockedOther";
 
         const children = (
             <>
@@ -208,18 +215,21 @@ export const UserProfile = observer(
                                     </Localizer>
                                 </span>
                             </div>
-                            <div className={styles.badges}>
-                                <UserBadges
-                                    badges={badges}
-                                    uid={user._id}
-                                    privileged={user.privileged}
-                                />
-                            </div>
-                            {user.status?.text && (
-                                <span className={styles.status}>
-                                    <UserStatus user={user} tooltip />
-                                </span>
+                            {user.relationship !== "BlockedOther" && (
+                                <div className={styles.badges}>
+                                    <UserBadges
+                                        badges={badges}
+                                        uid={user._id}
+                                        privileged={user.privileged}
+                                    />
+                                </div>
                             )}
+                            {user.relationship !== "BlockedOther" &&
+                                user.status?.text && (
+                                    <span className={styles.status}>
+                                        <UserStatus user={user} tooltip />
+                                    </span>
+                                )}
                         </div>
                         {isPublicBot && (
                             <Link to={`/bot/${user._id}`}>
@@ -271,6 +281,42 @@ export const UserProfile = observer(
                                 <UserX size={28} />
                             </IconButton>
                         )}
+                        {!user.bot &&
+                            flags != 2 &&
+                            flags != 4 &&
+                            user.relationship !== "User" &&
+                            user.relationship !== "BlockedOther" && (
+                                <Localizer>
+                                    <Tooltip
+                                        content={
+                                            <Text
+                                                id={
+                                                    user.relationship ===
+                                                    "Blocked"
+                                                        ? "app.context_menu.unblock_user"
+                                                        : "app.context_menu.block_user"
+                                                }
+                                            />
+                                        }>
+                                        <IconButton
+                                            onClick={() => {
+                                                if (
+                                                    user.relationship ===
+                                                    "Blocked"
+                                                ) {
+                                                    user.unblockUser();
+                                                } else {
+                                                    modalController.push({
+                                                        type: "block_user",
+                                                        target: user,
+                                                    });
+                                                }
+                                            }}>
+                                            <Block size={26} />
+                                        </IconButton>
+                                    </Tooltip>
+                                </Localizer>
+                            )}
                         {!user.bot && flags != 2 && flags != 4 && (
                             <Localizer>
                                 <Tooltip
@@ -291,37 +337,50 @@ export const UserProfile = observer(
                         )}
                     </div>
 
-                    <div className={styles.tabs}>
-                        <div
-                            data-active={tab === "profile"}
-                            onClick={() => setTab("profile")}>
-                            <Text id="app.special.popovers.user_profile.profile" />
-                        </div>
-                        {user.relationship !== "User" && (
-                            <>
-                                {!user.bot && (
+                    {!blocked && (
+                        <div className={styles.tabs}>
+                            <div
+                                data-active={tab === "profile"}
+                                onClick={() => setTab("profile")}>
+                                <Text id="app.special.popovers.user_profile.profile" />
+                            </div>
+                            {user.relationship !== "User" && (
+                                <>
+                                    {!user.bot && (
+                                        <div
+                                            data-active={tab === "friends"}
+                                            onClick={() => setTab("friends")}>
+                                            <Text id="app.special.popovers.user_profile.mutual_friends" />
+                                        </div>
+                                    )}
                                     <div
-                                        data-active={tab === "friends"}
-                                        onClick={() => setTab("friends")}>
-                                        <Text id="app.special.popovers.user_profile.mutual_friends" />
+                                        data-active={tab === "groups"}
+                                        onClick={() => setTab("groups")}>
+                                        <Text id="app.special.popovers.user_profile.mutual_groups" />
                                     </div>
-                                )}
-                                <div
-                                    data-active={tab === "groups"}
-                                    onClick={() => setTab("groups")}>
-                                    <Text id="app.special.popovers.user_profile.mutual_groups" />
-                                </div>
-                                <div
-                                    data-active={tab === "servers"}
-                                    onClick={() => setTab("servers")}>
-                                    <Text id="app.special.popovers.user_profile.mutual_servers" />
-                                </div>
-                            </>
-                        )}
-                    </div>
+                                    <div
+                                        data-active={tab === "servers"}
+                                        onClick={() => setTab("servers")}>
+                                        <Text id="app.special.popovers.user_profile.mutual_servers" />
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
                 </div>
                 <div className={styles.content}>
-                    {tab === "profile" &&
+                    {user.relationship === "BlockedOther" && (
+                        <Category>
+                            <Error error="403 Forbidden — This user has blocked you." />
+                        </Category>
+                    )}
+                    {user.relationship === "Blocked" && (
+                        <Category>
+                            <Error error="You blocked this user. Unblock them to view their profile." />
+                        </Category>
+                    )}
+                    {!blocked &&
+                        tab === "profile" &&
                         (profile?.content || flags > 0 || user.bot ? (
                             <div>
                                 {flags & 1 ? (

@@ -65,6 +65,18 @@ inbound WebRTC media. See [`VOICE.md`](./VOICE.md) for the architecture,
 privacy notes, self-hosting instructions and troubleshooting. The backend
 still contains the legacy LiveKit path for LAN/public-SFU deployments.
 
+## Blocking
+
+Users can block others from the context menu or their profile. Blocking
+automatically removes the friendship and prevents direct messages in both
+directions. The blocked account can still see the other user's username and
+profile picture, but profile details and message delivery return
+`403 Forbidden`.
+
+When a blocked user tries to send a DM, their client shows a local, dismissible
+Clyde-style notice. The notice is visible only to the sender and links to the
+help centre at [`support.canyonlakelabs.com`](https://support.canyonlakelabs.com/).
+
 ## Usernames
 
 Usernames are 2–35 characters and may contain Unicode letters, numbers,

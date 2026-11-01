@@ -26,6 +26,7 @@ import { ScrollState } from "../../../lib/renderer/types";
 import { useSession } from "../../../controllers/client/ClientController";
 import RequiresOnline from "../../../controllers/client/jsx/RequiresOnline";
 import { modalController } from "../../../controllers/modals/ModalController";
+import { BlockedNotices } from "../../../components/common/messaging/BlockedNotice";
 import ConversationStart from "./ConversationStart";
 import MessageRenderer from "./MessageRenderer";
 
@@ -332,6 +333,7 @@ export const MessageArea = observer(({ last_id, channel }: Props) => {
                     {renderer.state === "EMPTY" && (
                         <ConversationStart channel={channel} />
                     )}
+                    <BlockedNotices channelId={channel._id} />
                 </div>
             </Area>
         </MessageAreaWidthContext.Provider>

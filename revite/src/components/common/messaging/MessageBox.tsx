@@ -24,6 +24,7 @@ import {
 
 import { state, useApplicationState } from "../../../mobx/State";
 import { DraftObject } from "../../../mobx/stores/Draft";
+import { localNotices } from "../../../mobx/stores/LocalNotices";
 import { Reply } from "../../../mobx/stores/MessageQueue";
 
 import { dayjs } from "../../../context/Locale";
@@ -229,6 +230,13 @@ export default observer(({ channel }: Props) => {
 
     const renderer = getRenderer(channel);
 
+    // A read-only DM is usually the result of the other user blocking us.
+    // Keep the composer available so the attempted send can surface the
+    // server's 403 in a local, dismissible Clyde notice.
+    const readOnlyDm =
+        channel.channel_type === "DirectMessage" &&
+        !channel.havePermission("SendMessage");
+
     if (channel.server?.member?.timeout) {
         return (
             <Base>
@@ -257,7 +265,7 @@ export default observer(({ channel }: Props) => {
         );
     }
 
-    if (!channel.havePermission("SendMessage")) {
+    if (!channel.havePermission("SendMessage") && !readOnlyDm) {
         return (
             <Base>
                 <Blocked>
@@ -395,7 +403,19 @@ export default observer(({ channel }: Props) => {
                     replies,
                 });
             } catch (error) {
-                state.queue.fail(nonce, takeError(error));
+                if (
+                    channel.channel_type === "DirectMessage" &&
+                    (error as { response?: { status?: number } })?.response
+                        ?.status === 403
+                ) {
+                    state.queue.remove(nonce);
+                    localNotices.addBlockedMessage(channel._id);
+                    defer(() =>
+                        internalEmit("MessageArea", "jump_to_bottom"),
+                    );
+                } else {
+                    state.queue.fail(nonce, takeError(error));
+                }
             }
         }
     }
