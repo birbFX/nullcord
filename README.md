@@ -153,8 +153,9 @@ s.src = "/hack-client.js";
 document.head.append(s);
 ```
 
-It can inspect/edit the local session handoff, Orbs, Nitro tier, plugins,
-quest claims, UI mode, and `nullcord:*` storage. It does not call admin APIs.
+It can inspect the local session and storage, and change local-only plugins
+and UI mode. Orbs, Nitro tiers and quest claims are server-authoritative and
+cannot be changed by this overlay. It does not call admin APIs.
 
 ## NullCord Desktop
 
