@@ -1003,6 +1003,14 @@
         "React": {
             "t": "Use Reactions",
             "d": "Allows members to react to messages."
+        },
+        "MentionEveryone": {
+            "t": "Mention Everyone",
+            "d": "Allows members to use @everyone and @here to notify everyone who can see the channel, or only members who are online."
+        },
+        "MentionRoles": {
+            "t": "Mention Roles",
+            "d": "Allows members to mention roles in this server."
         }
     },
     "actions": {

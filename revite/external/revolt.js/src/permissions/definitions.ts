@@ -67,6 +67,10 @@ export const Permission = {
     Masquerade: 2 ** 28,
     /// React to messages with emoji
     React: 2 ** 29,
+    /// Mention everyone and online members
+    MentionEveryone: 2 ** 37,
+    /// Mention roles
+    MentionRoles: 2 ** 38,
 
     // * Voice permissions
     /// Connect to a voice channel
