@@ -173,23 +173,36 @@ pub async fn message_send(
         .as_ref()
         .map(|member| member.clone().into_owned().into());
 
-    Ok(Json(
-        Message::create_from_api(
-            db,
-            Some(amqp),
-            channel,
-            data,
-            v0::MessageAuthor::User(&author),
-            Some(model_user.clone()),
-            model_member.clone(),
-            user.limits().await,
-            idempotency,
-            permissions.has_channel_permission(ChannelPermission::SendEmbeds),
-            allow_mentions,
-        )
-        .await?
-        .into_model(Some(model_user), model_member),
-    ))
+    let has_image = data
+        .attachments
+        .as_ref()
+        .is_some_and(|attachments| !attachments.is_empty());
+    let server_id = channel.server().map(str::to_string);
+
+    let message = Message::create_from_api(
+        db,
+        Some(amqp),
+        channel,
+        data,
+        v0::MessageAuthor::User(&author),
+        Some(model_user.clone()),
+        model_member.clone(),
+        user.limits().await,
+        idempotency,
+        permissions.has_channel_permission(ChannelPermission::SendEmbeds),
+        allow_mentions,
+    )
+    .await?;
+
+    let _ = crate::routes::users::economy::record_message(
+        db.inner(),
+        &user.id,
+        server_id.as_deref(),
+        has_image,
+    )
+    .await;
+
+    Ok(Json(message.into_model(Some(model_user), model_member)))
 }
 
 #[cfg(test)]

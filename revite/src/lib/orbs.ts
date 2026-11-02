@@ -1,44 +1,29 @@
 import { isOwner } from "./owner";
-import { getQuestProgress, today, type Quest } from "./quests";
+import { economy } from "../mobx/stores/Economy";
+import type { Quest } from "./quests";
 
 export type { Quest } from "./quests";
 export { dailyQuests, QUESTS_EVENT } from "./quests";
 
 export const ORBS_EVENT = "nullcord:orbs";
 
-function orbKey(userId: string) {
-    return `nullcord:orbs:${userId}`;
-}
-
-function questKey(userId: string) {
-    return `nullcord:quests:${userId}`;
-}
-
+/** Current server-authoritative balance for the signed-in account. */
 export function getOrbs(userId?: string | null): number {
-    if (!userId || typeof localStorage === "undefined") return 0;
-    try {
-        return parseInt(localStorage.getItem(orbKey(userId)) ?? "0", 10) || 0;
-    } catch {
-        return 0;
-    }
+    if (userId && economy.userId && userId !== economy.userId) return 0;
+    return economy.orbs;
 }
 
-function setOrbs(userId: string, value: number) {
-    localStorage.setItem(orbKey(userId), String(Math.max(0, value)));
-    window.dispatchEvent(new Event(ORBS_EVENT));
+/** @deprecated Orbs are changed only by server endpoints. */
+export function addOrbs(_userId: string | null | undefined, _amount: number) {
+    // no-op: the server owns the balance
 }
 
-export function addOrbs(userId: string | null | undefined, amount: number) {
-    if (!userId || typeof localStorage === "undefined") return;
-    setOrbs(userId, getOrbs(userId) + amount);
-}
-
-export function spendOrbs(userId: string | null | undefined, amount: number) {
-    if (!userId || typeof localStorage === "undefined") return false;
-    const balance = getOrbs(userId);
-    if (balance < amount) return false;
-    setOrbs(userId, balance - amount);
-    return true;
+/** @deprecated Nitro purchases are performed by economy.redeem(). */
+export function spendOrbs(
+    _userId: string | null | undefined,
+    _amount: number,
+): boolean {
+    return false;
 }
 
 export function isAdminUser(
@@ -47,38 +32,24 @@ export function isAdminUser(
     return !!user && (!!user.privileged || isOwner(user._id));
 }
 
-export function formatOrbs(userId: string | null | undefined, admin: boolean) {
-    return admin ? "∞" : getOrbs(userId).toLocaleString();
+export function formatOrbs(_userId: string | null | undefined, admin: boolean) {
+    return admin ? "∞" : economy.orbs.toLocaleString();
 }
 
-function completedToday(userId: string): Record<string, string> {
-    try {
-        return JSON.parse(localStorage.getItem(questKey(userId)) ?? "{}");
-    } catch {
-        return {};
-    }
-}
-
-export function isQuestDone(userId: string | null | undefined, quest: Quest) {
-    if (!userId || typeof localStorage === "undefined") return false;
-    return completedToday(userId)[quest.id] === today();
-}
-
-export function completeQuest(
+export function isQuestDone(
     userId: string | null | undefined,
     quest: Quest,
 ): boolean {
-    if (!userId || typeof localStorage === "undefined") return false;
-    if (isQuestDone(userId, quest)) return false;
+    if (userId && economy.userId && userId !== economy.userId) return false;
+    return economy.quest(quest.id)?.claimed ?? false;
+}
 
-    // Only pay out when the event tracker actually saw the requirement.
-    if (!getQuestProgress(userId, quest).verified) return false;
-
-    const done = completedToday(userId);
-    done[quest.id] = today();
-    localStorage.setItem(questKey(userId), JSON.stringify(done));
-    addOrbs(userId, quest.reward);
-    return true;
+/** @deprecated Use economy.claim() and the server response. */
+export function completeQuest(
+    _userId: string | null | undefined,
+    _quest: Quest,
+): boolean {
+    return false;
 }
 
 export function isNitroOwner(user?: { _id?: string | null } | null) {

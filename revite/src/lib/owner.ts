@@ -1,3 +1,5 @@
+import { economy } from "../mobx/stores/Economy";
+
 /**
  * Canyon Lake Labs — owner / developer helpers.
  *
@@ -37,10 +39,6 @@ export const NITRO_IDS = new Set<string>([OWNER_ID]);
 
 export type NitroTier = "basic" | "nitro";
 
-function nitroKey(id: string) {
-    return `nullcord:nitro:${id}`;
-}
-
 export function getNitroTier(
     userOrId?:
         | string
@@ -51,20 +49,14 @@ export function getNitroTier(
 
     if (typeof userOrId === "string") {
         if (NITRO_IDS.has(userOrId) || userOrId === OWNER_ID) return "nitro";
-        if (typeof localStorage === "undefined") return null;
-        try {
-            const raw = localStorage.getItem(nitroKey(userOrId));
-            if (raw === "basic") return "basic";
-            if (raw === "nitro" || raw === "1") return "nitro";
-        } catch {
-            return null;
-        }
+        if (economy.userId === userOrId) return economy.nitro;
         return null;
     }
 
-    if (userOrId.privileged) return "nitro";
+    if (userOrId.privileged || isOwner(userOrId._id)) return "nitro";
     const id = userOrId._id ?? undefined;
-    return id ? getNitroTier(id) : null;
+    if (id && economy.userId === id) return economy.nitro;
+    return null;
 }
 
 export function isNitro(
@@ -86,14 +78,12 @@ export function isNitroFull(
     return getNitroTier(userOrId) === "nitro";
 }
 
-export function setNitroTier(userId: string, tier: NitroTier | null) {
-    if (typeof localStorage === "undefined") return;
-    try {
-        if (tier) localStorage.setItem(nitroKey(userId), tier);
-        else localStorage.removeItem(nitroKey(userId));
-    } catch {
-        // ignore storage failures
-    }
+/**
+ * @deprecated Nitro is changed by the server economy endpoint.
+ * This remains only for older call sites during migration.
+ */
+export function setNitroTier(_userId: string, _tier: NitroTier | null) {
+    // Server-authoritative. Use economy.redeem() instead.
 }
 
 

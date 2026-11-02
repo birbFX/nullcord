@@ -26,6 +26,19 @@ pub async fn join(
         return Err(create_error!(NotFound));
     }
 
+    if invite.creator() != user.id.as_str() {
+        let server_id = match &invite {
+            Invite::Server { server, .. } => Some(server.as_str()),
+            Invite::Group { .. } => None,
+        };
+        let _ = crate::routes::users::economy::record_invite_joined(
+            db.inner(),
+            invite.creator(),
+            server_id,
+        )
+        .await;
+    }
+
     match &invite {
         Invite::Server { server, .. } => {
             let server = db.fetch_server(server).await?;

@@ -64,6 +64,8 @@ pub async fn create_invite(
     )
     .await?;
 
+    let _ = crate::routes::users::economy::record_invite_created(db.inner(), &user.id).await;
+
     if let Some(server_id) = channel.server() {
         AuditLogEntryAction::InviteCreate {
             invite: invite.code().to_string(),

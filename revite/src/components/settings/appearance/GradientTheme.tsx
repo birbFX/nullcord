@@ -1,3 +1,4 @@
+import { observer } from "mobx-react-lite";
 import { useState } from "preact/hooks";
 import { Link } from "react-router-dom";
 
@@ -13,7 +14,7 @@ import {
 import { isNitroFull } from "../../../lib/owner";
 import { recordQuestEvent } from "../../../lib/quests";
 
-export default function GradientTheme({ onApplied }: { onApplied?: () => void }) {
+export default observer(function GradientTheme({ onApplied }: { onApplied?: () => void }) {
     const client = useClient();
     const theme = useApplicationState().settings.theme;
     const userId = client.user?._id;
@@ -235,4 +236,4 @@ export default function GradientTheme({ onApplied }: { onApplied?: () => void })
             </div>
         </div>
     );
-}
+});

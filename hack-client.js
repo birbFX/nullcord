@@ -112,36 +112,6 @@
     setTimeout(() => location.reload(), 500);
   }
 
-  function setOrbs() {
-    const uid = currentUserId();
-    const value = Number(document.getElementById("nc-hack-orbs").value);
-    if (!uid || !Number.isFinite(value)) return toast("Enter a user ID and Orbs.");
-    localStorage.setItem(KEY(`orbs:${uid}`), String(Math.max(0, Math.floor(value))));
-    toast("Orbs updated.");
-    refresh();
-  }
-
-  function setNitro() {
-    const uid = currentUserId();
-    const tier = document.getElementById("nc-hack-nitro").value;
-    if (!uid) return toast("Enter a user ID.");
-    if (tier === "none") localStorage.removeItem(KEY(`nitro:${uid}`));
-    else localStorage.setItem(KEY(`nitro:${uid}`), tier);
-    toast("Nitro tier updated.");
-  }
-
-  function unclaimQuests() {
-    const uid = currentUserId();
-    if (!uid) return toast("Enter a user ID.");
-    const key = KEY(`quests:${uid}`);
-    const claims = readJson(key, {});
-    for (const id of Object.keys(claims)) {
-      if (claims[id] === today()) delete claims[id];
-    }
-    localStorage.setItem(key, JSON.stringify(claims));
-    toast("Today's quest claims cleared.");
-  }
-
   function setUiMode() {
     localStorage.setItem("nullcord:ui-mode", document.getElementById("nc-hack-ui").value);
     toast("UI mode saved. Reload to apply.");
@@ -177,8 +147,7 @@
     });
     if (tokenKeys.length) add("HIGH", `Token-like values in localStorage: ${tokenKeys.join(", ")}`);
     if (localStorage.getItem("nullcord:handoff")) add("MEDIUM", "Active 2-minute handoff token is present.");
-    if (localStorage.getItem("nullcord:nitro:" + (session.userId || ""))) add("INFO", "Nitro tier is stored client-side and editable.");
-    if (localStorage.getItem("nullcord:orbs:" + (session.userId || ""))) add("INFO", "Orbs are stored client-side and editable.");
+    add("INFO", "Orbs, Nitro and quest claims are server-authoritative; legacy local values are ignored.");
 
     try {
       const res = await fetch(location.href, { method: "HEAD" });
@@ -212,10 +181,6 @@
 
   function refresh() {
     const uid = currentUserId();
-    const orbs = localStorage.getItem(KEY(`orbs:${uid}`));
-    if (orbs !== null) document.getElementById("nc-hack-orbs").value = orbs;
-    const nitro = localStorage.getItem(KEY(`nitro:${uid}`));
-    document.getElementById("nc-hack-nitro").value = nitro || "none";
     const states = readJson("nullcord:plugins", {});
     for (const id of ["server-tags", "quest-helper", "no-snow"]) {
       const checkbox = document.getElementById(`nc-hack-plugin-${id}`);
@@ -278,11 +243,7 @@
         </section>
         <section>
           <h3>Economy</h3>
-          <label>Orbs<input id="nc-hack-orbs" type="number" min="0" step="1"></label>
-          <div class="row"><button id="nc-hack-set-orbs">Set Orbs</button></div>
-          <label>Nitro tier<select id="nc-hack-nitro"><option value="none">None</option><option value="basic">Nitro Basic</option><option value="nitro">Nitro</option></select></label>
-          <div class="row"><button id="nc-hack-set-nitro">Set Nitro</button></div>
-          <div class="row"><button id="nc-hack-unclaim" style="background:#fbbf24">Clear today's quest claims</button></div>
+          <div class="muted">Orbs, Nitro and quest claims are server-authoritative. They cannot be changed from this local overlay.</div>
         </section>
         <section>
           <h3>Plugins</h3>
@@ -320,9 +281,6 @@
       navigator.clipboard?.writeText(document.getElementById("nc-hack-token").value);
       toast("Token copied.");
     });
-    on("nc-hack-set-orbs", setOrbs);
-    on("nc-hack-set-nitro", setNitro);
-    on("nc-hack-unclaim", unclaimQuests);
     on("nc-hack-set-ui", setUiMode);
     on("nc-hack-refresh", refresh);
     on("nc-hack-wipe", wipeNullCord);

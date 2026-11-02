@@ -4,6 +4,7 @@ use rocket::Route;
 mod add_friend;
 mod block_user;
 mod change_username;
+pub(crate) mod economy;
 mod edit_user;
 mod fetch_dms;
 mod fetch_profile;
@@ -19,6 +20,10 @@ mod unblock_user;
 
 pub fn routes() -> (Vec<Route>, OpenApi) {
     openapi_get_routes_spec![
+        // Economy
+        economy::fetch,
+        economy::claim_quest,
+        economy::redeem_nitro,
         // User Information
         fetch_self::fetch,
         fetch_user::fetch,

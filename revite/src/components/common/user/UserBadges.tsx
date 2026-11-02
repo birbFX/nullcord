@@ -1,4 +1,5 @@
 import { Shield } from "@styled-icons/boxicons-regular";
+import { observer } from "mobx-react-lite";
 import styled from "styled-components/macro";
 
 import { Text } from "preact-i18n";
@@ -59,7 +60,7 @@ interface Props {
 
 type Item = { key: string; title: string; node: Children };
 
-export default function UserBadges({
+export default observer(function UserBadges({
     badges,
     uid,
     privileged = false,
@@ -324,4 +325,4 @@ export default function UserBadges({
             )}
         </BadgesBase>
     );
-}
+});

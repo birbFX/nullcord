@@ -59,6 +59,11 @@ pub async fn edit(
         return Ok(Json(user.into_self(false).await));
     }
 
+    let changed_profile =
+        data.display_name.is_some() || data.pronouns.is_some() || data.profile.is_some();
+    let changed_avatar = data.avatar.is_some();
+    let changed_status = data.status.is_some();
+
     // 1. Remove fields from object
     if data.remove.contains(&v0::FieldsUser::Avatar) {
         if let Some(avatar) = &user.avatar {
@@ -127,6 +132,34 @@ pub async fn edit(
         data.remove.into_iter().map(Into::into).collect(),
     )
     .await?;
+
+    if changed_profile {
+        let _ = crate::routes::users::economy::record_event(
+            db.inner(),
+            &user.id,
+            "profile_updated",
+            1,
+        )
+        .await;
+    }
+    if changed_avatar {
+        let _ = crate::routes::users::economy::record_event(
+            db.inner(),
+            &user.id,
+            "avatar_updated",
+            1,
+        )
+        .await;
+    }
+    if changed_status {
+        let _ = crate::routes::users::economy::record_event(
+            db.inner(),
+            &user.id,
+            "status_updated",
+            1,
+        )
+        .await;
+    }
 
     Ok(Json(user.into_self(false).await))
 }

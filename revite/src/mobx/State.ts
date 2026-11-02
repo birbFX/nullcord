@@ -14,6 +14,7 @@ import Syncable from "./interfaces/Syncable";
 import Auth from "./stores/Auth";
 import Changelog from "./stores/Changelog";
 import Draft from "./stores/Draft";
+import { economy } from "./stores/Economy";
 import Experiments from "./stores/Experiments";
 import Layout from "./stores/Layout";
 import LocaleOptions from "./stores/LocaleOptions";
@@ -179,6 +180,9 @@ export default class State {
                 .pull(client)
                 .catch(console.error)
                 .finally(() => state.changelog.checkForUpdates());
+
+            // Server-authoritative Orbs, Nitro and quest state.
+            economy.fetch(client).catch(console.error);
         }
 
         // Register all the listeners required for saving and syncing state.
@@ -344,6 +348,7 @@ export default class State {
      */
     reset() {
         runInAction(() => {
+            economy.reset();
             this.draft = new Draft();
             this.experiments = new Experiments();
             this.layout = new Layout();

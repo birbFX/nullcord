@@ -51,6 +51,14 @@ pub async fn create_server(
     let (server, channels) = Server::create(db, data, &user, true).await?;
     let (_, channels) = Member::create(db, &server, &user, Some(channels)).await?;
 
+    let _ = crate::routes::users::economy::record_event(
+        db.inner(),
+        &user.id,
+        "server_created",
+        1,
+    )
+    .await;
+
     Ok(Json(v0::CreateServerLegacyResponse {
         server: server.into(db).await,
         channels: channels.into_iter().map(|channel| channel.into()).collect(),

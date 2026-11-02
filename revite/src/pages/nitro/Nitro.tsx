@@ -1,4 +1,5 @@
 import { Star } from "@styled-icons/boxicons-solid";
+import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "preact/hooks";
 import { Link } from "react-router-dom";
 import styled from "styled-components/macro";
@@ -7,20 +8,12 @@ import { Header } from "@revoltchat/ui";
 
 import GradientTheme from "../../components/settings/appearance/GradientTheme";
 
-import {
-    getNitroTier,
-    setNitroTier,
-    type NitroTier,
-} from "../../lib/owner";
 import { useClient } from "../../controllers/client/ClientController";
 import { useApplicationState } from "../../mobx/State";
-import {
-    getOrbs,
-    isAdminUser,
-    spendOrbs,
-} from "../../lib/orbs";
+import { isAdminUser } from "../../lib/orbs";
 import { isTouchscreenDevice } from "../../lib/isTouchscreenDevice";
 import { SOURCE_URL } from "../../lib/source";
+import { economy } from "../../mobx/stores/Economy";
 
 const Container = styled.div`
     flex-grow: 1;
@@ -176,29 +169,20 @@ const Footer = styled.p`
     }
 `;
 
-export default function Nitro() {
+export default observer(function Nitro() {
     const client = useClient();
     const state = useApplicationState();
     const theme = state.settings.theme;
-    const userId = client.user?._id;
-    const admin = isAdminUser(client.user);
-    const [tier, setTier] = useState<NitroTier | null>(() =>
-        getNitroTier(client.user),
-    );
+    const admin = economy.admin || isAdminUser(client.user);
+    const tier = admin ? "nitro" : economy.nitro;
     const active = tier !== null;
     const full = tier === "nitro";
-    const [orbs, setOrbs] = useState(() => getOrbs(userId));
+    const orbs = economy.orbs;
     const [note, setNote] = useState<{ plan: string; text: string }>();
 
     useEffect(() => {
-        const refresh = () => {
-            setTier(getNitroTier(client.user));
-            setOrbs(getOrbs(userId));
-        };
-        window.addEventListener("nullcord:nitro-changed", refresh);
-        return () =>
-            window.removeEventListener("nullcord:nitro-changed", refresh);
-    }, [client.user, userId]);
+        economy.fetch(client).catch(console.error);
+    }, [client]);
     const themeColours = [
         ["accent", "Accent"],
         ["background", "Background"],
@@ -227,12 +211,11 @@ export default function Nitro() {
     const asColour = (value?: string) =>
         /^#[0-9a-f]{6}$/i.test(value ?? "") ? value! : "#000000";
 
-    const redeem = (plan: "basic" | "nitro", cost: number) => {
-        if (!userId) return;
+    const redeem = async (plan: "basic" | "nitro", cost: number) => {
         if (plan === "basic" && active) return;
         if (plan === "nitro" && full) return;
 
-        if (!admin && !spendOrbs(userId, cost)) {
+        if (!admin && orbs < cost) {
             setNote({
                 plan,
                 text: `Not enough Orbs — you have ${orbs.toLocaleString()}. Earn more in Quests.`,
@@ -240,18 +223,23 @@ export default function Nitro() {
             return;
         }
 
-        setNitroTier(userId, plan);
-        setTier(plan);
-        setOrbs(getOrbs(userId));
-        setNote({
-            plan,
-            text:
-                plan === "basic"
-                    ? "Nitro Basic unlocked with Orbs."
-                    : tier === "basic"
-                      ? "Upgraded to full Nitro."
-                      : "Nitro unlocked with Orbs.",
-        });
+        try {
+            await economy.redeem(client, plan);
+            setNote({
+                plan,
+                text:
+                    plan === "basic"
+                        ? "Nitro Basic unlocked with Orbs."
+                        : tier === "basic"
+                          ? "Upgraded to full Nitro."
+                          : "Nitro unlocked with Orbs.",
+            });
+        } catch {
+            setNote({
+                plan,
+                text: "Could not redeem Nitro. Refresh and try again.",
+            });
+        }
     };
 
     return (
@@ -395,8 +383,8 @@ export default function Nitro() {
                         </span>
                     </h2>
                     <p style={{ margin: "0 0 14px", color: "var(--secondary-foreground)", fontSize: 13 }}>
-                        Recolour your client and add your own CSS. Saved on
-                        this device.
+                        Recolour your client and add your own CSS. Saved to
+                        your CLL account.
                     </p>
 
                     {full ? (
@@ -556,7 +544,7 @@ export default function Nitro() {
 
                 <Footer>
                     Nitro is paid with Orbs, not money. Orbs and unlocks are
-                    stored on this device; admins get Nitro automatically.{" "}
+                    stored on your CLL account; admins get Nitro automatically.{" "}
                     <a href={SOURCE_URL} target="_blank" rel="noreferrer">
                         Source code
                     </a>
@@ -564,4 +552,4 @@ export default function Nitro() {
             </Inner>
         </Container>
     );
-}
+});

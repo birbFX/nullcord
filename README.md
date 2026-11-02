@@ -77,6 +77,25 @@ When a blocked user tries to send a DM, their client shows a local, dismissible
 Clyde-style notice. The notice is visible only to the sender and links to the
 help centre at [`support.canyonlakelabs.com`](https://support.canyonlakelabs.com/).
 
+## Orbs, Nitro and quests
+
+Orbs, Nitro tiers and daily quest progress are server-authoritative. They are
+stored in MongoDB through the API, never in browser storage, and the client
+cannot set a balance or tier directly.
+
+- `GET /users/@me/economy` — current balance, tier and daily quests
+- `POST /users/@me/economy/quests/:id/claim` — server-verified quest claim
+- `POST /users/@me/economy/nitro/redeem` — server-side Orb deduction
+- `/sync/settings/set` rejects the protected `nullcord:economy` key
+
+Server hooks validate messages, images, reactions, invites, invite joins,
+voice presence, profile changes, themes, server creation and friend requests.
+Unverifiable quests are excluded from the daily pool.
+
+Theme, appearance, notifications, locale and ordering continue to use server
+sync settings. Device-specific settings such as audio devices and drafts remain
+local.
+
 ## Usernames
 
 Usernames are 2–35 characters and may contain Unicode letters, numbers,

@@ -24,6 +24,15 @@ pub async fn send_friend_request(
         }
 
         user.add_friend(db, amqp, &mut target).await?;
+
+        let _ = crate::routes::users::economy::record_event(
+            db.inner(),
+            &user.id,
+            "friend_requested",
+            1,
+        )
+        .await;
+
         Ok(Json(target.into(db, &user).await))
     } else {
         Err(create_error!(InvalidProperty))

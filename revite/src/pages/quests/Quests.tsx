@@ -1,4 +1,5 @@
 import { Gift } from "@styled-icons/boxicons-solid";
+import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "preact/hooks";
 import { Link, useHistory } from "react-router-dom";
 import styled from "styled-components/macro";
@@ -6,21 +7,11 @@ import styled from "styled-components/macro";
 import { Button, Header } from "@revoltchat/ui";
 
 import { useClient } from "../../controllers/client/ClientController";
-import {
-    ORBS_EVENT,
-    completeQuest,
-    dailyQuests,
-    getOrbs,
-    isAdminUser,
-    isQuestDone,
-} from "../../lib/orbs";
-import {
-    QUESTS_EVENT,
-    getQuestProgress,
-    recordQuestEvent,
-} from "../../lib/quests";
+import { dailyQuests, isAdminUser, isQuestDone } from "../../lib/orbs";
+import { getQuestProgress } from "../../lib/quests";
 import { isTouchscreenDevice } from "../../lib/isTouchscreenDevice";
 import { SOURCE_URL } from "../../lib/source";
+import { economy } from "../../mobx/stores/Economy";
 
 const Container = styled.div`
     flex-grow: 1;
@@ -159,30 +150,22 @@ const Footer = styled.p`
     }
 `;
 
-export default function Quests() {
+export default observer(function Quests() {
     const client = useClient();
     const history = useHistory();
     const userId = client.user?._id;
-    const admin = isAdminUser(client.user);
-    const [orbs, setOrbs] = useState(() => getOrbs(userId));
-    const [, setTick] = useState(0);
+    const admin = economy.admin || isAdminUser(client.user);
+    const orbs = economy.orbs;
+    const [claimError, setClaimError] = useState("");
 
     useEffect(() => {
-        const update = () => {
-            setOrbs(getOrbs(userId));
-            setTick((x) => x + 1);
-        };
-        window.addEventListener(ORBS_EVENT, update);
-        window.addEventListener(QUESTS_EVENT, update);
-        return () => {
-            window.removeEventListener(ORBS_EVENT, update);
-            window.removeEventListener(QUESTS_EVENT, update);
-        };
-    }, [userId]);
-
-    useEffect(() => {
-        if (userId) recordQuestEvent(userId, "visit_quests");
-    }, [userId]);
+        economy.fetch(client).catch(console.error);
+        const timer = window.setInterval(
+            () => economy.fetch(client).catch(console.error),
+            30_000,
+        );
+        return () => window.clearInterval(timer);
+    }, [client]);
 
     const quests = dailyQuests(userId);
 
@@ -300,9 +283,17 @@ export default function Quests() {
                                 <Button
                                     palette={done ? "secondary" : "primary"}
                                     disabled={done || !progress.verified}
-                                    onClick={() => {
-                                        if (completeQuest(userId, quest)) {
-                                            setTick((x) => x + 1);
+                                    onClick={async () => {
+                                        try {
+                                            await economy.claim(
+                                                client,
+                                                quest.id,
+                                            );
+                                            setClaimError("");
+                                        } catch {
+                                            setClaimError(
+                                                "Could not claim this quest. Refresh and try again.",
+                                            );
                                         }
                                     }}>
                                     {done
@@ -316,12 +307,23 @@ export default function Quests() {
                     })}
                 </Grid>
 
+                {claimError && (
+                    <p
+                        style={{
+                            color: "var(--error)",
+                            fontSize: 13,
+                            marginTop: 14,
+                        }}>
+                        {claimError}
+                    </p>
+                )}
+
                 <Footer>
-                    Verification is automatic: messages, images, reactions,
-                    invites, joins, voice presence, profile changes, themes,
-                    server tags, boosts and plugin changes are tracked
-                    locally. Quests rotate by date. Orbs are stored on this
-                    device; admins have unlimited Orbs.{" "}
+                    Verification is automatic and server-side: messages,
+                    images, reactions, invites, joins, voice presence, profile
+                    changes, themes, server creation and friend requests are
+                    counted by the API. Quests rotate by date. Orbs and Nitro
+                    live on your CLL account; admins have unlimited Orbs.{" "}
                     <Link to="/nitro">See what Orbs can buy →</Link> ·{" "}
                     <a href={SOURCE_URL} target="_blank" rel="noreferrer">
                         Source code
@@ -330,4 +332,4 @@ export default function Quests() {
             </Inner>
         </Container>
     );
-}
+});

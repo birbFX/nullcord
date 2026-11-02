@@ -132,6 +132,13 @@ pub async fn join(
         }
     }
 
+    let _ = crate::routes::users::economy::record_voice_join(
+        db.inner(),
+        &user.id,
+        members.len() > 1,
+    )
+    .await;
+
     Ok(Json(peers_response(&voice_channel).await?))
 }
 

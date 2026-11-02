@@ -31,6 +31,15 @@ pub async fn react_message(
     // Add the reaction
     message
         .add_reaction(db, &user, &mut query, emoji.id)
-        .await
-        .map(|_| EmptyResponse)
+        .await?;
+
+    let _ = crate::routes::users::economy::record_event(
+        db.inner(),
+        &user.id,
+        "reaction",
+        1,
+    )
+    .await;
+
+    Ok(EmptyResponse)
 }
