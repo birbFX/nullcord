@@ -89,10 +89,6 @@ const Copy = styled.div`
         margin-top: 18px;
     }
 
-    &.status {
-        font-weight: 600;
-    }
-
     a {
         color: #00a8fc;
         text-decoration: none;
@@ -176,7 +172,7 @@ const Notice = observer(
                         </AppBadge>
                         <time>{dayjs(createdAt).format("h:mm A")}</time>
                     </Detail>
-                    <Copy className="status">Unavailable</Copy>
+                    <Copy>Your message could not be delivered.</Copy>
                     <Copy>
                         You can see the full list of reasons here:{" "}
                         <a
