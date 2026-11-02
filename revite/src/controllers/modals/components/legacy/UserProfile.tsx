@@ -371,7 +371,7 @@ export const UserProfile = observer(
                 <div className={styles.content}>
                     {user.relationship === "BlockedOther" && (
                         <Category>
-                            <Error error="403 Forbidden — This user has blocked you." />
+                            <Error error="Unavailable" />
                         </Category>
                     )}
                     {user.relationship === "Blocked" && (

@@ -26,7 +26,7 @@ const NoticeBase = styled(MessageBase)`
     }
 `;
 
-const ClydeAvatar = styled.div`
+const SystemAvatar = styled.div`
     width: 36px;
     height: 36px;
     overflow: hidden;
@@ -89,6 +89,10 @@ const Copy = styled.div`
         margin-top: 18px;
     }
 
+    &.status {
+        font-weight: 600;
+    }
+
     a {
         color: #00a8fc;
         text-decoration: none;
@@ -142,44 +146,44 @@ const Notice = observer(
         <Row>
             <NoticeBase role="status">
                 <MessageInfo click={false}>
-                    <ClydeAvatar aria-hidden="true">
+                    <SystemAvatar aria-hidden="true">
                         <svg viewBox="0 0 36 36">
-                            <rect
-                                x="7"
-                                y="10"
-                                width="22"
-                                height="16"
-                                rx="8"
+                            <path
+                                d="M18 4.5 29 9v8.5c0 7.1-4.6 11.6-11 14.5-6.4-2.9-11-7.4-11-14.5V9L18 4.5Z"
                                 fill="#11152a"
                             />
-                            <circle cx="14" cy="18" r="2.5" fill="#9cf8ff" />
-                            <circle cx="22" cy="18" r="2.5" fill="#9cf8ff" />
                             <path
-                                d="M14 24c2.4 2 5.6 2 8 0"
+                                d="M18 9.5 25.5 12.6v5c0 4.7-3 8.1-7.5 10.4-4.5-2.3-7.5-5.7-7.5-10.4v-5L18 9.5Z"
                                 fill="none"
                                 stroke="#9cf8ff"
                                 strokeWidth="1.5"
+                            />
+                            <path
+                                d="M18 13v6"
+                                stroke="#9cf8ff"
+                                strokeWidth="2.4"
                                 strokeLinecap="round"
                             />
+                            <circle cx="18" cy="23.5" r="1.5" fill="#9cf8ff" />
                         </svg>
-                    </ClydeAvatar>
+                    </SystemAvatar>
                 </MessageInfo>
                 <MessageContent>
                     <Detail>
-                        <Author>Clyde</Author>
+                        <Author>NullCord System</Author>
                         <AppBadge>
                             <span className="check">✓</span> APP
                         </AppBadge>
                         <time>{dayjs(createdAt).format("h:mm A")}</time>
                     </Detail>
-                    <Copy>Your message could not be delivered.</Copy>
+                    <Copy className="status">Unavailable</Copy>
                     <Copy>
                         You can see the full list of reasons here:{" "}
                         <a
-                            href="https://support.canyonlakelabs.com/topics/nullcord#blocking"
+                            href="https://support.canyonlakelabs.com/topics/nullcord"
                             target="_blank"
                             rel="noreferrer">
-                            https://support.canyonlakelabs.com/topics/nullcord#blocking
+                            https://support.canyonlakelabs.com/topics/nullcord
                         </a>
                     </Copy>
                     <OnlyYou>

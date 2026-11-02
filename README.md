@@ -76,7 +76,7 @@ profile picture, but profile details and message delivery return
 When a blocked user tries to send a DM, their client shows a local, dismissible
 Clyde-style notice. The notice is visible only to the sender and links to the
 help article at
-[`support.canyonlakelabs.com/topics/nullcord#blocking`](https://support.canyonlakelabs.com/topics/nullcord#blocking).
+[`support.canyonlakelabs.com/topics/nullcord`](https://support.canyonlakelabs.com/topics/nullcord).
 
 ## Orbs, Nitro and quests
 
