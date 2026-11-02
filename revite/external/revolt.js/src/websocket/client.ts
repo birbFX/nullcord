@@ -281,9 +281,10 @@ export class WebSocketClient {
 
                                     if (
                                         this.client.unreads &&
-                                        message.mention_ids?.includes(
+                                        (message.mention_ids?.includes(
                                             this.client.user!._id,
-                                        )
+                                        ) ||
+                                            message.mentionsEveryone)
                                     ) {
                                         this.client.unreads.markMention(
                                             message.channel_id,

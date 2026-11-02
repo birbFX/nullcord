@@ -40,6 +40,7 @@ export class Message {
     embeds: Nullable<Embed[]>;
     components: Nullable<any[]>;
     mention_ids: Nullable<string[]>;
+    flags: number;
     reply_ids: Nullable<string[]>;
     masquerade: Nullable<Masquerade>;
     reactions: ObservableMap<string, ObservableSet<string>>;
@@ -65,6 +66,20 @@ export class Message {
 
     get mentions() {
         return this.mention_ids?.map((id) => this.client.users.get(id));
+    }
+
+    /**
+     * Whether this message mentions everyone in the server channel.
+     */
+    get mentionsEveryone() {
+        return (this.flags & 4) !== 0;
+    }
+
+    /**
+     * Whether this message mentions online users in the server channel.
+     */
+    get mentionsOnline() {
+        return (this.flags & 8) !== 0;
     }
 
     /**
@@ -182,6 +197,7 @@ export class Message {
         this.embeds = toNullable(data.embeds);
         this.components = toNullable((data as any).components);
         this.mention_ids = toNullable(data.mentions);
+        this.flags = (data as any).flags ?? 0;
         this.reply_ids = toNullable(data.replies);
         this.masquerade = toNullable(data.masquerade);
         this.interactions = toNullable(data.interactions);
@@ -229,6 +245,7 @@ export class Message {
         apply("embeds");
         apply("components");
         apply("mentions", "mention_ids");
+        apply("flags");
         apply("masquerade");
         apply("reactions", undefined, (reactions) => {
             const v = reactions as Record<string, string[]>;

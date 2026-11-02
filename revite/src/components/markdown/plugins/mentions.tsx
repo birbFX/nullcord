@@ -48,6 +48,26 @@ export function RenderMention({ match }: CustomComponentProps) {
     );
 }
 
+const MassMention = styled.span`
+    display: inline-flex;
+    align-items: center;
+    padding: 0 5px;
+    border-radius: calc(var(--border-radius) * 2);
+    background: rgba(var(--accent-rgb), 0.16);
+    color: var(--accent);
+    font-weight: 600;
+    line-height: 1.35;
+`;
+
+export function RenderMassMention({ match }: CustomComponentProps) {
+    return <MassMention>@{match}</MassMention>;
+}
+
 export const remarkMention = createComponent("mention", RE_MENTIONS, (match) =>
     clientController.getAvailableClient().users.has(match),
+);
+
+export const remarkMassMention = createComponent(
+    "massmention",
+    /@(everyone|here)\b/g,
 );

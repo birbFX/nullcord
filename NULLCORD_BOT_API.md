@@ -71,8 +71,10 @@ Send-body fields:
 }
 ```
 
-`flags`: `1` suppress notifications, `2` mentions everyone, `4` mentions
-online members.
+`flags`: `2` suppress notifications, `4` mentions everyone, `8` mentions
+online members (`@here`). In message content, `@everyone` pings every member
+who can see the channel and `@here` pings only members who are online at send
+time.
 
 ### Channels, permissions, voice
 

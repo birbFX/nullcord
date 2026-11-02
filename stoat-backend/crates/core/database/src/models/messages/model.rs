@@ -6,6 +6,7 @@ use revolt_models::v0::{
     MessageWebhook, PushNotification, ReplyIntent, SendableEmbed, Text,
 };
 use revolt_permissions::{calculate_channel_permissions, ChannelPermission, PermissionValue};
+use revolt_presence::filter_online;
 use revolt_result::{ErrorType, Result};
 use std::str::FromStr;
 use std::time::SystemTime;
@@ -308,7 +309,7 @@ impl Message {
         let mut suppress_notifications = false;
 
         if let Some(raw_flags) = &data.flags {
-            if raw_flags > &7 {
+            if raw_flags > &15 {
                 // quick path to failure: bigger than all the bits combined
                 return Err(create_error!(InvalidProperty));
             }
@@ -533,6 +534,34 @@ impl Message {
                 Channel::SavedMessages { .. } => {
                     user_mentions.clear();
                 }
+            }
+        }
+
+        // Resolve @here to the users who are online and can see this channel.
+        // Keeping the resolved user IDs on the message makes the mention
+        // work for clients while ensuring offline members are not pinged.
+        if mentions_online {
+            if let Some(server_id) = &server_id {
+                let members = db.fetch_all_members(server_id).await?;
+                let member_channel_view_perms =
+                    BulkDatabasePermissionQuery::from_server_id(db, server_id)
+                        .await
+                        .channel(&channel)
+                        .members(&members)
+                        .members_can_see_channel()
+                        .await;
+
+                let visible_user_ids: Vec<String> = members
+                    .iter()
+                    .filter(|member| {
+                        *member_channel_view_perms
+                            .get(&member.id.user)
+                            .unwrap_or(&false)
+                    })
+                    .map(|member| member.id.user.clone())
+                    .collect();
+
+                user_mentions.extend(filter_online(&visible_user_ids).await);
             }
         }
 
@@ -790,7 +819,9 @@ impl Message {
 
     pub fn contains_mass_push_mention(&self) -> bool {
         let ping = if let Some(flags) = self.flags {
-            MessageFlagsValue(flags).has(MessageFlags::MentionsEveryone)
+            let flags = MessageFlagsValue(flags);
+            flags.has(MessageFlags::MentionsEveryone)
+                || flags.has(MessageFlags::MentionsOnline)
         } else {
             false
         };

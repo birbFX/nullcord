@@ -126,7 +126,7 @@ impl Consumer for MassMessageConsumer {
                     HashSet::new()
                 };
 
-            // KNOWN QUIRK: if you mention @online and role(s), the offline members with the role(s) wont get pinged
+            // KNOWN QUIRK: if you mention @here and role(s), the offline members with the role(s) wont get pinged
             if let Some(ref query) = query {
                 let flags = MessageFlagsValue(push.message.flags);
                 if flags.has(MessageFlags::MentionsEveryone) {
@@ -136,7 +136,7 @@ impl Consumer for MassMessageConsumer {
                         .await?;
 
                     let mut exhausted = false;
-                    let ack_chnl = vec![push.channel.id().to_string()];
+                    let mention_ids = vec![push.message.id.clone()];
                     loop {
                         let mut chunk: Vec<Member> = vec![];
                         for _ in 0..config.pushd.mass_mention_chunk_size {
@@ -153,17 +153,41 @@ impl Consumer for MassMessageConsumer {
 
                         debug!("Userids in chunk: {:?}", userids);
 
-                        if let Err(err) = self
-                            .db
-                            .add_mention_to_many_unreads(push.channel.id(), &userids, &ack_chnl)
-                            .await
-                        {
-                            revolt_config::capture_error(&err);
+                        let mut permission_query = query.clone().members(&chunk);
+                        let channel_view_perms =
+                            permission_query.members_can_see_channel().await;
+
+                        let visible_userids: Vec<String> = userids
+                            .iter()
+                            .filter(|id| *channel_view_perms.get(*id).unwrap_or(&false))
+                            .cloned()
+                            .collect();
+
+                        let new_mentions: Vec<String> = visible_userids
+                            .iter()
+                            .filter(|id| !existing_mentions.contains(*id))
+                            .cloned()
+                            .collect();
+
+                        if !new_mentions.is_empty() {
+                            if let Err(err) = self
+                                .db
+                                .add_mention_to_many_unreads(
+                                    push.channel.id(),
+                                    &new_mentions,
+                                    &mention_ids,
+                                )
+                                .await
+                            {
+                                revolt_config::capture_error(&err);
+                            }
                         }
 
-                        // ignore anyone in this list
-                        let online_users = revolt_presence::filter_online(&userids).await;
-                        let target_users: Vec<String> = userids
+                        // Online users already see the message over the gateway;
+                        // only send push notifications to offline members.
+                        let online_users =
+                            revolt_presence::filter_online(&visible_userids).await;
+                        let target_users: Vec<String> = visible_userids
                             .iter()
                             .filter(|id| {
                                 !online_users.contains(*id) && !existing_mentions.contains(*id)
@@ -178,6 +202,72 @@ impl Consumer for MassMessageConsumer {
 
                         self.fire_notification_for_users(&push, &target_users)
                             .await?;
+
+                        if exhausted {
+                            break;
+                        }
+                    }
+                } else if flags.has(MessageFlags::MentionsOnline) {
+                    let mut db_query = self
+                        .db
+                        .fetch_all_members_chunked(&payload.server_id)
+                        .await?;
+
+                    let mut exhausted = false;
+                    let mention_ids = vec![push.message.id.clone()];
+                    loop {
+                        let mut chunk: Vec<Member> = vec![];
+                        for _ in 0..config.pushd.mass_mention_chunk_size {
+                            if let Some(member) = db_query.next().await {
+                                chunk.push(member);
+                            } else {
+                                exhausted = true;
+                                break;
+                            }
+                        }
+
+                        let userids: Vec<String> =
+                            chunk.iter().map(|member| member.id.user.clone()).collect();
+
+                        let mut permission_query = query.clone().members(&chunk);
+                        let channel_view_perms =
+                            permission_query.members_can_see_channel().await;
+
+                        let visible_userids: Vec<String> = userids
+                            .iter()
+                            .filter(|id| *channel_view_perms.get(*id).unwrap_or(&false))
+                            .cloned()
+                            .collect();
+
+                        // @here only mentions users who were online when the
+                        // message was sent. Offline members must not get an
+                        // unread mention or a push notification.
+                        let online_users =
+                            revolt_presence::filter_online(&visible_userids).await;
+                        let new_mentions: Vec<String> = online_users
+                            .iter()
+                            .filter(|id| !existing_mentions.contains(*id))
+                            .cloned()
+                            .collect();
+
+                        if !new_mentions.is_empty() {
+                            if let Err(err) = self
+                                .db
+                                .add_mention_to_many_unreads(
+                                    push.channel.id(),
+                                    &new_mentions,
+                                    &mention_ids,
+                                )
+                                .await
+                            {
+                                revolt_config::capture_error(&err);
+                            }
+                        }
+
+                        debug!(
+                            "Online users for @here: {:?} (new mentions: {:?})",
+                            online_users, new_mentions
+                        );
 
                         if exhausted {
                             break;

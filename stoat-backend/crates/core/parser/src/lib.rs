@@ -23,6 +23,7 @@ pub enum MessageToken<'a> {
     #[token("@everyone")]
     MentionEveryone,
     #[token("@online")]
+    #[token("@here")]
     MentionOnline,
 }
 
@@ -153,6 +154,14 @@ mod tests {
     #[test]
     fn test_mention_online() {
         let output = parse_message_iter("Hello @online.").collect::<Vec<_>>();
+
+        assert_eq!(output.len(), 1);
+        assert_eq!(output[0], MessageToken::MentionOnline);
+    }
+
+    #[test]
+    fn test_mention_here() {
+        let output = parse_message_iter("Hello @here.").collect::<Vec<_>>();
 
         assert_eq!(output.len(), 1);
         assert_eq!(output[0], MessageToken::MentionOnline);

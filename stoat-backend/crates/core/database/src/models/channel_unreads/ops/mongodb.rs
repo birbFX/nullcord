@@ -116,26 +116,31 @@ impl AbstractChannelUnreads for MongoDb {
         user_ids: &[String],
         message_ids: &[String],
     ) -> Result<()> {
-        self.col::<Document>(COL)
-            .update_many(
-                doc! {
-                    "_id.channel": channel_id,
-                    "_id.user": {
-                        "$in": user_ids
+        // `update_many` cannot upsert a separate document per user when the
+        // filter uses `$in` on `_id.user`; it only creates one partial doc.
+        // Loop over the recipients so members without an existing unread
+        // document still receive the mention.
+        for user_id in user_ids {
+            self.col::<Document>(COL)
+                .update_one(
+                    doc! {
+                        "_id.channel": channel_id,
+                        "_id.user": user_id,
                     },
-                },
-                doc! {
-                    "$push": {
-                        "mentions": {
-                            "$each": message_ids
+                    doc! {
+                        "$push": {
+                            "mentions": {
+                                "$each": message_ids
+                            }
                         }
-                    }
-                },
-            )
-            .with_options(UpdateOptions::builder().upsert(true).build())
-            .await
-            .map(|_| ())
-            .map_err(|_| create_database_error!("update_many", COL))
+                    },
+                )
+                .with_options(UpdateOptions::builder().upsert(true).build())
+                .await
+                .map_err(|_| create_database_error!("update_one", COL))?;
+        }
+
+        Ok(())
     }
 
     /// Fetch all channel unreads for a user.

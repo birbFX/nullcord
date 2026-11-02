@@ -157,8 +157,10 @@ export default class NotificationOptions
             return false;
         }
 
-        // Check channel notification settings
-        const mentioned = message.mention_ids?.includes(user._id);
+        // Check channel notification settings. Mass mentions count as a
+        // mention; @here is resolved to the online recipients server-side.
+        const mentioned =
+            message.mention_ids?.includes(user._id) || message.mentionsEveryone;
         switch (this.computeForChannel(message.channel!)) {
             case "muted":
             case "none":
