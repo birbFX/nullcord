@@ -41,15 +41,21 @@ const AvatarWrap = styled.div`
     height: 48px;
     margin: 0 16px;
 
-    > div,
-    > svg {
+    /* Ring around the avatar. Drawn on a wrapper (not the avatar svg) so the
+       round clip can't cut off the status dot in the bottom-right corner. */
+    .ring {
         position: absolute;
         top: -48px;
         left: -6px;
-        border-radius: 50%;
+        display: flex;
         padding: 6px;
+        border-radius: 50%;
         background: var(--secondary-background);
         cursor: pointer;
+    }
+
+    .ring > svg {
+        overflow: visible;
     }
 `;
 
@@ -244,12 +250,9 @@ export default observer(({ user }: { user: User }) => {
                 }
             />
             <AvatarWrap>
-                <UserIcon
-                    target={user}
-                    size={80}
-                    status
-                    onClick={openProfile}
-                />
+                <div className="ring" onClick={openProfile}>
+                    <UserIcon target={user} size={80} status />
+                </div>
             </AvatarWrap>
             <Card>
                 <div className="names">
