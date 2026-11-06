@@ -2,6 +2,7 @@ import { Hash, VolumeFull } from "@styled-icons/boxicons-regular";
 import { observer } from "mobx-react-lite";
 import { Channel } from "revolt.js";
 
+import { isVoiceChannel } from "../../lib/voiceChannels";
 import fallback from "./assets/group.png";
 
 import { useClient } from "../../controllers/client/ClientController";
@@ -42,7 +43,7 @@ export default observer(
 
         if (typeof iconURL === "undefined") {
             if (isServerChannel) {
-                if (target?.channel_type === "VoiceChannel") {
+                if (isVoiceChannel(target)) {
                     return <VolumeFull size={size} />;
                 }
                 return <Hash size={size} />;

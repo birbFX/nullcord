@@ -1,5 +1,6 @@
 // @ts-expect-error No typings.
 import stringify from "json-stringify-deterministic";
+import { onVoicePacket } from "../lib/voiceChannels";
 import localforage from "localforage";
 import { action, makeAutoObservable, reaction, runInAction } from "mobx";
 import { Client, ClientboundNotification } from "revolt.js";
@@ -163,6 +164,7 @@ export default class State {
 
             // Register listener for incoming packets.
             client.addListener("packet", this.onPacket);
+            client.addListener("packet", onVoicePacket);
 
             // Register events for notifications.
             client.addListener("message", this.notifications.onMessage);
@@ -272,6 +274,7 @@ export default class State {
             if (client) {
                 client.removeListener("message", this.queue.onMessage);
                 client.removeListener("packet", this.onPacket);
+                client.removeListener("packet", onVoicePacket);
                 client.removeListener("message", this.notifications.onMessage);
                 client.removeListener(
                     "user/relationship",

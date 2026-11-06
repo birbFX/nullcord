@@ -6,6 +6,7 @@ import {
     PhoneCall,
     PhoneOff,
     Group,
+    UserCircle,
 } from "@styled-icons/boxicons-solid";
 import { observer } from "mobx-react-lite";
 import { useHistory } from "react-router-dom";
@@ -16,6 +17,7 @@ import { IconButton } from "@revoltchat/ui";
 import { chainedDefer, defer } from "../../../lib/defer";
 import { internalEmit } from "../../../lib/eventEmitter";
 import { isTouchscreenDevice } from "../../../lib/isTouchscreenDevice";
+import { isVoiceChannel } from "../../../lib/voiceChannels";
 import { voiceState, VoiceStatus } from "../../../lib/vortex/VoiceState";
 
 import { useApplicationState } from "../../../mobx/State";
@@ -145,8 +147,22 @@ const HeaderActions = observer(({ channel }: ChannelHeaderProps) => {
                     </>
                 )}
                 <VoiceActions channel={channel} />
+                {channel.channel_type === "DirectMessage" && (
+                    <Tooltip
+                        content={
+                            membersOpen ? "Hide User Profile" : "Show User Profile"
+                        }
+                        placement="bottom">
+                        <IconButton
+                            className={membersOpen ? "active" : undefined}
+                            onClick={openMembers}>
+                            <UserCircle size={24} />
+                        </IconButton>
+                    </Tooltip>
+                )}
                 {(channel.channel_type === "Group" ||
-                    channel.channel_type === "TextChannel") && (
+                    channel.channel_type === "TextChannel" ||
+                    channel.channel_type === "VoiceChannel") && (
                     <Tooltip
                         content={
                             membersOpen ? "Hide Member List" : "Show Member List"
@@ -159,7 +175,7 @@ const HeaderActions = observer(({ channel }: ChannelHeaderProps) => {
                         </IconButton>
                     </Tooltip>
                 )}
-                {channel.channel_type !== "VoiceChannel" && (
+                {!isVoiceChannel(channel) && (
                     <SearchBar
                         role="search"
                         onClick={openSearch}
@@ -179,7 +195,7 @@ const VoiceActions = observer(
     ({ channel }: Pick<ChannelHeaderProps, "channel">) => {
         if (
             channel.channel_type === "SavedMessages" ||
-            channel.channel_type === "TextChannel"
+            (channel.channel_type === "TextChannel" && !isVoiceChannel(channel))
         )
             return null;
 

@@ -43,6 +43,17 @@ const Navbar = styled.div`
     position: relative;
     z-index: 2;
     box-shadow: var(--dc-elevation-low);
+    isolation: isolate;
+    background-color: var(--dc-solid-base);
+
+    &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background: var(--secondary-background);
+    }
 
     ${() =>
         isTouchscreenDevice &&

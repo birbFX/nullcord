@@ -1,10 +1,11 @@
-import { At, Hash } from "@styled-icons/boxicons-regular";
+import { At, Hash, Volume } from "@styled-icons/boxicons-regular";
 import { Notepad, Group } from "@styled-icons/boxicons-solid";
 import { observer } from "mobx-react-lite";
 import { Channel, User } from "revolt.js";
 import styled from "styled-components/macro";
 
 import { isTouchscreenDevice } from "../../lib/isTouchscreenDevice";
+import { isVoiceChannel } from "../../lib/voiceChannels";
 
 import { useStatusColour } from "../../components/common/user/UserIcon";
 import UserStatus from "../../components/common/user/UserStatus";
@@ -84,7 +85,7 @@ const Info = styled.div`
 
 export default observer(({ channel }: ChannelHeaderProps) => {
     let icon, recipient: User | undefined;
-    switch (channel.channel_type) {
+    switch (isVoiceChannel(channel) ? "VoiceChannel" : channel.channel_type) {
         case "SavedMessages":
             icon = <Notepad size={24} />;
             break;
@@ -97,6 +98,9 @@ export default observer(({ channel }: ChannelHeaderProps) => {
             break;
         case "TextChannel":
             icon = <Hash size={24} />;
+            break;
+        case "VoiceChannel":
+            icon = <Volume size={24} />;
             break;
     }
 

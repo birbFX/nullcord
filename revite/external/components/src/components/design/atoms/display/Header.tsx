@@ -42,17 +42,39 @@ export const Header = styled.div<Props>`
     ${(props) =>
         props.withTransparency
             ? css`
-                  background-color: var(--primary-background);
-
                   width: 100%;
                   z-index: 20;
                   position: absolute;
+
+                  &::before {
+                      background: var(--primary-background);
+                  }
               `
             : css`
                   position: relative;
                   z-index: 2;
-                  background-color: var(--${props.palette}-header);
+
+                  &::before {
+                      background: var(--${props.palette}-header);
+                  }
               `}
+
+    /*
+     * Always opaque, even on custom themes: an opaque base colour, then the
+     * theme surface on top. "background" (not background-color) so gradient
+     * theme values render instead of being dropped as invalid.
+     */
+    isolation: isolate;
+    background-color: var(--dc-solid-base, #1e1f22);
+    backdrop-filter: none;
+
+    &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+    }
 
     ${(props) =>
         props.withBackground &&

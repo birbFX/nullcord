@@ -1,4 +1,4 @@
-import { Hash } from "@styled-icons/boxicons-regular";
+import { Hash, Volume } from "@styled-icons/boxicons-regular";
 import { Ghost } from "@styled-icons/boxicons-solid";
 import dayjs from "dayjs";
 import { reaction } from "mobx";
@@ -29,6 +29,7 @@ import ChannelHeader from "./ChannelHeader";
 import { MessageArea } from "./messaging/MessageArea";
 import VoiceHeader from "./voice/VoiceHeader";
 import { voiceState } from "../../lib/vortex/VoiceState";
+import { isVoiceChannel } from "../../lib/voiceChannels";
 
 const ChannelMain = styled.div.attrs({ "data-component": "channel" })`
     flex-grow: 1;
@@ -128,7 +129,7 @@ export const Channel = observer(
         }
 
         const channel = client.channels.get(id)!;
-        if (channel.channel_type === "VoiceChannel") {
+        if (isVoiceChannel(channel)) {
             return <VoiceChannel channel={channel} />;
         }
 
@@ -262,14 +263,94 @@ const TextChannel = observer(({ channel }: { channel: ChannelI }) => {
     );
 });
 
-function VoiceChannel({ channel }: { channel: ChannelI }) {
+const VoiceLobby = styled.div`
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--header-height) 16px 0;
+    background: #000;
+
+    .card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        text-align: center;
+        color: #fff;
+    }
+
+    .icon {
+        width: 80px;
+        height: 80px;
+        display: grid;
+        place-items: center;
+        margin-bottom: 8px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    h2 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 700;
+    }
+
+    p {
+        margin: 0 0 16px;
+        font-size: 16px;
+        color: #b5bac1;
+    }
+
+    button {
+        all: unset;
+        cursor: pointer;
+        padding: 10px 24px;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #fff;
+        background: #248046;
+
+        &:hover {
+            background: #1a6334;
+        }
+    }
+`;
+
+const VoiceChannel = observer(({ channel }: { channel: ChannelI }) => {
+    const connected = voiceState.roomId === channel._id;
+
     return (
         <>
             <ChannelHeader channel={channel} />
-            <VoiceHeader id={channel._id} />
+            {connected ? (
+                <VoiceHeader id={channel._id} embedded />
+            ) : (
+                <VoiceLobby>
+                    <div className="card">
+                        <div className="icon">
+                            <Volume size={40} />
+                        </div>
+                        <h2>{channel.name}</h2>
+                        <p>
+                            {voiceState.roomId
+                                ? "You're in another call. Joining will switch to this channel."
+                                : "No one is talking yet. Jump in and start the conversation."}
+                        </p>
+                        <button
+                            onClick={async () => {
+                                await voiceState.loadVoice();
+                                voiceState.connect(channel);
+                            }}>
+                            Join Voice
+                        </button>
+                    </div>
+                </VoiceLobby>
+            )}
         </>
     );
-}
+});
 
 function ChannelPlaceholder() {
     return (

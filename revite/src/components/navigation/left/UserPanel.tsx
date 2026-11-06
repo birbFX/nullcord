@@ -20,6 +20,7 @@ const DEAFEN_KEY = "nullcord:deafen-snapshot";
 
 const Panel = styled.section`
     flex-shrink: 0;
+    margin: 0 !important;
     background: var(--dc-bg-user-panel);
 `;
 

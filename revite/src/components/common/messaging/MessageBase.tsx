@@ -223,9 +223,9 @@ export const MessageInfo = styled.div<{ click: boolean }>`
 `;
 
 export const MessageContent = styled.div`
-    // Position relatively so we can put
-    // the overlay in the right place.
-    position: relative;
+    // The hover toolbar anchors to the whole message row (MessageBase),
+    // so it sits against the right edge next to the member list.
+    position: static;
 
     min-width: 0;
     flex-grow: 1;

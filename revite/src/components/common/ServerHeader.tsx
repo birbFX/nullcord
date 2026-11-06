@@ -32,8 +32,19 @@ const ServerBanner = styled.div<Omit<Props, "server">>`
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center center;
-    background-color: var(--secondary-background);
+    /* Opaque on every theme; see Header in @revoltchat/ui. */
+    background-color: var(--dc-solid-base);
     box-shadow: var(--dc-elevation-low);
+    isolation: isolate;
+
+    &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background: var(--secondary-background);
+    }
     transition: background-color 0.1s linear;
 
     ${(props) =>
@@ -41,6 +52,11 @@ const ServerBanner = styled.div<Omit<Props, "server">>`
         css`
             height: 135px;
             box-shadow: none;
+
+            /* The banner image is the background here. */
+            &::before {
+                display: none;
+            }
 
             .container {
                 background: linear-gradient(

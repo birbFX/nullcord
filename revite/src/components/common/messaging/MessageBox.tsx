@@ -69,7 +69,7 @@ export type UploadState =
 const Composer = styled.div`
     flex-shrink: 0;
     padding: 0 16px;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     position: relative;
 
     > [data-dc-bar] {

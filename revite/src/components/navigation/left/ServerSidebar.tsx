@@ -13,7 +13,14 @@ import { internalEmit } from "../../../lib/eventEmitter";
 
 import { useApplicationState } from "../../../mobx/State";
 
+import { voiceState } from "../../../lib/vortex/VoiceState";
+import {
+    isVoiceChannel,
+    syncServerVoiceChannels,
+} from "../../../lib/voiceChannels";
+
 import { useClient } from "../../../controllers/client/ClientController";
+import UserIcon from "../../common/user/UserIcon";
 import CollapsibleSection from "../../common/CollapsibleSection";
 import ServerHeader from "../../common/ServerHeader";
 import { ChannelButton } from "../items/ButtonItem";
@@ -39,6 +46,57 @@ const ServerList = styled.div.attrs({ className: "dc-thin-scroller" })`
     }
 `;
 
+const Participants = styled.div`
+    margin: 0 8px 4px 0;
+    padding-left: 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .member {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 30px;
+        padding: 0 8px;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--dc-channel-default);
+    }
+
+    .member:hover {
+        color: var(--dc-interactive-hover);
+        background: var(--dc-modifier-hover);
+    }
+`;
+
+/**
+ * People in the voice channel you're connected to, listed under it.
+ * Jitsi only reports a count for remote participants, so others are summed.
+ */
+const VoiceParticipants = observer(() => {
+    const client = useClient();
+    const self = client.user;
+    const others = Math.max(0, voiceState.participantCount - 1);
+
+    return (
+        <Participants>
+            {self && (
+                <div className="member">
+                    <UserIcon target={self} size={24} />
+                    {self.display_name ?? self.username}
+                </div>
+            )}
+            {others > 0 && (
+                <div className="member">
+                    + {others} other{others === 1 ? "" : "s"} connected
+                </div>
+            )}
+        </Participants>
+    );
+});
+
 export default observer(() => {
     const client = useClient();
     const state = useApplicationState();
@@ -51,6 +109,11 @@ export default observer(() => {
     if (!server) return <Redirect to="/" />;
 
     const channel = channel_id ? client.channels.get(channel_id) : undefined;
+
+    // Learn which channels are voice channels (see lib/voiceChannels).
+    useEffect(() => {
+        void syncServerVoiceChannels(server);
+    }, [server._id]);
 
     // ! FIXME: move this globally
     // Track which channel the user was last on.
@@ -72,9 +135,20 @@ export default observer(() => {
         const isUnread = entry.isUnread(state.notifications);
         const mentionCount = entry.getMentions(state.notifications);
 
+        const isVoice = isVoiceChannel(entry);
+        const inCall = isVoice && voiceState.roomId === entry._id;
+
         return (
+            <>
             <ConditionalLink
                 onClick={(e) => {
+                    // Discord joins a voice channel as soon as you click it.
+                    if (isVoice && !e.shiftKey && !inCall) {
+                        void voiceState
+                            .loadVoice()
+                            .then(() => voiceState.connect(entry));
+                    }
+
                     if (e.shiftKey) {
                         internalEmit(
                             "MessageBox",
@@ -103,6 +177,8 @@ export default observer(() => {
                     muted={state.notifications.isMuted(entry)}
                 />
             </ConditionalLink>
+            {inCall && <VoiceParticipants />}
+            </>
         );
     }
 

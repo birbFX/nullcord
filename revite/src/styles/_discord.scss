@@ -80,6 +80,9 @@
     --dc-elevation-high: 0 8px 16px rgba(0, 0, 0, 0.24);
     --dc-elevation-stroke: 0 0 0 1px rgba(2, 2, 2, 0.15);
 
+    /* Opaque base under headers so custom/translucent themes stay solid. */
+    --dc-solid-base: #1e1f22;
+
     /* Sizes */
     --dc-rail-width: 72px;
     --dc-sidebar-width: 240px;

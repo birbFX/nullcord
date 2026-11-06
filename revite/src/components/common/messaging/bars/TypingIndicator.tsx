@@ -12,8 +12,8 @@ const Base = styled.div`
     position: relative;
 
     > div {
-        height: 24px;
-        top: -24px;
+        height: 20px;
+        top: -20px;
         left: 16px;
         right: 16px;
         position: absolute;

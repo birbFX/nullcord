@@ -1,14 +1,20 @@
-import { Route, Switch } from "react-router";
+import { Route, Switch, useParams } from "react-router";
 
 import { useEffect, useState } from "preact/hooks";
 
 import { internalSubscribe } from "../../lib/eventEmitter";
+
+import { useClient } from "../../controllers/client/ClientController";
 
 import SidebarBase from "./SidebarBase";
 import MemberSidebar from "./right/MemberSidebar";
 import { SearchSidebar } from "./right/Search";
 
 export default function RightSidebar() {
+    const client = useClient();
+    const { channel: channelId } = useParams<{ channel?: string }>();
+    const isDM =
+        client.channels.get(channelId ?? "")?.channel_type === "DirectMessage";
     const [sidebar, setSidebar] = useState<"search" | undefined>();
     const close = () => setSidebar(undefined);
 
@@ -32,7 +38,7 @@ export default function RightSidebar() {
     return (
         <SidebarBase
             style={{
-                width: "var(--dc-member-list-width)",
+                width: isDM ? "340px" : "var(--dc-member-list-width)",
                 flexShrink: 0,
                 background: "var(--secondary-background)",
             }}>

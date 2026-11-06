@@ -11,6 +11,7 @@ import {
     useClient,
 } from "../../../controllers/client/ClientController";
 import { GenericSidebarBase } from "../SidebarBase";
+import DMProfileSidebar from "./DMProfileSidebar";
 import MemberList, { MemberListGroup } from "./MemberList";
 
 export default function MemberSidebar() {
@@ -22,7 +23,12 @@ export default function MemberSidebar() {
         case "Group":
             return <GroupMemberSidebar channel={channel} />;
         case "TextChannel":
+        case "VoiceChannel":
             return <ServerMemberSidebar channel={channel} />;
+        case "DirectMessage":
+            return channel.recipient ? (
+                <DMProfileSidebar user={channel.recipient} />
+            ) : null;
         default:
             return null;
     }
