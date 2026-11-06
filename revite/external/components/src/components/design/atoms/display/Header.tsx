@@ -11,21 +11,29 @@ export interface Props {
 }
 
 export const Header = styled.div<Props>`
-    gap: 10px;
+    gap: 8px;
     flex: 0 auto;
     display: flex;
     flex-shrink: 0;
-    padding: 0 16px;
+    padding: 0 8px 0 16px;
     align-items: center;
 
+    font-size: 16px;
     font-weight: 600;
+    line-height: 20px;
     user-select: none;
 
     height: var(--header-height);
 
-    color: var(--foreground);
+    color: var(--dc-header-primary, var(--foreground));
     background-size: cover !important;
     background-position: center !important;
+    box-shadow: var(
+        --dc-elevation-low,
+        0 1px 0 rgba(4, 4, 5, 0.2),
+        0 1.5px 0 rgba(6, 6, 7, 0.05),
+        0 2px 0 rgba(4, 4, 5, 0.05)
+    );
 
     svg {
         flex-shrink: 0;
@@ -34,17 +42,15 @@ export const Header = styled.div<Props>`
     ${(props) =>
         props.withTransparency
             ? css`
-                  background-color: rgba(
-                      var(--${props.palette}-header-rgb),
-                      max(var(--min-opacity), 0.75)
-                  );
-                  backdrop-filter: blur(20px);
+                  background-color: var(--primary-background);
 
                   width: 100%;
                   z-index: 20;
                   position: absolute;
               `
             : css`
+                  position: relative;
+                  z-index: 2;
                   background-color: var(--${props.palette}-header);
               `}
 
@@ -55,17 +61,5 @@ export const Header = styled.div<Props>`
             height: 120px !important;
 
             text-shadow: 0px 0px 1px black;
-        `}
-
-    ${(props) =>
-        props.topBorder &&
-        css`
-            border-start-start-radius: 8px;
-        `}
-
-    ${(props) =>
-        props.bottomBorder &&
-        css`
-            border-end-start-radius: 8px;
         `}
 `;

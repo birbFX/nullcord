@@ -5,7 +5,6 @@ import {
     Wrench,
     Notepad,
     Star,
-    Compass,
     Gift,
 } from "@styled-icons/boxicons-solid";
 import { observer } from "mobx-react-lite";
@@ -13,7 +12,7 @@ import { Link, useLocation, useParams } from "react-router-dom";
 import styled, { css } from "styled-components/macro";
 
 import { Text } from "preact-i18n";
-import { useContext, useEffect } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 
 import { Category, IconButton } from "@revoltchat/ui";
 
@@ -38,16 +37,38 @@ import ConnectionStatus from "../items/ConnectionStatus";
 const Navbar = styled.div`
     display: flex;
     align-items: center;
-    padding: 0 14px;
-    font-weight: 600;
+    padding: 0 10px;
     flex-shrink: 0;
-    height: 48px;
+    height: var(--header-height);
+    position: relative;
+    z-index: 2;
+    box-shadow: var(--dc-elevation-low);
 
     ${() =>
         isTouchscreenDevice &&
         css`
             height: 56px;
         `}
+
+    input {
+        all: unset;
+        width: 100%;
+        height: 28px;
+        padding: 1px 6px;
+        box-sizing: border-box;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 24px;
+        cursor: text;
+        color: var(--foreground);
+        background: var(--dc-bg-input);
+
+        &::placeholder {
+            color: var(--tertiary-foreground);
+            opacity: 1;
+        }
+    }
 `;
 
 export default observer(() => {
@@ -63,6 +84,8 @@ export default observer(() => {
     );
 
     const channel = client.channels.get(channel_id);
+    const [filter, setFilter] = useState("");
+    const query = filter.trim().toLowerCase();
     const quests = dailyQuests(client.user?._id);
     const questsDone = quests.filter(
         (quest) =>
@@ -86,7 +109,14 @@ export default observer(() => {
     return (
         <GenericSidebarBase mobilePadding>
             <Navbar>
-                <Text id="app.home.directs" />
+                <input
+                    type="text"
+                    value={filter}
+                    aria-label="Find or start a conversation"
+                    placeholder="Find or start a conversation"
+                    onInput={(e) => setFilter(e.currentTarget.value)}
+                    onKeyDown={(e) => e.key === "Escape" && setFilter("")}
+                />
             </Navbar>
             <ConnectionStatus />
             <GenericSidebarList>
@@ -98,13 +128,6 @@ export default observer(() => {
                         </span>
                     </ButtonItem>
                 </ConditionalLink>
-                <ButtonItem
-                    onClick={() =>
-                        modalController.push({ type: "create_server" })
-                    }>
-                    <Plus size={20} />
-                    <span>Add a server</span>
-                </ButtonItem>
                 {!isTouchscreenDevice && (
                     <>
                         <ConditionalLink
@@ -142,14 +165,6 @@ export default observer(() => {
                     </ButtonItem>
                 </ConditionalLink>
                 <ConditionalLink
-                    active={pathname.startsWith("/discover")}
-                    to="/discover">
-                    <ButtonItem active={pathname.startsWith("/discover")}>
-                        <Compass size={20} />
-                        <span>Discover</span>
-                    </ButtonItem>
-                </ConditionalLink>
-                <ConditionalLink
                     active={pathname === "/quests"}
                     to="/quests">
                     <ButtonItem active={pathname === "/quests"}>
@@ -178,7 +193,7 @@ export default observer(() => {
                     </Link>
                 )}
                 <Category>
-                    <Text id="app.main.categories.conversations" />
+                    <span>Direct Messages</span>
                     <IconButton
                         onClick={() =>
                             modalController.push({
@@ -198,6 +213,15 @@ export default observer(() => {
                         user = channel.recipient;
 
                         if (!user) return null;
+                    }
+
+                    if (query) {
+                        const name = (
+                            user
+                                ? `${user.display_name ?? ""} ${user.username}`
+                                : channel.name ?? ""
+                        ).toLowerCase();
+                        if (!name.includes(query)) return null;
                     }
 
                     const isUnread = channel.isUnread(state.notifications);

@@ -18,21 +18,27 @@ export type MemberListGroup = {
 };
 
 const ListCategory = styled.div<{ first?: boolean }>`
-    opacity: 0.8;
-    font-size: 0.8em;
+    height: 40px;
+    box-sizing: border-box;
+    padding: 24px 8px 0 16px;
+    font-size: 12px;
     font-weight: 600;
+    line-height: 16px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
     user-select: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 
-    padding: 4px 14px;
-    padding-top: 12px;
-
-    color: var(--secondary-foreground);
+    color: var(--dc-channel-default);
     background: var(--secondary-background);
 
     ${(props) =>
-        !props.first &&
+        props.first &&
         css`
-            padding-top: 16px;
+            height: 36px;
+            padding-top: 20px;
         `}
 `;
 
@@ -99,7 +105,7 @@ export default function MemberList({
                         )}
                         {entry.type !== "no_offline" && (
                             <>
-                                {" – "}
+                                {" — "}
                                 {entry.users.length}
                             </>
                         )}

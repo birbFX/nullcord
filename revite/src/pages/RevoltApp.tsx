@@ -86,7 +86,7 @@ const Routes = styled.div.attrs({ "data-component": "routes" })<{
     ${(props) =>
         props.borders &&
         css`
-            border-start-start-radius: 8px;
+            border-start-start-radius: 0;
         `}
 `;
 
@@ -152,11 +152,11 @@ export default function App() {
                     leftPanel={
                         inSpecial
                             ? undefined
-                            : { width: 290, component: <LeftSidebar /> }
+                            : { width: 312, component: <LeftSidebar /> }
                     }
                     rightPanel={
                         !inSpecial && inChannel
-                            ? { width: 236, component: <RightSidebar /> }
+                            ? { width: 240, component: <RightSidebar /> }
                             : undefined
                     }
                     bottomNav={{

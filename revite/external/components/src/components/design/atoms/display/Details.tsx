@@ -40,9 +40,11 @@ export const Details = styled.details<Props>`
         align-items: center;
         transition: 0.2s opacity;
 
-        font-size: 0.75rem;
+        font-size: 12px;
         font-weight: 600;
+        letter-spacing: 0.02em;
         text-transform: uppercase;
+        color: var(--dc-channel-default, var(--tertiary-foreground));
 
         &::marker,
         &::-webkit-details-marker {
@@ -60,12 +62,28 @@ export const Details = styled.details<Props>`
         .padding {
             display: flex;
             align-items: center;
+            ${(props) =>
+                !props.large &&
+                css`
+                    padding-top: 16px;
+                `}
 
             > svg {
                 flex-shrink: 0;
-                margin-inline-end: 4px;
-                transition: 0.2s ease transform;
+                margin-inline-start: -2px;
+                margin-inline-end: -6px;
+                transition: 0.1s ease-out transform;
             }
+
+            > div {
+                padding-top: 0;
+                padding-bottom: 4px;
+                color: inherit;
+            }
+        }
+
+        &:hover {
+            color: var(--dc-interactive-hover, var(--foreground));
         }
 
         gap: 4px;
@@ -74,10 +92,6 @@ export const Details = styled.details<Props>`
     }
 
     &:not([open]) {
-        summary {
-            opacity: 0.7;
-        }
-
         summary svg {
             transform: rotateZ(-90deg);
         }

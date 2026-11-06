@@ -7,10 +7,11 @@ import { isTouchscreenDevice } from "../../lib/isTouchscreenDevice";
 import { useApplicationState } from "../../mobx/State";
 import { SIDEBAR_CHANNELS } from "../../mobx/stores/Layout";
 
-import SidebarBase from "./SidebarBase";
+import SidebarBase, { SidebarColumn } from "./SidebarBase";
 import HomeSidebar from "./left/HomeSidebar";
 import ServerListSidebar from "./left/ServerListSidebar";
 import ServerSidebar from "./left/ServerSidebar";
+import UserPanel from "./left/UserPanel";
 
 export default observer(() => {
     const layout = useApplicationState().layout;
@@ -24,19 +25,39 @@ export default observer(() => {
                 <Route path="/settings" />
                 <Route path="/server/:server/channel/:channel">
                     <ServerListSidebar />
-                    {isOpen && <ServerSidebar />}
+                    {isOpen && (
+                        <SidebarColumn>
+                            <ServerSidebar />
+                            <UserPanel />
+                        </SidebarColumn>
+                    )}
                 </Route>
                 <Route path="/server/:server">
                     <ServerListSidebar />
-                    {isOpen && <ServerSidebar />}
+                    {isOpen && (
+                        <SidebarColumn>
+                            <ServerSidebar />
+                            <UserPanel />
+                        </SidebarColumn>
+                    )}
                 </Route>
                 <Route path="/channel/:channel">
                     <ServerListSidebar />
-                    {isOpen && <HomeSidebar />}
+                    {isOpen && (
+                        <SidebarColumn>
+                            <HomeSidebar />
+                            <UserPanel />
+                        </SidebarColumn>
+                    )}
                 </Route>
                 <Route path="/">
                     <ServerListSidebar />
-                    {isOpen && <HomeSidebar />}
+                    {isOpen && (
+                        <SidebarColumn>
+                            <HomeSidebar />
+                            <UserPanel />
+                        </SidebarColumn>
+                    )}
                 </Route>
             </Switch>
         </SidebarBase>

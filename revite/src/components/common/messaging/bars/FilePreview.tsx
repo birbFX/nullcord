@@ -15,9 +15,10 @@ interface Props {
     removeFile: (index: number) => void;
 }
 
-const Container = styled.div`
+const Container = styled.div.attrs({ "data-dc-bar": true })`
     gap: 4px;
-    padding: 8px;
+    padding: 20px 10px 10px;
+    border-bottom: 1px solid var(--dc-modifier-selected);
     display: flex;
     user-select: none;
     flex-direction: column;

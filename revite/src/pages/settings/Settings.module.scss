@@ -1,33 +1,23 @@
 /* Settings animations */
 @keyframes open {
     0% {
-        transform: scale(1.2);
+        transform: scale(1.1);
         opacity: 0;
-    }
-    20% {
-        opacity: 0.5;
-    }
-    50% {
-        opacity: 1;
     }
     100% {
         transform: scale(1);
+        opacity: 1;
     }
 }
 
 @keyframes close {
     0% {
         transform: scale(1);
-    }
-    20% {
         opacity: 1;
-    }
-    50% {
-        opacity: 0.5;
     }
     100% {
         opacity: 0;
-        transform: scale(1.2);
+        transform: scale(1.1);
     }
 }
 
@@ -82,10 +72,15 @@
     width: 100%;
     height: 100%;
     position: fixed;
-    animation: open 340ms cubic-bezier(0.2, 0.9, 0.5, 1.16) forwards;
+    animation: open 200ms cubic-bezier(0.2, 0.9, 0.4, 1) forwards;
 
     &.closing {
-        animation: close 340ms cubic-bezier(0.5, 0, 0.8, 0.11);
+        animation: close 200ms ease-in forwards;
+    }
+
+    /* Discord's settings sidebar is text-only. */
+    .sidebar .container > div svg {
+        display: none;
     }
 
     .scrollbox::-webkit-scrollbar-thumb {
@@ -125,12 +120,47 @@
         background: var(--secondary-background);
 
         .container {
+            width: 218px;
             min-width: 218px;
+            box-sizing: border-box;
 
-            padding: 80px 8px;
+            padding: 60px 6px 60px 20px;
             display: flex;
-            gap: 2px;
+            gap: 0;
             flex-direction: column;
+
+            > div:has(> div):not(:global(.dc-settings-category)) {
+                height: 32px;
+                margin: 0 0 2px;
+                padding: 6px 10px;
+                font-size: 16px;
+                font-weight: 500;
+                line-height: 20px;
+                color: var(--dc-interactive-normal);
+
+                &:hover {
+                    color: var(--dc-interactive-hover);
+                }
+
+                &[data-active="true"] {
+                    color: var(--dc-interactive-active);
+                }
+            }
+
+            > :global(.dc-settings-category) {
+                height: auto;
+                padding: 6px 10px;
+                font-size: 12px;
+                font-weight: 700;
+                color: var(--dc-channel-default);
+            }
+
+            hr,
+            > [class*="LineDivider"] {
+                margin: 8px 10px;
+                height: 1px;
+                background: var(--dc-modifier-selected);
+            }
         }
 
         .divider {
@@ -185,9 +215,11 @@
             display: flex;
             gap: 13px;
             max-width: 740px;
-            padding: 80px 32px;
+            min-width: 460px;
+            padding: 60px 40px 80px;
             width: 100%;
             flex-direction: column;
+            color: var(--dc-header-secondary);
 
             // This prevents members, invites and ban list from being able to properly display.
             // height: fit-content;
@@ -205,23 +237,26 @@
 
         hr {
             height: 1px;
-            width: calc(100% - 10px);
-            background: var(--secondary-header);
-            margin: 18px auto;
+            width: 100%;
+            background: var(--dc-modifier-selected);
+            margin: 24px 0;
             flex-grow: 0;
         }
 
         h1 {
-            margin: 0;
-            line-height: 1rem;
-            font-size: 1.2rem;
+            margin: 0 0 8px;
+            line-height: 24px;
+            font-size: 20px;
             font-weight: 600;
+            color: var(--dc-header-primary);
         }
 
         h3 {
-            font-size: 0.8125rem;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
             text-transform: uppercase;
-            color: var(--secondary-foreground);
+            color: var(--dc-header-secondary);
             /*margin-bottom: 10px;*/
 
             &:first-child {
@@ -272,7 +307,7 @@
 
     .action {
         flex-grow: 1;
-        padding: 80px 8px;
+        padding: 60px 21px;
         visibility: visible;
         position: sticky;
         top: 0;
@@ -282,26 +317,35 @@
             margin-top: 4px;
             display: flex;
             justify-content: center;
-            width: 40px;
-            opacity: 0.5;
-            font-size: 0.75rem;
+            width: 36px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--dc-interactive-normal);
         }
 
         .closeButton {
             display: flex;
             align-items: center;
             justify-content: center;
+            box-sizing: border-box;
             border-radius: var(--border-radius-half);
-            height: 40px;
-            width: 40px;
-            border: 3px solid var(--tertiary-background);
+            height: 36px;
+            width: 36px;
+            border: 2px solid var(--dc-interactive-normal);
             cursor: pointer;
 
             svg {
-                color: var(--secondary-foreground);
+                width: 18px;
+                height: 18px;
+                color: var(--dc-interactive-normal);
             }
             &:hover {
-                background: var(--secondary-header);
+                background: var(--dc-modifier-hover);
+                border-color: var(--dc-interactive-hover);
+
+                svg {
+                    color: var(--dc-interactive-hover);
+                }
             }
             &:active {
                 transform: translateY(2px);

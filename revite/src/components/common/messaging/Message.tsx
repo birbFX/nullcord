@@ -146,7 +146,7 @@ const Message = observer(
                                         : undefined
                                 }
                                 target={user}
-                                size={36}
+                                size={40}
                                 onClick={handleUserClick}
                                 animate={mouseHovering}
                                 {...(userContext as any)}

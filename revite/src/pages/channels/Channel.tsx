@@ -246,9 +246,9 @@ const TextChannel = observer(({ channel }: { channel: ChannelI }) => {
                                     channel={channel}
                                     last_id={lastId}
                                 />
-                                <TypingIndicator channel={channel} />
                                 <JumpToBottom channel={channel} />
                                 <MessageBox channel={channel} />
+                                <TypingIndicator channel={channel} />
                             </>
                         )}
                     </ChannelContent>

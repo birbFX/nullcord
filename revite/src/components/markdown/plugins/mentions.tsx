@@ -6,34 +6,42 @@ import UserShort from "../../common/user/UserShort";
 import { createComponent, CustomComponentProps } from "./remarkRegexComponent";
 
 const Mention = styled.a`
-    gap: 4px;
     flex-shrink: 0;
-    padding-left: 2px;
-    padding-right: 6px;
+    padding: 0 2px;
     align-items: center;
     display: inline-flex;
-    vertical-align: middle;
+    vertical-align: baseline;
 
     cursor: pointer;
 
-    font-weight: 600;
+    font-weight: 500;
+    line-height: inherit;
     text-decoration: none !important;
-    background: var(--secondary-background);
-    border-radius: calc(var(--border-radius) * 2);
+    color: var(--dc-mention-foreground, #c9cdfb);
+    background: rgba(var(--accent-rgb), 0.3);
+    border-radius: 3px;
 
-    transition: 0.1s ease filter;
+    transition: 50ms ease-out background-color, 50ms ease-out color;
+
+    &::before {
+        content: "@";
+    }
 
     &:hover {
-        filter: brightness(0.75);
+        color: #fff;
+        background: var(--accent);
     }
 
-    &:active {
-        filter: brightness(0.65);
+    /* Discord renders mentions as plain text: no avatar. */
+    img,
+    svg,
+    [class*="Avatar"] {
+        display: none !important;
     }
 
-    svg {
-        width: 1em;
-        height: 1em;
+    * {
+        color: inherit !important;
+        font-weight: inherit !important;
     }
 `;
 
@@ -49,14 +57,19 @@ export function RenderMention({ match }: CustomComponentProps) {
 }
 
 const MassMention = styled.span`
-    display: inline-flex;
-    align-items: center;
-    padding: 0 5px;
-    border-radius: calc(var(--border-radius) * 2);
-    background: rgba(var(--accent-rgb), 0.16);
-    color: var(--accent);
-    font-weight: 600;
-    line-height: 1.35;
+    display: inline;
+    padding: 0 2px;
+    border-radius: 3px;
+    background: rgba(var(--accent-rgb), 0.3);
+    color: var(--dc-mention-foreground, #c9cdfb);
+    font-weight: 500;
+    cursor: pointer;
+    transition: 50ms ease-out background-color, 50ms ease-out color;
+
+    &:hover {
+        color: #fff;
+        background: var(--accent);
+    }
 `;
 
 export function RenderMassMention({ match }: CustomComponentProps) {

@@ -1,53 +1,70 @@
+/* Discord-style sidebar rows: channels, DMs, members and nav buttons. */
+
 .item {
+    position: relative;
     height: 42px;
     display: flex;
     padding: 0 8px;
+    margin: 1px 0;
     user-select: none;
-    margin-bottom: 2px;
-    border-radius: var(--border-radius);
+    border-radius: 4px;
 
-    gap: 8px;
+    gap: 12px;
     align-items: center;
     flex-direction: row;
 
     cursor: pointer;
     font-size: 16px;
-    transition: 0.1s ease-in-out background-color;
+    font-weight: 500;
+    line-height: 20px;
 
-    color: var(--tertiary-foreground);
+    color: var(--dc-channel-default);
 
     &.normal {
         height: 42px;
+
+        div.content svg {
+            width: 24px;
+            height: 24px;
+        }
     }
 
     &.compact {
-        /* TOFIX: Introduce two separate compact items, one for settings, other for channels. */
         height: 32px;
+        gap: 6px;
+        padding: 6px 8px;
+        margin: 1px 8px 1px 0;
+
+        div.avatar svg,
+        div.avatar img {
+            width: 20px !important;
+            height: 20px !important;
+        }
+
+        div.name {
+            font-size: 16px;
+            font-weight: 500;
+        }
     }
 
     &.user {
-        opacity: 0.4;
-        cursor: pointer;
-        transition: 0.1s ease-in-out opacity;
-
-        &[data-online="true"],
-        &:hover {
-            opacity: 1;
+        &[data-online="false"]:not(:hover):not([data-active="true"]) {
+            opacity: 0.3;
         }
     }
 
     &:hover {
-        background: var(--hover);
+        color: var(--dc-interactive-hover);
+        background: var(--dc-modifier-hover);
     }
 
     div {
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        transition: color 0.1s ease-in-out;
 
         &.content {
-            gap: 10px;
+            gap: 12px;
             flex-grow: 1;
             min-width: 0;
             display: flex;
@@ -68,30 +85,37 @@
         &.avatar {
             display: flex;
             flex-shrink: 0;
+            overflow: visible;
         }
 
         &.name {
             flex-grow: 1;
+            min-width: 0;
             display: flex;
-            font-weight: 600;
-            font-size: 0.90625rem;
+            font-weight: 500;
+            font-size: 16px;
+            line-height: 20px;
             flex-direction: column;
 
             .subText {
                 margin-top: -1px;
                 font-weight: 500;
-                font-size: 0.6875rem;
-                color: var(--tertiary-foreground);
+                font-size: 12px;
+                line-height: 16px;
+                color: var(--dc-channel-default);
             }
         }
 
         &.button {
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
 
             svg {
                 opacity: 0;
                 display: none;
-                transition: 0.1s ease-in-out opacity;
+                width: 16px;
+                height: 16px;
             }
         }
     }
@@ -102,75 +126,90 @@
         }
 
         div.button svg {
-            opacity: 1;
+            opacity: 0.7;
             display: block;
+
+            &:hover {
+                opacity: 1;
+            }
         }
     }
 
     &[data-active="true"] {
         cursor: default;
-        background: var(--hover);
+        color: var(--dc-interactive-active);
+        background: var(--dc-modifier-selected);
 
         .unread {
             display: none;
         }
     }
 
-    &[data-muted="true"] {
-        opacity: 0.4;
+    &[data-muted="true"]:not([data-active="true"]) {
+        color: var(--dc-interactive-muted);
+    }
+
+    &[data-alert="true"] {
+        color: var(--dc-interactive-active);
+
+        div.name {
+            font-weight: 600;
+        }
     }
 
     &[data-alert="true"],
     &[data-active="true"],
     &:hover {
-        color: var(--foreground);
-
         .subText {
-            color: var(--secondary-foreground) !important;
+            color: var(--dc-header-secondary) !important;
         }
     }
 
+    /* Channel unread pill, hanging off the left edge like Discord. */
+    &.compact[data-alert="true"]:not([data-active="true"])::before {
+        content: "";
+        position: absolute;
+        left: -8px;
+        top: 50%;
+        width: 8px;
+        height: 8px;
+        margin-left: -4px;
+        border-radius: 0 4px 4px 0;
+        transform: translateY(-50%);
+        background: var(--dc-header-primary);
+    }
+
     &[data-margin="true"] {
-        margin: 0 6px;
+        margin: 1px 8px;
     }
 }
 
 .alert {
-    width: 6px;
-    height: 6px;
-    margin: 9px;
     flex-shrink: 0;
-    background: var(--foreground);
-    border-radius: var(--border-radius-half);
-
-    display: grid;
-    font-size: 10px;
-    font-weight: 600;
-    place-items: center;
+    display: none;
 
     &[data-style="mention"] {
-        width: 16px;
+        display: grid;
+        place-items: center;
+        min-width: 16px;
         height: 16px;
-        color: white;
+        padding: 0 4px;
+        box-sizing: border-box;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 16px;
+        border-radius: 8px;
         background: var(--error);
     }
 }
 
 @media (pointer: coarse) {
     .item {
-        height: 50px;
+        height: 48px;
 
         &.compact {
-            height: 50px;
-
-            > div {
-                gap: 20px;
-
-                > svg {
-                    height: 24px;
-                    width: 24px;
-                }
-            }
+            height: 40px;
         }
     }
 }

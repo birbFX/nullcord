@@ -9,7 +9,7 @@ import {
 } from "@styled-icons/boxicons-solid";
 import { observer } from "mobx-react-lite";
 import { useHistory } from "react-router-dom";
-import styled, { css } from "styled-components/macro";
+import styled from "styled-components/macro";
 
 import { IconButton } from "@revoltchat/ui";
 
@@ -21,58 +21,64 @@ import { voiceState, VoiceStatus } from "../../../lib/vortex/VoiceState";
 import { useApplicationState } from "../../../mobx/State";
 import { SIDEBAR_MEMBERS } from "../../../mobx/stores/Layout";
 
+import Tooltip from "../../../components/common/Tooltip";
 import UpdateIndicator from "../../../components/common/UpdateIndicator";
 import { modalController } from "../../../controllers/modals/ModalController";
 import { ChannelHeaderProps } from "../ChannelHeader";
 
 const Container = styled.div`
     display: flex;
+    align-items: center;
     gap: 16px;
+    flex-shrink: 0;
+
+    a.active {
+        color: var(--dc-interactive-active);
+    }
+
+    a.unavailable {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
 `;
 
 const SearchBar = styled.div`
     display: flex;
     align-items: center;
-    background: var(--primary-background);
-    border-radius: 4px;
     position: relative;
-    width: 120px;
-    transition: width .25s ease;
+    width: 144px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: text;
+    background: var(--dc-bg-input);
+    transition: width 0.25s ease;
 
-    :focus-within {
-        width: 200px;
-        box-shadow: 0 0 0 1pt var(--accent);
+    span {
+        flex: 1;
+        padding: 0 8px;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 24px;
+        white-space: nowrap;
+        overflow: hidden;
+        color: var(--tertiary-foreground);
     }
 
-    input {
-        all: unset;
-        font-size: 13px;
-        padding: 0 8px;
-        font-weight: 400;
-        height: 100%;
-        width: 100%;
-        }
+    svg {
+        margin-right: 6px;
+        color: var(--tertiary-foreground);
     }
 
-    .actions {
-        display: flex;
-        align-items: center;
-        position: absolute;
-        right: 0;
-        padding: 0 8px;
-        pointer-events: none;
-        background: inherit;
-
-        svg {
-            opacity: 0.4;
-            color: var(--foreground);
-        }
+    &:hover {
+        width: 160px;
     }
 `;
 
-export default function HeaderActions({ channel }: ChannelHeaderProps) {
+const HeaderActions = observer(({ channel }: ChannelHeaderProps) => {
     const layout = useApplicationState().layout;
     const history = useHistory();
+    const membersOpen =
+        !isTouchscreenDevice && layout.getSectionState(SIDEBAR_MEMBERS, true);
 
     function slideOpen() {
         if (!isTouchscreenDevice) return;
@@ -110,6 +116,7 @@ export default function HeaderActions({ channel }: ChannelHeaderProps) {
                 <UpdateIndicator style="channel" />
                 {channel.channel_type === "Group" && (
                     <>
+                        <Tooltip content="Add Friends to DM" placement="bottom">
                         <IconButton
                             onClick={() =>
                                 modalController.push({
@@ -122,42 +129,51 @@ export default function HeaderActions({ channel }: ChannelHeaderProps) {
                                     },
                                 })
                             }>
-                            <UserPlus size={27} />
+                            <UserPlus size={24} />
                         </IconButton>
-                        <IconButton
-                            onClick={() =>
-                                history.push(`/channel/${channel._id}/settings`)
-                            }>
-                            <Cog size={24} />
-                        </IconButton>
+                        </Tooltip>
+                        <Tooltip content="Group Settings" placement="bottom">
+                            <IconButton
+                                onClick={() =>
+                                    history.push(
+                                        `/channel/${channel._id}/settings`,
+                                    )
+                                }>
+                                <Cog size={24} />
+                            </IconButton>
+                        </Tooltip>
                     </>
                 )}
                 <VoiceActions channel={channel} />
                 {(channel.channel_type === "Group" ||
                     channel.channel_type === "TextChannel") && (
-                    <IconButton onClick={openMembers}>
-                        <Group size={25} />
-                    </IconButton>
+                    <Tooltip
+                        content={
+                            membersOpen ? "Hide Member List" : "Show Member List"
+                        }
+                        placement="bottom">
+                        <IconButton
+                            className={membersOpen ? "active" : undefined}
+                            onClick={openMembers}>
+                            <Group size={24} />
+                        </IconButton>
+                    </Tooltip>
                 )}
                 {channel.channel_type !== "VoiceChannel" && (
-                    /*<SearchBar>
-                        <input
-                            type="text"
-                            placeholder="Search..."
-                            onClick={openSearch}
-                        />
-                        <div className="actions">
-                            <Search size={18} />
-                        </div>
-                    </SearchBar>*/
-                    <IconButton onClick={openSearch}>
-                        <Search size={25} />
-                    </IconButton>
+                    <SearchBar
+                        role="search"
+                        onClick={openSearch}
+                        aria-label="Search">
+                        <span>Search</span>
+                        <Search size={16} />
+                    </SearchBar>
                 )}
             </Container>
         </>
     );
-}
+});
+
+export default HeaderActions;
 
 const VoiceActions = observer(
     ({ channel }: Pick<ChannelHeaderProps, "channel">) => {
@@ -170,28 +186,34 @@ const VoiceActions = observer(
         if (voiceState.status >= VoiceStatus.READY) {
             if (voiceState.roomId === channel._id) {
                 return (
-                    <IconButton onClick={voiceState.disconnect}>
-                        <PhoneOff size={22} />
-                    </IconButton>
+                    <Tooltip content="Leave Call" placement="bottom">
+                        <IconButton onClick={voiceState.disconnect}>
+                            <PhoneOff size={24} color="var(--error)" />
+                        </IconButton>
+                    </Tooltip>
                 );
             }
 
             return (
-                <IconButton
-                    onClick={async () => {
-                        await voiceState.loadVoice();
-                        voiceState.disconnect();
-                        voiceState.connect(channel);
-                    }}>
-                    <PhoneCall size={24} />
-                </IconButton>
+                <Tooltip content="Start Voice Call" placement="bottom">
+                    <IconButton
+                        onClick={async () => {
+                            await voiceState.loadVoice();
+                            voiceState.disconnect();
+                            voiceState.connect(channel);
+                        }}>
+                        <PhoneCall size={24} />
+                    </IconButton>
+                </Tooltip>
             );
         }
 
         return (
-            <IconButton>
-                <PhoneCall size={24} /** ! FIXME: TEMP */ color="red" />
-            </IconButton>
+            <Tooltip content="Voice is unavailable" placement="bottom">
+                <IconButton className="unavailable">
+                    <PhoneCall size={24} />
+                </IconButton>
+            </Tooltip>
         );
     },
 );

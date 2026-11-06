@@ -5,45 +5,39 @@ export interface Props {
 }
 
 export const InputBox = styled.input<Props>`
-    //min-height: 42px;
     width: 100%;
-    padding: 11px 16px;
+    height: 40px;
+    padding: 10px;
 
-    font-size: 0.9375rem;
+    font-size: 16px;
     font-family: inherit;
-    font-weight: 500;
+    font-weight: 400;
 
     border: none;
-    border-radius: var(--border-radius);
+    border-radius: 3px;
     box-sizing: border-box;
     outline: none;
 
-    transition: 0.1s ease-in-out all;
+    color: var(--foreground);
+    background: var(--dc-bg-input, var(--background));
+
+    transition: box-shadow 0.15s ease;
+
+    &::placeholder {
+        color: var(--tertiary-foreground);
+    }
 
     &:disabled {
         filter: brightness(0.9);
     }
 
     &:focus-visible {
-        box-shadow: 0 0 0 1.5pt var(--accent);
+        box-shadow: 0 0 0 2px var(--dc-text-link, var(--accent));
     }
 
     ${(props) =>
-        props.palette === "primary"
-            ? css`
-                  color: var(--foreground);
-                  background: var(--primary-background);
-
-                  &:hover {
-                      background: var(--secondary-background);
-                  }
-              `
-            : css`
-                  color: var(--secondary-foreground);
-                  background: var(--secondary-background);
-
-                  &:hover {
-                      background: var(--hover);
-                  }
-              `}
+        props.palette === "secondary" &&
+        css`
+            color: var(--foreground);
+        `}
 `;

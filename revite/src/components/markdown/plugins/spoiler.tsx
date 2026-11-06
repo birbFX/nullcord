@@ -9,8 +9,13 @@ const Spoiler = styled.span<{ shown: boolean }>`
     cursor: pointer;
     user-select: none;
     color: transparent;
-    background: #151515;
-    border-radius: var(--border-radius);
+    background: #1e1f22;
+    border-radius: 4px;
+    transition: background-color 0.1s ease;
+
+    &:hover {
+        background: #111214;
+    }
 
     > * {
         opacity: 0;
@@ -23,7 +28,11 @@ const Spoiler = styled.span<{ shown: boolean }>`
             cursor: auto;
             user-select: all;
             color: var(--foreground);
-            background: var(--secondary-background);
+            background: rgba(255, 255, 255, 0.1);
+
+            &:hover {
+                background: rgba(255, 255, 255, 0.1);
+            }
 
             > * {
                 opacity: 1;
@@ -43,3 +52,9 @@ export function RenderSpoiler({ match }: CustomComponentProps) {
 }
 
 export const remarkSpoiler = createComponent("spoiler", /!!([^!]+)!!/g);
+
+// Discord-style ||spoiler|| syntax.
+export const remarkSpoilerPipes = createComponent(
+    "spoiler",
+    /\|\|([^|\n]+)\|\|/g,
+);

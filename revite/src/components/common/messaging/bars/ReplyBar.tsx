@@ -27,7 +27,7 @@ interface Props {
     setReplies: StateUpdater<Reply[]>;
 }
 
-const Base = styled.div`
+const Base = styled.div.attrs({ "data-dc-bar": true })`
     @keyframes bottomBounce {
         0% {
             transform: translateY(33px);
@@ -38,10 +38,12 @@ const Base = styled.div`
     }
 
     display: flex;
-    height: 30px;
-    padding: 0 20px;
+    height: 34px;
+    padding: 0 16px;
+    font-size: 14px;
     user-select: none;
     align-items: center;
+    color: var(--dc-header-secondary);
     background: var(--secondary-background);
     animation: bottomBounce 340ms cubic-bezier(0.2, 0.9, 0.5, 1.16) forwards;
 

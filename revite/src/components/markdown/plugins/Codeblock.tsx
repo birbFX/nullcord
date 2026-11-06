@@ -10,37 +10,59 @@ import { modalController } from "../../../controllers/modals/ModalController";
  * Base codeblock styles
  */
 const Base = styled.pre`
-    padding: 1em;
-    overflow-x: scroll;
+    margin: 6px 0 0;
+    padding: 0.5em;
+    max-width: 90%;
+    overflow-x: auto;
+    font-size: 0.875rem;
+    line-height: 1.125rem;
     background: var(--block);
-    border-radius: var(--border-radius);
+    border: 1px solid var(--background);
+    border-radius: 4px;
+    position: relative;
+
+    &:hover > div a {
+        opacity: 1;
+    }
+
+    code {
+        border: none;
+        background: none;
+        font-size: inherit;
+        white-space: pre-wrap;
+    }
 `;
 
 /**
  * Copy codeblock contents button styles
  */
 const Lang = styled.div`
-    font-family: var(--monospace-font);
-    width: fit-content;
-    padding-bottom: 8px;
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    font-family: var(--font), sans-serif;
 
     a {
-        color: #111;
+        opacity: 0;
         cursor: pointer;
-        padding: 2px 6px;
-        font-weight: 600;
+        padding: 2px 8px;
+        font-weight: 500;
         user-select: none;
         display: inline-block;
-        background: var(--accent);
+        color: var(--secondary-foreground);
+        background: var(--secondary-background);
+        border: 1px solid var(--background);
 
-        font-size: 10px;
-        text-transform: uppercase;
-        box-shadow: 0 2px #787676;
-        border-radius: calc(var(--border-radius) / 3);
+        font-size: 12px;
+        border-radius: 4px;
+        transition: opacity 0.1s ease;
+
+        &:hover {
+            color: var(--foreground);
+        }
 
         &:active {
             transform: translateY(1px);
-            box-shadow: 0 1px #787676;
         }
     }
 `;

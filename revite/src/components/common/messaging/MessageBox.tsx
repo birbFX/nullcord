@@ -63,15 +63,46 @@ export type UploadState =
     | { type: "sending"; files: File[] }
     | { type: "failed"; files: File[]; error: string };
 
-const Base = styled.div`
+/**
+ * Discord-style composer gutter: 16px sides, 24px bottom for the typing line.
+ */
+const Composer = styled.div`
+    flex-shrink: 0;
+    padding: 0 16px;
+    margin-bottom: 24px;
+    position: relative;
+
+    > [data-dc-bar] {
+        border-radius: 8px 8px 0 0;
+    }
+
+    > [data-dc-bar] + [data-dc-bar] {
+        border-radius: 0;
+    }
+
+    > [data-dc-bar] ~ [data-dc-input] {
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+    }
+`;
+
+const Base = styled.div.attrs({ "data-dc-input": true })`
     z-index: 1;
     display: flex;
+    min-height: 44px;
     align-items: flex-start;
+    border-radius: 8px;
     background: var(--message-box);
 
     textarea {
         font-size: var(--text-size);
+        line-height: 22px;
+        color: var(--foreground);
         background: transparent;
+
+        &::placeholder {
+            color: var(--dc-interactive-muted, var(--tertiary-foreground));
+        }
 
         &::placeholder {
             white-space: nowrap;
@@ -84,13 +115,8 @@ const Base = styled.div`
 const BlockedComposer = styled(Base)`
     align-items: center;
     gap: 12px;
-    padding: 10px 14px;
-    background: linear-gradient(
-        90deg,
-        rgba(237, 66, 69, 0.16),
-        var(--message-box) 65%
-    );
-    border-top: 1px solid rgba(237, 66, 69, 0.25);
+    padding: 0 16px;
+    background: var(--message-box);
 
     .text {
         flex-grow: 1;
@@ -124,12 +150,20 @@ const Blocked = styled.div`
 
 const Action = styled.div`
     > a {
-        height: 48px;
-        width: 48px;
+        height: 44px;
+        width: 40px;
         display: flex;
         align-items: center;
         justify-content: center;
-        /*padding: 14px 0 14px 14px;*/
+        color: var(--dc-interactive-normal);
+
+        &:hover {
+            color: var(--dc-interactive-hover);
+        }
+    }
+
+    &:last-child > a:not(.mobile) {
+        margin-right: 6px;
     }
 
     .mobile {
@@ -146,12 +180,18 @@ const Action = styled.div`
 `;
 
 const FileAction = styled.div`
-    > a {
-        height: 48px;
-        width: 62px;
+    > a,
+    > div {
+        height: 44px;
+        width: 56px;
         display: flex;
         align-items: center;
         justify-content: center;
+        color: var(--dc-interactive-normal);
+
+        &:hover {
+            color: var(--dc-interactive-hover);
+        }
     }
 `;
 
@@ -264,6 +304,7 @@ export default observer(({ channel }: Props) => {
 
     if (channel.server?.member?.timeout) {
         return (
+            <Composer>
             <Base>
                 <Blocked>
                     <Action>
@@ -287,11 +328,13 @@ export default observer(({ channel }: Props) => {
                     </div>
                 </Blocked>
             </Base>
+            </Composer>
         );
     }
 
     if (blockedByMe) {
         return (
+            <Composer>
             <BlockedComposer>
                 <div className="text">
                     You cannot send messages to a user you have blocked.
@@ -305,11 +348,13 @@ export default observer(({ channel }: Props) => {
                     Unblock
                 </Button>
             </BlockedComposer>
+            </Composer>
         );
     }
 
     if (!channel.havePermission("SendMessage") && !readOnlyDm) {
         return (
+            <Composer>
             <Base>
                 <Blocked>
                     <Action>
@@ -324,6 +369,7 @@ export default observer(({ channel }: Props) => {
                     </div>
                 </Blocked>
             </Base>
+            </Composer>
         );
     }
 
@@ -633,7 +679,7 @@ export default observer(({ channel }: Props) => {
     });
 
     return (
-        <>
+        <Composer>
             <AutoComplete {...autoCompleteProps} />
             <FilePreview
                 state={uploadState}
@@ -827,6 +873,6 @@ export default observer(({ channel }: Props) => {
                     </IconButton>
                 </Action>
             </Base>
-        </>
+        </Composer>
     );
 });

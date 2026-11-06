@@ -1,6 +1,6 @@
 import { observer } from "mobx-react-lite";
 import { Redirect, useParams } from "react-router";
-import styled, { css } from "styled-components/macro";
+import styled from "styled-components/macro";
 
 import { useTriggerEvents } from "preact-context-menu";
 import { useEffect } from "preact/hooks";
@@ -10,7 +10,6 @@ import { Category } from "@revoltchat/ui";
 import ConditionalLink from "../../../lib/ConditionalLink";
 import PaintCounter from "../../../lib/PaintCounter";
 import { internalEmit } from "../../../lib/eventEmitter";
-import { isTouchscreenDevice } from "../../../lib/isTouchscreenDevice";
 
 import { useApplicationState } from "../../../mobx/State";
 
@@ -22,25 +21,18 @@ import ConnectionStatus from "../items/ConnectionStatus";
 
 const ServerBase = styled.div`
     height: 100%;
-    width: 232px;
+    width: 100%;
     display: flex;
     flex-shrink: 0;
     flex-direction: column;
     background: var(--secondary-background);
-    border-start-start-radius: 8px;
-    border-end-start-radius: 8px;
     overflow: hidden;
-
-    ${isTouchscreenDevice &&
-    css`
-        padding-bottom: 50px;
-    `}
 `;
 
-const ServerList = styled.div`
-    padding: 6px;
+const ServerList = styled.div.attrs({ className: "dc-thin-scroller" })`
+    padding: 8px 0 8px 8px;
     flex-grow: 1;
-    overflow-y: scroll;
+    overflow-y: auto;
 
     > svg {
         width: 100%;
@@ -106,6 +98,7 @@ export default observer(() => {
                             ? "unread"
                             : undefined
                     }
+                    alertCount={mentionCount.length}
                     compact
                     muted={state.notifications.isMuted(entry)}
                 />

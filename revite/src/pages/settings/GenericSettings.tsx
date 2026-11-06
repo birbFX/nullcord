@@ -133,7 +133,7 @@ export function GenericSettings({
                                 entry.hidden ? undefined : (
                                     <>
                                         {entry.category && (
-                                            <Category>
+                                            <Category className="dc-settings-category">
                                                 {entry.category}
                                             </Category>
                                         )}

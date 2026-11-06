@@ -1,13 +1,11 @@
-import { Check } from "@styled-icons/boxicons-regular";
-import { Cog } from "@styled-icons/boxicons-solid";
+import { Check, ChevronDown } from "@styled-icons/boxicons-regular";
 import { observer } from "mobx-react-lite";
-import { Link } from "react-router-dom";
 import { Server } from "revolt.js";
 import styled, { css } from "styled-components/macro";
 
 import { Text } from "preact-i18n";
 
-import { IconButton } from "@revoltchat/ui";
+import { openContextMenu } from "preact-context-menu";
 
 import { modalController } from "../../controllers/modals/ModalController";
 import { CLL_SERVER_ID } from "../../lib/constants";
@@ -27,49 +25,65 @@ const ServerBanner = styled.div<Omit<Props, "server">>`
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: flex-start;
+    position: relative;
+    z-index: 2;
 
     background-size: cover;
-    background-repeat: norepeat;
+    background-repeat: no-repeat;
     background-position: center center;
+    background-color: var(--secondary-background);
+    box-shadow: var(--dc-elevation-low);
+    transition: background-color 0.1s linear;
 
     ${(props) =>
-        props.background
-            ? css`
-                  height: 120px;
+        props.background &&
+        css`
+            height: 135px;
+            box-shadow: none;
 
-                  .container {
-                      background: linear-gradient(
-                          0deg,
-                          var(--secondary-background),
-                          transparent
-                      );
-                  }
-              `
-            : css`
-                  background-color: var(--secondary-header);
-              `}
+            .container {
+                background: linear-gradient(
+                    180deg,
+                    rgba(0, 0, 0, 0.4) 0%,
+                    transparent 100%
+                );
+                color: #fff;
+            }
+        `}
 
     .container {
         height: var(--header-height);
+        flex-shrink: 0;
 
         display: flex;
         align-items: center;
-        padding: 0 14px;
+        padding: 0 16px;
+        font-size: 16px;
         font-weight: 600;
+        line-height: 20px;
         white-space: nowrap;
         overflow: hidden;
-        text-overflow: ellipsis;
-        gap: 8px;
+        gap: 6px;
+        cursor: pointer;
+        user-select: none;
+        color: var(--dc-header-primary);
+
+        &:hover {
+            background-color: var(--dc-modifier-hover);
+        }
 
         .title {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             flex-grow: 1;
+            color: inherit;
+        }
 
-            cursor: pointer;
-            color: var(--foreground);
+        .chevron {
+            flex-shrink: 0;
+            opacity: 0.85;
         }
 
         .server-tag,
@@ -78,12 +92,13 @@ const ServerBanner = styled.div<Omit<Props, "server">>`
             align-items: center;
             gap: 4px;
             flex-shrink: 0;
-            padding: 2px 6px;
-            border-radius: 5px;
+            padding: 0 4px;
+            height: 16px;
+            border-radius: 4px;
             font-size: 11px;
-            font-weight: 800;
-            background: var(--primary-background);
-            color: var(--foreground);
+            font-weight: 700;
+            background: var(--dc-modifier-selected);
+            color: var(--dc-header-primary);
         }
 
         .server-tag .diamond {
@@ -91,7 +106,7 @@ const ServerBanner = styled.div<Omit<Props, "server">>`
         }
 
         .boost-badge {
-            color: #f7c948;
+            color: #ff73fa;
         }
     }
 `;
@@ -111,7 +126,16 @@ export default observer(({ server }: Props) => {
             style={{
                 backgroundImage: bannerURL ? `url('${bannerURL}')` : undefined,
             }}>
-            <div className="container">
+            <div
+                className="container"
+                onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    openContextMenu(
+                        "Menu",
+                        { server: server._id },
+                        { x: rect.left + 8, y: rect.bottom + 4 },
+                    );
+                }}>
                 {server.flags && server.flags & 1 ? (
                     <Tooltip
                         content={
@@ -159,13 +183,13 @@ export default observer(({ server }: Props) => {
                         </svg>
                     </Tooltip>
                 ) : undefined}
-                <a
+                <span
                     className="title"
-                    onClick={() =>
+                    onDblClick={() =>
                         modalController.push({ type: "server_info", server })
                     }>
                     {server.name}
-                </a>
+                </span>
                 {serverTag ? (
                     <span className="server-tag" title="Server tag">
                         <span className="diamond">◆</span>
@@ -176,16 +200,10 @@ export default observer(({ server }: Props) => {
                     <span
                         className="boost-badge"
                         title={`Boost level ${level}`}>
-                        🚀 {infinite ? "∞" : boosts} · Lv {level}
+                        ◆ {infinite ? "∞" : boosts} · Lv {level}
                     </span>
                 ) : undefined}
-                {server.havePermission("ManageServer") && (
-                    <Link to={`/server/${server._id}/settings`}>
-                        <IconButton>
-                            <Cog size={20} />
-                        </IconButton>
-                    </Link>
-                )}
+                <ChevronDown className="chevron" size={18} />
             </div>
         </ServerBanner>
     );

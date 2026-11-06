@@ -30,10 +30,12 @@ const highlight = keyframes`
 
 export default styled.div<BaseMessageProps>`
     display: flex;
+    position: relative;
     overflow: none;
-    padding: 0.125rem;
+    padding: 2px 0;
+    min-height: 22px;
     flex-direction: row;
-    padding-inline-end: 16px;
+    padding-inline-end: 48px;
 
     ${() =>
         isTouchscreenDevice &&
@@ -52,13 +54,24 @@ export default styled.div<BaseMessageProps>`
     ${(props) =>
         props.head &&
         css`
-            margin-top: 12px;
+            margin-top: 17px;
+            padding-top: 2px;
         `}
 
     ${(props) =>
         props.mention &&
         css`
             background: var(--mention);
+
+            &::before {
+                content: "";
+                position: absolute;
+                inset-inline-start: 0;
+                top: 0;
+                bottom: 0;
+                width: 2px;
+                background: var(--warning);
+            }
         `}
 
     ${(props) =>
@@ -94,16 +107,21 @@ export default styled.div<BaseMessageProps>`
         `}
 
     .detail {
-        gap: 8px;
+        gap: 0.25rem;
         display: flex;
-        align-items: center;
+        align-items: baseline;
         flex-shrink: 0;
+        line-height: 1.375rem;
+        min-height: 1.375rem;
     }
 
     .author {
         overflow: hidden;
         cursor: pointer;
-        font-weight: 600 !important;
+        font-size: 1rem;
+        font-weight: 500 !important;
+        line-height: 1.375rem;
+        color: var(--dc-header-primary);
 
         display: -webkit-box;
         -webkit-line-clamp: 1;
@@ -122,7 +140,10 @@ export default styled.div<BaseMessageProps>`
     }
 
     &:hover {
-        background: var(--hover);
+        background: ${(props) =>
+            props.mention
+                ? "rgba(250, 166, 26, 0.08)"
+                : "var(--dc-message-hover)"};
 
         time {
             opacity: 1;
@@ -135,10 +156,10 @@ export default styled.div<BaseMessageProps>`
 `;
 
 export const MessageInfo = styled.div<{ click: boolean }>`
-    width: 62px;
+    width: 72px;
     display: flex;
     flex-shrink: 0;
-    padding-top: 2px;
+    padding-top: 1px;
     flex-direction: row;
     justify-content: center;
 
@@ -166,10 +187,12 @@ export const MessageInfo = styled.div<{ click: boolean }>`
 
     time,
     .edited {
-        margin-top: 1px;
+        margin-top: 4px;
         cursor: default;
         display: inline;
-        font-size: 10px;
+        font-size: 11px;
+        font-weight: 500;
+        line-height: 1.375rem;
         color: var(--tertiary-foreground);
     }
 
@@ -211,12 +234,16 @@ export const MessageContent = styled.div`
     flex-direction: column;
     justify-content: center;
     font-size: var(--text-size);
+    line-height: 1.375rem;
 `;
 
 export const DetailBase = styled.div`
     flex-shrink: 0;
     gap: 4px;
-    font-size: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.375rem;
+    margin-inline-start: 0.25rem;
     display: inline-flex;
     color: var(--tertiary-foreground);
 

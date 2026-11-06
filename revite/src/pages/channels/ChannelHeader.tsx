@@ -27,18 +27,30 @@ const Info = styled.div`
     white-space: nowrap;
 
     display: flex;
-    gap: 8px;
+    gap: 0;
     align-items: center;
 
     * {
         display: inline-block;
     }
 
+    .name {
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 20px;
+        color: var(--dc-header-primary);
+        flex-shrink: 0;
+        max-width: 50%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
     .divider {
-        height: 20px;
-        margin: 0 5px;
-        padding-left: 1px;
-        background-color: var(--tertiary-background);
+        width: 1px;
+        height: 24px;
+        margin: 0 8px;
+        flex-shrink: 0;
+        background-color: var(--dc-modifier-selected);
     }
 
     .status {
@@ -50,14 +62,22 @@ const Info = styled.div`
     }
 
     .desc {
+        min-width: 0;
         cursor: pointer;
-        margin-top: 2px;
-        font-size: 0.8em;
-        font-weight: 400;
-        color: var(--secondary-foreground);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 18px;
+        color: var(--dc-header-secondary);
 
         > * {
             pointer-events: none;
+        }
+
+        [data-component="markdown"] {
+            line-height: 18px;
+            color: inherit;
         }
     }
 `;

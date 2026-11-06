@@ -29,7 +29,11 @@ import {
     RenderMention,
     RenderMassMention,
 } from "./plugins/mentions";
-import { remarkSpoiler, RenderSpoiler } from "./plugins/spoiler";
+import {
+    remarkSpoiler,
+    remarkSpoilerPipes,
+    RenderSpoiler,
+} from "./plugins/spoiler";
 import { remarkTimestamps } from "./plugins/timestamps";
 import "./prism";
 
@@ -52,59 +56,75 @@ const components = {
         margin: 0;
 
         > code {
-            padding: 1px 4px;
+            padding: 0 0.2em;
             flex-shrink: 0;
         }
     `,
     h1: styled.h1`
-        margin: 0.2em 0;
+        margin: 8px 0 4px;
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1.375em;
     `,
     h2: styled.h2`
-        margin: 0.2em 0;
+        margin: 8px 0 4px;
+        font-size: 1.25rem;
+        font-weight: 700;
+        line-height: 1.375em;
     `,
     h3: styled.h3`
-        margin: 0.2em 0;
+        margin: 8px 0 4px;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.375em;
     `,
     h4: styled.h4`
-        margin: 0.2em 0;
+        margin: 4px 0;
     `,
     h5: styled.h5`
-        margin: 0.2em 0;
+        margin: 4px 0;
     `,
     h6: styled.h6`
-        margin: 0.2em 0;
+        margin: 4px 0;
+        font-size: 0.8125rem;
+        color: var(--tertiary-foreground);
     `,
     pre: RenderCodeblock,
     code: styled.code`
-        color: white;
+        color: var(--foreground);
         background: var(--block);
+        border: 1px solid var(--background);
 
-        font-size: 90%;
+        font-size: 85%;
+        line-height: 1.125rem;
         font-family: var(--monospace-font), monospace;
 
-        border-radius: 3px;
+        border-radius: 4px;
         box-decoration-break: clone;
+        -webkit-box-decoration-break: clone;
     `,
     table: styled.table`
         border-collapse: collapse;
 
         th,
         td {
-            padding: 6px;
-            border: 1px solid var(--tertiary-foreground);
+            padding: 6px 10px;
+            border: 1px solid var(--tertiary-background);
         }
     `,
     ul: styled.ul`
-        list-style-position: inside;
-        padding-left: 10px;
-        margin: 0.2em 0;
+        list-style-position: outside;
+        padding-inline-start: 1.25em;
+        margin: 4px 0 0 0.5em;
     `,
     ol: styled.ol`
-        list-style-position: inside;
-        padding-left: 10px;
-        margin: 0.2em 0;
+        list-style-position: outside;
+        padding-inline-start: 1.25em;
+        margin: 4px 0 0 0.5em;
     `,
     li: styled.li`
+        margin-bottom: 4px;
+
         ${(props) =>
             props.class === "task-list-item" &&
             css`
@@ -112,14 +132,23 @@ const components = {
             `}
     `,
     blockquote: styled.blockquote`
-        margin: 2px 0;
-        padding: 2px 0;
-        background: var(--hover);
-        border-radius: var(--border-radius);
-        border-inline-start: 4px solid var(--tertiary-background);
+        margin: 0;
+        padding: 0 8px 0 12px;
+        position: relative;
+
+        &::before {
+            content: "";
+            position: absolute;
+            inset-inline-start: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            border-radius: 4px;
+            background: var(--tertiary-background);
+        }
 
         > * {
-            margin: 0 8px;
+            margin: 0;
         }
     `,
     // Block image elements
@@ -143,6 +172,7 @@ const render = unified()
     .use(remarkGfm)
     .use(remarkMath)
     .use(remarkSpoiler)
+    .use(remarkSpoilerPipes)
     .use(remarkChannels)
     .use(remarkTimestamps)
     .use(remarkEmoji)
@@ -174,14 +204,20 @@ const render = unified()
 /**
  * Markdown parent container
  */
-const Container = styled.div<{ largeEmoji: boolean }>`
+const Container = styled.div.attrs({ "data-component": "markdown" })<{
+    largeEmoji: boolean;
+}>`
+    line-height: 1.375rem;
+    overflow-wrap: break-word;
+    color: var(--foreground);
+
     // Allow scrolling block math
     .math-display {
         overflow-x: auto;
     }
 
     // Set emoji size
-    --emoji-size: ${(props) => (props.largeEmoji ? "3em" : "1.25em")};
+    --emoji-size: ${(props) => (props.largeEmoji ? "3rem" : "1.375em")};
 
     // Underline link hover
     a:hover {

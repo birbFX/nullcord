@@ -33,7 +33,7 @@ export default function CollapsibleSection({
             {...detailsProps}>
             <summary>
                 <div className="padding">
-                    <ChevronDown size={20} />
+                    <ChevronDown size={12} />
                     {summary}
                 </div>
             </summary>

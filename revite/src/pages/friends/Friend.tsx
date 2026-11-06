@@ -134,9 +134,14 @@ export const Friend = observer(({ user }: Props) => {
             {...useTriggerEvents("Menu", {
                 user: user._id,
             })}>
-            <UserIcon target={user} size={36} status />
+            <UserIcon target={user} size={32} status />
             <div className={styles.name}>
-                <span>{user.display_name ?? user.username}</span>
+                <span>
+                    {user.display_name ?? user.username}
+                    {user.display_name && (
+                        <span className={styles.tag}>{user.username}</span>
+                    )}
+                </span>
                 {subtext && <span className={styles.subtext}>{subtext}</span>}
             </div>
             <div className={styles.actions}>{actions}</div>

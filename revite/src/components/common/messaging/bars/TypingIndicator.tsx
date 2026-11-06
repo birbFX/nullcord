@@ -12,23 +12,26 @@ const Base = styled.div`
     position: relative;
 
     > div {
-        height: 26px;
-        top: -26px;
+        height: 24px;
+        top: -24px;
+        left: 16px;
+        right: 16px;
         position: absolute;
-        font-size: 13px;
-        gap: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        gap: 6px;
         display: flex;
-        padding: 0 10px;
+        padding: 0 4px;
         user-select: none;
         align-items: center;
         flex-direction: row;
-        width: calc(100% - var(--scrollbar-thickness));
-        color: var(--secondary-foreground);
-        background-color: rgba(
-            var(--secondary-background-rgb),
-            max(var(--min-opacity), 0.75)
-        );
-        backdrop-filter: blur(10px);
+        color: var(--dc-header-secondary);
+
+        b,
+        strong {
+            font-weight: 700;
+            color: var(--dc-header-primary);
+        }
     }
 
     .avatars {
@@ -39,9 +42,8 @@ const Base = styled.div`
             height: 16px;
             object-fit: cover;
             border-radius: var(--border-radius-half);
-            background: var(--secondary-background);
-            //background-clip: border-box;
-            border: 2px solid var(--secondary-background);
+            background: var(--primary-background);
+            border: 2px solid var(--primary-background);
 
             &:not(:first-child) {
                 margin-left: -6px;
@@ -51,7 +53,7 @@ const Base = styled.div`
 
     .usernames {
         min-width: 0;
-        font-size: 13px;
+        font-size: 14px;
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;

@@ -60,7 +60,7 @@ const Base = styled.div<{ closing?: boolean }>`
     place-items: center;
 
     color: var(--foreground);
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.7);
 
     ${(props) =>
         props.closing
@@ -79,8 +79,8 @@ const Base = styled.div<{ closing?: boolean }>`
 const Container = styled.div<
     Pick<Props, "transparent" | "maxWidth" | "maxHeight"> & { actions: boolean }
 >`
-    min-height: 200px;
-    max-width: min(calc(100vw - 20px), ${(props) => props.maxWidth ?? "450px"});
+    min-height: 120px;
+    max-width: min(calc(100vw - 20px), ${(props) => props.maxWidth ?? "440px"});
     max-height: min(
         calc(100vh - 20px),
         ${(props) => props.maxHeight ?? "650px"}
@@ -104,18 +104,35 @@ const Container = styled.div<
         !props.transparent &&
         css`
             overflow: hidden;
-            background: var(--secondary-header);
-            border-radius: var(--border-radius);
+            background: var(--primary-background);
+            border-radius: 4px;
+            box-shadow: 0 0 0 1px rgba(32, 34, 37, 0.6),
+                0 2px 10px 0 rgba(0, 0, 0, 0.2);
         `}
 `;
 
 const Title = styled.div`
-    padding: 1rem;
+    padding: 16px;
     flex-shrink: 0;
     word-break: break-word;
     gap: 8px;
     display: flex;
     flex-direction: column;
+    color: var(--dc-header-primary, var(--foreground));
+
+    h2 {
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 24px;
+        margin: 0;
+    }
+
+    h4 {
+        font-size: 16px;
+        font-weight: 400;
+        line-height: 20px;
+        color: var(--dc-header-secondary, var(--secondary-foreground));
+    }
 `;
 
 const Content = styled.div<Pick<Props, "transparent" | "padding">>`
@@ -124,7 +141,9 @@ const Content = styled.div<Pick<Props, "transparent" | "padding">>`
     padding: ${(props) => props.padding ?? "0 1rem 1rem"};
 
     overflow-y: auto;
-    font-size: 0.9375rem;
+    font-size: 16px;
+    line-height: 20px;
+    color: var(--dc-header-secondary, var(--secondary-foreground));
 
     display: flex;
     flex-direction: column;
@@ -132,7 +151,7 @@ const Content = styled.div<Pick<Props, "transparent" | "padding">>`
     ${(props) =>
         !props.transparent &&
         css`
-            background: var(--secondary-header);
+            background: var(--primary-background);
         `}
 `;
 
@@ -141,11 +160,11 @@ const Actions = styled.div`
 
     gap: 8px;
     display: flex;
-    padding: 1rem;
+    padding: 16px;
     flex-direction: row-reverse;
 
     background: var(--secondary-background);
-    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    border-radius: 0 0 4px 4px;
 `;
 
 export const Modal: (props: Props) => JSX.Element = ({

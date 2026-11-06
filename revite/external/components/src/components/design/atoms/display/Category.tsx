@@ -5,15 +5,16 @@ export interface Props {
 }
 
 export const Category = styled.div<Props>`
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--foreground);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+    letter-spacing: 0.02em;
+    color: var(--dc-channel-default, var(--tertiary-foreground));
     text-transform: uppercase;
 
-    margin-top: 4px;
-    margin-bottom: 4px;
+    margin: 0;
     white-space: nowrap;
-    padding: ${(props) => (props.compact ? "0 4px" : "6px 0 6px 8px")};
+    padding: ${(props) => (props.compact ? "0 4px" : "18px 8px 4px 8px")};
 
     display: flex;
     align-items: center;
@@ -21,7 +22,14 @@ export const Category = styled.div<Props>`
     justify-content: space-between;
 
     &:first-child {
-        margin-top: 0;
-        padding-top: 0;
+        padding-top: ${(props) => (props.compact ? "0" : "4px")};
+    }
+
+    svg {
+        cursor: pointer;
+    }
+
+    &:hover {
+        color: var(--dc-interactive-hover, var(--foreground));
     }
 `;

@@ -1,10 +1,5 @@
-import {
-    ChevronLeft,
-    ChevronRight,
-    Menu,
-} from "@styled-icons/boxicons-regular";
+import { Menu } from "@styled-icons/boxicons-regular";
 import { observer } from "mobx-react-lite";
-import { useLocation } from "react-router-dom";
 import styled, { css } from "styled-components/macro";
 
 import { Header } from "@revoltchat/ui";
@@ -27,17 +22,17 @@ const IconContainer = styled.div`
     display: flex;
     align-items: center;
     cursor: pointer;
-    color: var(--secondary-foreground);
-    margin-right: 5px;
+    color: var(--dc-channel-icon, #80848e);
+    margin-right: 0;
 
-    > svg {
-        margin-right: -5px;
+    > svg:not(:only-child) {
+        margin-right: 0;
     }
 
     ${!isTouchscreenDevice &&
     css`
         &:hover {
-            color: var(--foreground);
+            color: var(--dc-interactive-hover);
         }
     `}
 `;
@@ -51,27 +46,19 @@ type PageHeaderProps = Omit<Props, "placement" | "borders"> & {
 export const PageHeader = observer(
     ({ children, icon, noBurger, ...props }: PageHeaderProps) => {
         const layout = useApplicationState().layout;
-        const visible = layout.getSectionState(SIDEBAR_CHANNELS, true);
-        const { pathname } = useLocation();
 
         return (
             <Header
                 {...props}
                 palette="primary"
-                topBorder={!visible}
-                bottomBorder={!pathname.includes("/server")}>
+                topBorder={false}
+                bottomBorder={false}>
                 {!noBurger && <HamburgerAction />}
                 <IconContainer
                     onClick={() =>
                         layout.toggleSectionState(SIDEBAR_CHANNELS, true)
                     }>
-                    {!isTouchscreenDevice && visible && (
-                        <ChevronLeft size={18} />
-                    )}
                     {icon}
-                    {!isTouchscreenDevice && !visible && (
-                        <ChevronRight size={18} />
-                    )}
                 </IconContainer>
                 {children}
             </Header>

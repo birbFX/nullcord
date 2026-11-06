@@ -39,16 +39,19 @@ const OverlayBar = styled.div`
     align-self: end;
     align-content: center;
     justify-content: center;
-    right: 0;
-    top: -18px;
-    z-index: 0;
+    right: 14px;
+    top: -16px;
+    z-index: 2;
+    padding: 0;
+    overflow: hidden;
     transition: box-shadow 0.1s ease-out;
-    border-radius: 5px;
-    background: var(--primary-header);
-    border: 1px solid var(--background);
+    border-radius: 4px;
+    background: var(--primary-background);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--background) 60%, transparent);
 
     &:hover {
-        box-shadow: rgb(0 0 0 / 20%) 0px 2px 10px;
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--background) 60%, transparent),
+            0 4px 4px rgba(0, 0, 0, 0.16);
     }
 `;
 
@@ -60,12 +63,17 @@ const Entry = styled.div`
     justify-content: center;
     flex-shrink: 0;
     cursor: pointer;
-    transition: 0.2s ease background-color;
-    color: var(--secondary-foreground);
+    transition: 0.1s ease background-color;
+    color: var(--dc-interactive-normal);
+
+    svg {
+        width: 20px;
+        height: 20px;
+    }
 
     &:hover {
-        background-color: var(--secondary-header);
-        color: var(--foreground);
+        background-color: var(--dc-modifier-hover);
+        color: var(--dc-interactive-hover);
     }
 
     &:focus {
@@ -81,9 +89,9 @@ const Entry = styled.div`
 `;
 
 const Divider = styled.div`
-    margin: 6px 4px;
-    width: 0.5px;
-    background: var(--tertiary-background);
+    margin: 6px 2px;
+    width: 1px;
+    background: var(--dc-modifier-selected);
 `;
 
 export const MessageOverlayBar = observer(

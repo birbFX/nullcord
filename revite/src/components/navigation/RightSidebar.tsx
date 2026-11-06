@@ -30,7 +30,12 @@ export default function RightSidebar() {
         );
 
     return (
-        <SidebarBase>
+        <SidebarBase
+            style={{
+                width: "var(--dc-member-list-width)",
+                flexShrink: 0,
+                background: "var(--secondary-background)",
+            }}>
             <Switch>
                 <Route path="/server/:server/channel/:channel">{content}</Route>
                 <Route path="/channel/:channel">{content}</Route>

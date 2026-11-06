@@ -1,0 +1,285 @@
+/*
+ * Discord-style UI layer.
+ *
+ * Colours come from the theme presets in context/Theme.tsx; this file adds
+ * the derived tokens Discord uses (interactive states, floating surfaces,
+ * user panel) plus global element styling. Loaded after _for-web.scss so it
+ * wins over the Material radius tokens in every UI mode.
+ */
+
+:root,
+:root[data-ui] {
+    --border-radius: 4px;
+    --border-radius-half: 50%;
+    --scrollbar-thickness: 8px;
+    --text-size: 1rem;
+    --message-box-padding: 11px 10px 11px 0;
+    --textarea-line-height: 22px;
+
+    /* Text */
+    --dc-header-primary: color-mix(
+        in srgb,
+        var(--foreground) 70%,
+        var(--background-contrast, #fff) 30%
+    );
+    --dc-header-secondary: var(--secondary-foreground);
+    --dc-text-muted: var(--tertiary-foreground);
+    --dc-text-link: #00a8fc;
+    --dc-mention-foreground: #c9cdfb;
+
+    /* Interactive */
+    --dc-interactive-normal: var(--secondary-foreground);
+    --dc-interactive-hover: var(--foreground);
+    --dc-interactive-active: var(--dc-header-primary);
+    --dc-interactive-muted: color-mix(
+        in srgb,
+        var(--tertiary-foreground) 55%,
+        transparent
+    );
+    --dc-channel-default: var(--tertiary-foreground);
+    --dc-modifier-hover: var(--hover);
+    --dc-modifier-selected: color-mix(
+        in srgb,
+        var(--tertiary-foreground) 24%,
+        transparent
+    );
+    --dc-modifier-active: color-mix(
+        in srgb,
+        var(--tertiary-foreground) 30%,
+        transparent
+    );
+    --dc-message-hover: color-mix(
+        in srgb,
+        var(--background) 30%,
+        transparent
+    );
+
+    /* Surfaces */
+    --dc-bg-floating: var(--tooltip);
+    --dc-bg-user-panel: color-mix(
+        in srgb,
+        var(--secondary-background) 40%,
+        var(--background) 60%
+    );
+    --dc-bg-input: color-mix(
+        in srgb,
+        var(--background) 80%,
+        var(--secondary-background) 20%
+    );
+    --dc-bg-accent: var(--tertiary-background);
+    --dc-accent-hover: color-mix(in srgb, var(--accent) 82%, #000);
+    --dc-accent-active: color-mix(in srgb, var(--accent) 70%, #000);
+    --dc-button-secondary: #4e5058;
+    --dc-button-secondary-hover: #6d6f78;
+    --dc-danger: #da373c;
+    --dc-danger-hover: #a12828;
+
+    /* Elevation */
+    --dc-elevation-low: 0 1px 0 rgba(2, 2, 2, 0.2),
+        0 1.5px 0 rgba(6, 6, 7, 0.05), 0 2px 0 rgba(2, 2, 2, 0.05);
+    --dc-elevation-high: 0 8px 16px rgba(0, 0, 0, 0.24);
+    --dc-elevation-stroke: 0 0 0 1px rgba(2, 2, 2, 0.15);
+
+    /* Sizes */
+    --dc-rail-width: 72px;
+    --dc-sidebar-width: 240px;
+    --dc-member-list-width: 240px;
+    --dc-user-panel-height: 52px;
+}
+
+/* ---------------------------------------------------------------- Text */
+
+html,
+body {
+    font-family: var(--font), "gg sans", "Noto Sans", "Helvetica Neue",
+        Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.375;
+}
+
+::selection {
+    color: inherit;
+    background: rgba(var(--accent-rgb), 0.4);
+}
+
+::-moz-selection {
+    color: inherit;
+    background: rgba(var(--accent-rgb), 0.4);
+}
+
+:focus-visible {
+    outline: 2px solid var(--dc-text-link);
+    outline-offset: 1px;
+    border-radius: 2px;
+}
+
+/* Links inside rendered message markdown use Discord's link blue. */
+[data-component="markdown"] a:not([class]),
+.markdown a:not([class]) {
+    color: var(--dc-text-link);
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+/* ---------------------------------------------------------- Scrollbars */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    background-color: var(--scrollbar-thumb);
+    min-height: 40px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* Thin, hover-only scrollbars for sidebars (Discord's "thin" scroller). */
+.dc-thin-scroller {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+
+    &:hover {
+        scrollbar-color: var(--scrollbar-thumb) transparent;
+    }
+
+    &::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        border: none;
+        background-color: transparent;
+    }
+
+    &:hover::-webkit-scrollbar-thumb {
+        background-color: var(--scrollbar-thumb);
+    }
+}
+
+/* -------------------------------------------------------------- Tooltips */
+
+.tippy-box {
+    color: var(--dc-header-primary);
+    background: var(--dc-bg-floating);
+    border-radius: 4px;
+    box-shadow: var(--dc-elevation-high);
+    font-family: var(--font), sans-serif;
+}
+
+.tippy-content {
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2857;
+    max-width: 190px;
+    word-wrap: break-word;
+}
+
+.tippy-arrow {
+    color: var(--dc-bg-floating);
+}
+
+/* --------------------------------------------------------- Context menus */
+
+.preact-context-menu .context-menu {
+    min-width: 188px;
+    max-width: 320px;
+    padding: 6px 8px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 18px;
+    color: var(--dc-interactive-normal);
+    border-radius: 4px;
+    background-color: var(--dc-bg-floating);
+    backdrop-filter: none;
+    box-shadow: var(--dc-elevation-stroke), var(--dc-elevation-high);
+
+    > span,
+    .main > span {
+        margin: 2px 0;
+        min-height: 32px;
+        padding: 6px 8px;
+        border-radius: 2px;
+        box-sizing: border-box;
+
+        &:not([data-disabled="true"]):hover {
+            color: #fff;
+            background-color: var(--dc-accent-hover);
+            backdrop-filter: none;
+
+            .tip {
+                color: rgba(255, 255, 255, 0.8);
+            }
+
+            /* Destructive items (rendered with an inline --error colour). */
+            span[style*="--error"] {
+                color: #fff !important;
+            }
+        }
+
+        &:not([data-disabled="true"]):hover:has(span[style*="--error"]) {
+            background-color: var(--dc-danger);
+        }
+
+        &:active:not([data-disabled="true"]) {
+            background-color: var(--dc-accent-active);
+        }
+
+        .tip {
+            font-size: 12px;
+            color: var(--tertiary-foreground);
+        }
+    }
+
+    hr,
+    [class*="LineDivider"] {
+        margin: 4px;
+        height: 1px;
+        background: color-mix(in srgb, var(--tertiary-foreground) 24%, transparent);
+    }
+}
+
+.context-menu.Status .header {
+    padding: 8px;
+    color: var(--dc-header-primary);
+}
+
+/* --------------------------------------------------------------- Inputs */
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+        [type="color"]
+    ),
+textarea,
+select {
+    font-family: inherit;
+}
+
+/* ------------------------------------------------------------ Utilities */
+
+.dc-status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+@keyframes dc-fade-in {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
