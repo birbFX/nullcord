@@ -25,10 +25,25 @@ export function Connections() {
     const [providers, setProviders] = useState<Provider[] | undefined>();
     const [error, setError] = useState<string | undefined>();
 
+    const json = async (r: Response) => {
+        const t = await r.text();
+        try {
+            return JSON.parse(t);
+        } catch {
+            throw new Error(
+                "The connections service returned an unexpected response. Try again in a moment.",
+            );
+        }
+    };
+
     const load = () =>
         fetch(`${BASE}/api/connections`, { headers })
-            .then((r) => (r.ok ? r.json() : Promise.reject(new Error("Failed to load connections"))))
-            .then((d) => setProviders(d.providers))
+            .then(async (r) => {
+                const d = await json(r);
+                if (!r.ok) throw new Error(d.error || "Failed to load connections");
+                return d;
+            })
+            .then((d) => setProviders(d.providers ?? []))
             .catch((e) => setError(e.message));
 
     useEffect(() => {
@@ -38,8 +53,13 @@ export function Connections() {
 
     async function connect(p: Provider) {
         const r = await fetch(`${BASE}/api/connections/${p.provider}/start`, { method: "POST", headers });
-        if (!r.ok) return setError("Could not start connection");
-        window.location.href = (await r.json()).url;
+        try {
+            const d = await json(r);
+            if (!r.ok) return setError(d.error || "Could not start connection");
+            window.location.href = d.url;
+        } catch (e) {
+            setError((e as Error).message);
+        }
     }
 
     async function disconnect(p: Provider) {
@@ -47,7 +67,19 @@ export function Connections() {
         load();
     }
 
-    if (error) return <div className={styles.loader}>{error}</div>;
+    if (error)
+        return (
+            <div className={styles.loader} style={{ flexDirection: "column", gap: "12px" }}>
+                <span>{error}</span>
+                <Button
+                    onClick={() => {
+                        setError(undefined);
+                        load();
+                    }}>
+                    Retry
+                </Button>
+            </div>
+        );
     if (!providers)
         return (
             <div className={styles.loader}>
@@ -60,7 +92,18 @@ export function Connections() {
             <h3>Connections</h3>
             <p>Link your NullCord account to other Canyon Lake Labs apps.</p>
             {providers.map((p) => (
-                <div key={p.provider} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 0" }}>
+                <div
+                    key={p.provider}
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "16px",
+                        padding: "14px 16px",
+                        marginTop: "10px",
+                        borderRadius: "10px",
+                        background: "var(--secondary-background)",
+                        borderLeft: `4px solid ${p.linked ? "var(--success, #3ba55d)" : "var(--tertiary-foreground)"}`,
+                    }}>
                     <div style={{ flex: 1 }}>
                         <b>{p.name}</b>
                         <div style={{ opacity: 0.7 }}>

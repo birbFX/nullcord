@@ -55,7 +55,7 @@ const server = http.createServer((req, res) => {
             { host: "127.0.0.1", port: process.env.CONNECTIONS_PORT || 4230, path: req.url, method: req.method, headers: req.headers },
             (r) => { res.writeHead(r.statusCode, r.headers); r.pipe(res); }
         );
-        up.on("error", () => { res.writeHead(502); res.end("connections service unavailable"); });
+        up.on("error", () => { res.writeHead(502, { "content-type": "application/json" }); res.end(JSON.stringify({ error: "connections service unavailable" })); });
         req.pipe(up);
         return;
     }
