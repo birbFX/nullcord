@@ -49,6 +49,17 @@ const forwebHandler = fs.existsSync(path.join(FORWEB_DIST, "index.html"))
     : null;
 
 const server = http.createServer((req, res) => {
+    // Connections sidecar (gitclone / TubeClone / ToKTok account linking)
+    if (req.url.startsWith("/connections-api/")) {
+        const up = http.request(
+            { host: "127.0.0.1", port: process.env.CONNECTIONS_PORT || 4230, path: req.url, method: req.method, headers: req.headers },
+            (r) => { res.writeHead(r.statusCode, r.headers); r.pipe(res); }
+        );
+        up.on("error", () => { res.writeHead(502); res.end("connections service unavailable"); });
+        req.pipe(up);
+        return;
+    }
+
     // Health check without touching disk.
     const cookies = req.headers.cookie || "";
     const stoatMode = /(?:^|;\s*)nullcord_client=stoat(?:;|$)/.test(cookies);
@@ -89,17 +100,6 @@ const server = http.createServer((req, res) => {
         const [pathname, query] = req.url.slice("/stoat".length).split("?");
         req.url = (pathname || "/") + (query ? `?${query}` : "");
         forwebHandler(req, res);
-        return;
-    }
-
-    // Connections sidecar (gitclone / TubeClone / ToKTok account linking)
-    if (req.url.startsWith("/connections-api/")) {
-        const up = http.request(
-            { host: "127.0.0.1", port: process.env.CONNECTIONS_PORT || 4230, path: req.url, method: req.method, headers: req.headers },
-            (r) => { res.writeHead(r.statusCode, r.headers); r.pipe(res); }
-        );
-        up.on("error", () => { res.writeHead(502); res.end("connections service unavailable"); });
-        req.pipe(up);
         return;
     }
 
