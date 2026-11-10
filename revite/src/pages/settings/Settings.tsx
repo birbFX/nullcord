@@ -5,6 +5,7 @@ import {
     Desktop,
     ListUl,
     Tag,
+    Link,
 } from "@styled-icons/boxicons-regular";
 import {
     Bell,
@@ -52,6 +53,7 @@ import { Notifications } from "./panes/Notifications";
 import { PluginsPage } from "./panes/Plugins";
 import { Profile } from "./panes/Profile";
 import { ServerTags } from "./panes/ServerTags";
+import { Connections } from "./panes/Connections";
 import { Sessions } from "./panes/Sessions";
 import { Sync } from "./panes/Sync";
 
@@ -154,6 +156,11 @@ export default observer(() => {
                     title: <Text id="app.settings.pages.sessions.title" />,
                 },
                 {
+                    id: "connections",
+                    icon: <Link size={20} />,
+                    title: "Connections",
+                },
+                {
                     category: (
                         <Text id="app.settings.categories.client_settings" />
                     ),
@@ -213,6 +220,11 @@ export default observer(() => {
                     <Route path="/settings/sessions">
                         <RequiresOnline>
                             <Sessions />
+                        </RequiresOnline>
+                    </Route>
+                    <Route path="/settings/connections">
+                        <RequiresOnline>
+                            <Connections />
                         </RequiresOnline>
                     </Route>
                     <Route path="/settings/server-tags">
