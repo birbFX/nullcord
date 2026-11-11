@@ -428,7 +428,11 @@ impl EventV1 {
 
         let redis_channel = self.redis_suffix(channel.clone());
 
-        redis_kiss::publish(redis_channel, &self).await.unwrap();
+        // A dropped Redis or RabbitMQ link must never take the caller's task down with it:
+        // in bonfire that task is a user's websocket, and the panic shows up as a reconnect.
+        if let Err(e) = redis_kiss::publish(redis_channel, &self).await {
+            log::error!("Failed to publish event over Redis: {e:?}");
+        }
 
         if let Err(e) = get_amqp().publish_event(channel, &self).await {
             log::error!("Failed to publish event over AMQP: {e:?}");
@@ -441,7 +445,9 @@ impl EventV1 {
 
         for channel in &channels {
             let redis_channel = self.redis_suffix(channel.clone());
-            redis_kiss::publish(redis_channel, &self).await.unwrap();
+            if let Err(e) = redis_kiss::publish(redis_channel, &self).await {
+                log::error!("Failed to publish event over Redis: {e:?}");
+            }
         }
 
         if let Err(e) = get_amqp().publish_event_broadcast(channels, &self).await {
