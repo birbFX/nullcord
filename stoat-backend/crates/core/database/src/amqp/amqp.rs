@@ -3,6 +3,7 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
+use async_lock::Mutex;
 use crate::User;
 use crate::events::{client::EventV1, rabbit::*};
 use lapin::{
@@ -24,33 +25,84 @@ pub fn get_amqp() -> &'static AMQP {
     AMQP_INSTANCE.get().expect("No AMQP instance set.")
 }
 
+/// Owns the RabbitMQ connection and transparently re-dials it when it has been dropped.
+struct Link {
+    connection: Mutex<Arc<Connection>>,
+}
+
+impl Link {
+    async fn connection(&self) -> Result<Arc<Connection>, AMQPError> {
+        let mut current = self.connection.lock().await;
+
+        if !current.status().connected() {
+            log::warn!("RabbitMQ connection lost, reconnecting");
+            *current = Arc::new(AMQP::dial().await?);
+            log::info!("RabbitMQ connection re-established");
+        }
+
+        Ok(current.clone())
+    }
+}
+
+/// A channel that is re-created whenever it (or its connection) has died.
+struct Slot {
+    link: Arc<Link>,
+    channel: Mutex<Option<Arc<Channel>>>,
+}
+
+impl Slot {
+    fn new(link: Arc<Link>) -> Arc<Self> {
+        Arc::new(Self {
+            link,
+            channel: Mutex::new(None),
+        })
+    }
+
+    async fn get(&self) -> Result<Arc<Channel>, AMQPError> {
+        let mut slot = self.channel.lock().await;
+
+        if let Some(channel) = slot.as_ref() {
+            if channel.status().connected() {
+                return Ok(channel.clone());
+            }
+        }
+
+        let channel = Arc::new(self.link.connection().await?.create_channel().await?);
+        *slot = Some(channel.clone());
+        Ok(channel)
+    }
+}
+
 #[derive(Clone)]
 pub struct AMQP {
-    friend_request_accepted: Arc<Channel>,
-    friend_request_received: Arc<Channel>,
-    generic_message: Arc<Channel>,
-    message_sent: Arc<Channel>,
-    mass_mention_message_sent: Arc<Channel>,
-    ack_notification_message: Arc<Channel>,
-    dm_call_updated: Arc<Channel>,
-    process_ack: Arc<Channel>,
-    publish_event: Arc<Channel>,
-    #[allow(unused)]
+    friend_request_accepted: Arc<Slot>,
+    friend_request_received: Arc<Slot>,
+    generic_message: Arc<Slot>,
+    message_sent: Arc<Slot>,
+    mass_mention_message_sent: Arc<Slot>,
+    ack_notification_message: Arc<Slot>,
+    dm_call_updated: Arc<Slot>,
+    process_ack: Arc<Slot>,
+    publish_event: Arc<Slot>,
     connection: Arc<Connection>,
 }
 
 impl AMQP {
     pub async fn new(connection: Arc<Connection>) -> Self {
+        let link = Arc::new(Link {
+            connection: Mutex::new(connection.clone()),
+        });
+
         let this = Self {
-            friend_request_accepted: Self::create_channel(&connection).await,
-            friend_request_received: Self::create_channel(&connection).await,
-            generic_message: Self::create_channel(&connection).await,
-            message_sent: Self::create_channel(&connection).await,
-            mass_mention_message_sent: Self::create_channel(&connection).await,
-            ack_notification_message: Self::create_channel(&connection).await,
-            dm_call_updated: Self::create_channel(&connection).await,
-            process_ack: Self::create_channel(&connection).await,
-            publish_event: Self::create_channel(&connection).await,
+            friend_request_accepted: Slot::new(link.clone()),
+            friend_request_received: Slot::new(link.clone()),
+            generic_message: Slot::new(link.clone()),
+            message_sent: Slot::new(link.clone()),
+            mass_mention_message_sent: Slot::new(link.clone()),
+            ack_notification_message: Slot::new(link.clone()),
+            dm_call_updated: Slot::new(link.clone()),
+            process_ack: Slot::new(link.clone()),
+            publish_event: Slot::new(link),
             connection,
         };
 
@@ -59,34 +111,26 @@ impl AMQP {
         this
     }
 
-    pub async fn new_auto() -> Self {
+    async fn dial() -> Result<Connection, AMQPError> {
         let config = revolt_config::config().await;
 
-        let connection = Arc::new(
-            Connection::connect(
-                &format!(
-                    "amqp://{}:{}@{}:{}",
-                    &config.rabbit.username,
-                    &config.rabbit.password,
-                    &config.rabbit.host,
-                    &config.rabbit.port,
-                ),
-                ConnectionProperties::default(),
-            )
-            .await
-            .expect("Failed to connect to RabbitMQ"),
-        );
-
-        Self::new(connection).await
+        Connection::connect(
+            &format!(
+                "amqp://{}:{}@{}:{}",
+                &config.rabbit.username,
+                &config.rabbit.password,
+                &config.rabbit.host,
+                &config.rabbit.port,
+            ),
+            ConnectionProperties::default(),
+        )
+        .await
     }
 
-    async fn create_channel(connection: &Connection) -> Arc<Channel> {
-        Arc::new(
-            connection
-                .create_channel()
-                .await
-                .expect("Failed to create channel"),
-        )
+    pub async fn new_auto() -> Self {
+        let connection = Arc::new(Self::dial().await.expect("Failed to connect to RabbitMQ"));
+
+        Self::new(connection).await
     }
 
     pub fn connection(&self) -> &Arc<Connection> {
@@ -112,6 +156,8 @@ impl AMQP {
         );
 
         self.friend_request_accepted
+            .get()
+            .await?
             .basic_publish(
                 config.pushd.exchange.clone().into(),
                 config.pushd.get_fr_accepted_routing_key().into(),
@@ -145,6 +191,8 @@ impl AMQP {
         );
 
         self.friend_request_received
+            .get()
+            .await?
             .basic_publish(
                 config.pushd.exchange.clone().into(),
                 config.pushd.get_fr_received_routing_key().into(),
@@ -182,6 +230,8 @@ impl AMQP {
         );
 
         self.generic_message
+            .get()
+            .await?
             .basic_publish(
                 config.pushd.exchange.clone().into(),
                 config.pushd.get_generic_routing_key().into(),
@@ -225,6 +275,8 @@ impl AMQP {
         );
 
         self.message_sent
+            .get()
+            .await?
             .basic_publish(
                 config.pushd.exchange.clone().into(),
                 config.pushd.get_message_routing_key().into(),
@@ -260,6 +312,8 @@ impl AMQP {
         );
 
         self.mass_mention_message_sent
+            .get()
+            .await?
             .basic_publish(
                 config.pushd.exchange.clone().into(),
                 routing_key.into(),
@@ -303,6 +357,8 @@ impl AMQP {
         );
 
         self.ack_notification_message
+            .get()
+            .await?
             .basic_publish(
                 config.pushd.exchange.clone().into(),
                 config.pushd.ack_queue.into(),
@@ -349,6 +405,8 @@ impl AMQP {
         );
 
         self.dm_call_updated
+            .get()
+            .await?
             .basic_publish(
                 config.pushd.exchange.clone().into(),
                 config.pushd.get_dm_call_routing_key().into(),
@@ -385,6 +443,8 @@ impl AMQP {
         );
 
         self.process_ack
+            .get()
+            .await?
             .basic_publish(
                 config.rabbit.default_exchange.clone().into(),
                 config.rabbit.queues.acks.into(),
@@ -406,6 +466,8 @@ impl AMQP {
         let config = config().await;
 
         self.publish_event
+            .get()
+            .await?
             .basic_publish(
                 config.rabbit.default_exchange.clone().into(),
                 config.rabbit.queues.events.into(),
@@ -438,6 +500,8 @@ impl AMQP {
         let config = config().await;
 
         self.publish_event
+            .get()
+            .await?
             .basic_publish(
                 config.rabbit.default_exchange.clone().into(),
                 config.rabbit.queues.events.into(),

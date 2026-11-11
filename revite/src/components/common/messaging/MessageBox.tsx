@@ -44,6 +44,7 @@ import { modalController } from "../../../controllers/modals/ModalController";
 import { RenderEmoji } from "../../markdown/plugins/emoji";
 import AutoComplete, { useAutoComplete } from "../AutoComplete";
 import { PermissionTooltip } from "../Tooltip";
+import GifPicker from "./GifPicker";
 import FilePreview from "./bars/FilePreview";
 import ReplyBar from "./bars/ReplyBar";
 
@@ -282,6 +283,7 @@ export default observer(({ channel }: Props) => {
     const [typing, setTyping] = useState<boolean | number>(false);
     const [replies, setReplies] = useState<Reply[]>([]);
     const [picker, setPicker] = useState(false);
+    const [gifPicker, setGifPicker] = useState(false);
     const client = useClient();
     const translate = useTranslation();
 
@@ -720,6 +722,17 @@ export default observer(({ channel }: Props) => {
                 setReplies={setReplies}
             />
             <FloatingLayer>
+                {gifPicker && (
+                    <GifPicker
+                        onSelect={(url) => {
+                            const v = state.draft.get(channel._id);
+                            state.draft.set(channel._id, {
+                                content: (v?.content ? `${v.content} ` : "") + url,
+                            });
+                        }}
+                        onClose={() => setGifPicker(false)}
+                    />
+                )}
                 {picker && (
                     <HackAlertThisFileWillBeReplaced
                         onSelect={(emoji) => {
@@ -855,6 +868,11 @@ export default observer(({ channel }: Props) => {
                     onFocus={onFocus}
                     onBlur={onBlur}
                 />
+                <Action>
+                    <IconButton onClick={() => setGifPicker(!gifPicker)}>
+                        <b style={{ fontSize: "13px" }}>GIF</b>
+                    </IconButton>
+                </Action>
                 <Action>
                     <IconButton onClick={() => setPicker(!picker)}>
                         <HappyBeaming size={24} />

@@ -25,6 +25,7 @@ import {
     Preloader,
 } from "@revoltchat/ui";
 
+import { parseConnections } from "../../../../lib/connections";
 import { noop } from "../../../../lib/js";
 import { displayDiscriminator } from "../../../../lib/owner";
 
@@ -32,6 +33,7 @@ import ChannelIcon from "../../../../components/common/ChannelIcon";
 import ServerIcon from "../../../../components/common/ServerIcon";
 import Tooltip from "../../../../components/common/Tooltip";
 import UserBadges from "../../../../components/common/user/UserBadges";
+import UserConnections from "../../../../components/common/user/UserConnections";
 import UserIcon from "../../../../components/common/user/UserIcon";
 import { Username } from "../../../../components/common/user/UserShort";
 import UserStatus from "../../../../components/common/user/UserStatus";
@@ -344,6 +346,11 @@ export const UserProfile = observer(
                                 onClick={() => setTab("profile")}>
                                 <Text id="app.special.popovers.user_profile.profile" />
                             </div>
+                            <div
+                                data-active={tab === "connections"}
+                                onClick={() => setTab("connections")}>
+                                Connections
+                            </div>
                             {user.relationship !== "User" && (
                                 <>
                                     {!user.bot && (
@@ -512,6 +519,18 @@ export const UserProfile = observer(
                                         ),
                                 )}
                             </div>
+                        ))}
+                    {tab === "connections" &&
+                        (parseConnections(profile?.content).length === 0 ? (
+                            <div className={styles.empty}>
+                                <ListUl size="72" />
+                                No connections. Add lines like
+                                &quot;github: name&quot; to the bio.
+                            </div>
+                        ) : (
+                            <UserConnections
+                                connections={parseConnections(profile?.content)}
+                            />
                         ))}
                     {tab === "servers" &&
                         (!mutualServers || mutualServers.length === 0 ? (

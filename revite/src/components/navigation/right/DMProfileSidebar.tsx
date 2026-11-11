@@ -7,6 +7,7 @@ import { decodeTime } from "ulid";
 
 import { useEffect, useState } from "preact/hooks";
 
+import { parseConnections } from "../../../lib/connections";
 import { displayDiscriminator } from "../../../lib/owner";
 
 import { dayjs } from "../../../context/Locale";
@@ -15,6 +16,7 @@ import { useClient } from "../../../controllers/client/ClientController";
 import { modalController } from "../../../controllers/modals/ModalController";
 import Markdown from "../../markdown/Markdown";
 import UserBadges from "../../common/user/UserBadges";
+import UserConnections from "../../common/user/UserConnections";
 import UserIcon from "../../common/user/UserIcon";
 import UserStatus from "../../common/user/UserStatus";
 
@@ -198,7 +200,7 @@ export default observer(({ user }: { user: User }) => {
     const client = useClient();
     const [profile, setProfile] = useState<API.UserProfile | null>();
     const [mutual, setMutual] = useState<Mutual | null>();
-    const [open, setOpen] = useState<"servers" | "friends" | null>(null);
+    const [open, setOpen] = useState<"servers" | "friends" | "connections" | null>(null);
 
     const blocked =
         user.relationship === "Blocked" || user.relationship === "BlockedOther";
@@ -233,6 +235,7 @@ export default observer(({ user }: { user: User }) => {
     const openProfile = () =>
         modalController.push({ type: "user_profile", user_id: user._id });
 
+    const connections = parseConnections(profile?.content);
     const servers = (mutual?.servers ?? [])
         .map((id) => client.servers.get(id))
         .filter((x) => x);
@@ -368,6 +371,38 @@ export default observer(({ user }: { user: User }) => {
                                     {friend!.display_name ?? friend!.username}
                                 </a>
                             ))}
+                        </Mutuals>
+                    )}
+                </>
+            )}
+
+            {connections.length > 0 && (
+                <>
+                    <Row
+                        onClick={() =>
+                            setOpen(
+                                open === "connections" ? null : "connections",
+                            )
+                        }>
+                        <span>
+                            Connections{" "}
+                            <span className="count">
+                                — {connections.length}
+                            </span>
+                        </span>
+                        <ChevronRight
+                            size={20}
+                            style={{
+                                transform:
+                                    open === "connections"
+                                        ? "rotate(90deg)"
+                                        : "",
+                            }}
+                        />
+                    </Row>
+                    {open === "connections" && (
+                        <Mutuals>
+                            <UserConnections connections={connections} />
                         </Mutuals>
                     )}
                 </>

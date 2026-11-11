@@ -431,11 +431,7 @@ impl EventV1 {
         redis_kiss::publish(redis_channel, &self).await.unwrap();
 
         if let Err(e) = get_amqp().publish_event(channel, &self).await {
-            if cfg!(debug_assertions) {
-                panic!("{e:?}");
-            } else {
-                log::error!("{e:?}");
-            };
+            log::error!("Failed to publish event over AMQP: {e:?}");
         };
     }
 
@@ -449,11 +445,7 @@ impl EventV1 {
         }
 
         if let Err(e) = get_amqp().publish_event_broadcast(channels, &self).await {
-            if cfg!(debug_assertions) {
-                panic!("{e:?}");
-            } else {
-                log::error!("{e:?}");
-            };
+            log::error!("Failed to publish event over AMQP: {e:?}");
         };
     }
 
