@@ -2,7 +2,6 @@ use std::{collections::HashSet, net::SocketAddr, num::NonZeroUsize, sync::Arc};
 
 use async_tungstenite::WebSocketStream;
 use fred::{
-    error::RedisErrorKind,
     interfaces::{ClientLike, EventInterface, PubsubInterface},
     types::{ReconnectPolicy, RedisConfig},
 };
@@ -26,7 +25,6 @@ use sentry::Level;
 use tokio::{
     net::TcpStream,
     sync::{Mutex, RwLock},
-    task::spawn,
 };
 use tokio_util::compat::{Compat, TokioAsyncReadCompatExt};
 
@@ -81,6 +79,7 @@ pub async fn client(db: &'static Database, stream: TcpStream, addr: SocketAddr) 
 
     // Try to authenticate the user.
     let Some(token) = config.get_session_token().as_ref() else {
+        info!("User {addr:?} closed or sent no session token; rejecting");
         write
             .send(config.encode(&EventV1::Error {
                 data: create_error!(InvalidSession),
@@ -93,6 +92,9 @@ pub async fn client(db: &'static Database, stream: TcpStream, addr: SocketAddr) 
     let (user, session_id) = match User::from_token(db, token, UserHint::Any).await {
         Ok(user) => user,
         Err(err) => {
+            // Rejected connections used to vanish from the log, which made reconnect loops
+            // impossible to tell apart from a crashing server.
+            warn!("User {addr:?} failed to authenticate: {err:?}");
             write
                 .send(config.encode(&EventV1::Error { data: err }))
                 .await
@@ -245,86 +247,102 @@ async fn listener(
     let redis_config = RedisConfig::from_url(&url).unwrap();
     let mut builder = fred::types::Builder::from_config(redis_config);
     builder.set_policy(ReconnectPolicy::new_exponential(8, 100, 30_000, 2));
-    let subscriber = match report_internal_error!(builder.build_subscriber_client()) {
-        Ok(subscriber) => subscriber,
-        Err(_) => return,
-    };
 
-    if report_internal_error!(subscriber.init().await).is_err() {
-        return;
-    }
-
-    // Let Fred automatically re-subscribe to tracked channels on reconnect.
-    subscriber.manage_subscriptions();
-
-    // Handle Redis connection dropping
-    let (clean_up_s, clean_up_r) = async_channel::bounded(1);
-    let clean_up_s = Arc::new(Mutex::new(clean_up_s));
-    subscriber.on_error(move |err| {
-        warn!("Redis subscriber error: {:?}", err);
-        if let RedisErrorKind::Canceled = err.kind() {
-            let clean_up_s = clean_up_s.clone();
-            spawn(async move {
-                clean_up_s.lock().await.send(()).await.ok();
-            });
-        }
-        // Transient errors (IO, timeout) are handled by the reconnect policy.
-
-        Ok(())
-    });
-
-    let mut message_rx = subscriber.message_rx();
-    'out: loop {
-        // Check for state changes for subscriptions.
-        match state.apply_state().await {
-            SubscriptionStateChange::Reset => {
-                if report_internal_error!(subscriber.unsubscribe_all().await).is_err() {
-                    break 'out;
-                }
-
-                let subscribed = state.subscribed.read().await;
-                for id in subscribed.iter() {
-                    if report_internal_error!(subscriber.subscribe(id).await).is_err() {
-                        break 'out;
-                    }
-                }
-
-                #[cfg(debug_assertions)]
-                info!("{addr:?} has reset their subscriptions");
+    // A Redis subscriber can die (Redis restarting, connection reset, ...).
+    // That must never disconnect the user: rebuild the subscriber and
+    // re-subscribe instead. Otherwise every Redis hiccup shows up in the
+    // client as "disconnected, reconnecting".
+    'subscriber: loop {
+        let subscriber = match report_internal_error!(builder.build_subscriber_client()) {
+            Ok(subscriber) => subscriber,
+            Err(_) => {
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                continue 'subscriber;
             }
-            SubscriptionStateChange::Change { add, remove } => {
-                for id in remove {
-                    #[cfg(debug_assertions)]
-                    info!("{addr:?} unsubscribing from {id}");
+        };
 
-                    if report_internal_error!(subscriber.unsubscribe(id).await).is_err() {
-                        break 'out;
-                    }
-                }
-
-                for id in add {
-                    #[cfg(debug_assertions)]
-                    info!("{addr:?} subscribing to {id}");
-
-                    if report_internal_error!(subscriber.subscribe(id).await).is_err() {
-                        break 'out;
-                    }
-                }
-            }
-            SubscriptionStateChange::None => {}
+        if report_internal_error!(subscriber.init().await).is_err() {
+            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            continue 'subscriber;
         }
+
+        // Let Fred automatically re-subscribe to tracked channels on reconnect.
+        subscriber.manage_subscriptions();
+
+        // Re-subscribe to the channels this session is already subscribed to.
+        {
+            let subscribed = state.subscribed.read().await;
+            for id in subscribed.iter() {
+                let _ = subscriber.subscribe(id).await;
+            }
+        }
+
+        // Handle Redis connection dropping.
+        //
+        // Note: fred reports a lost reader task as `RedisErrorKind::Canceled`
+        // even though its reconnect policy is reconnecting in the background.
+        // Tearing the user's connection down on that error is what made every
+        // Redis blip look like a websocket outage, so the error is only logged
+        // here; the subscriber is rebuilt further down if it actually dies.
+        subscriber.on_error(move |err| {
+            warn!("Redis subscriber error: {:?}", err);
+
+            Ok(())
+        });
+
+        let mut message_rx = subscriber.message_rx();
+        let mut subscriber_died = false;
+        'out: loop {
+            // Check for state changes for subscriptions.
+            match state.apply_state().await {
+                SubscriptionStateChange::Reset => {
+                    if report_internal_error!(subscriber.unsubscribe_all().await).is_err() {
+                        subscriber_died = true;
+                        break 'out;
+                    }
+
+                    let subscribed = state.subscribed.read().await;
+                    for id in subscribed.iter() {
+                        if report_internal_error!(subscriber.subscribe(id).await).is_err() {
+                            subscriber_died = true;
+                            break 'out;
+                        }
+                    }
+
+                    #[cfg(debug_assertions)]
+                    info!("{addr:?} has reset their subscriptions");
+                }
+                SubscriptionStateChange::Change { add, remove } => {
+                    for id in remove {
+                        #[cfg(debug_assertions)]
+                        info!("{addr:?} unsubscribing from {id}");
+
+                        if report_internal_error!(subscriber.unsubscribe(id).await).is_err() {
+                            subscriber_died = true;
+                            break 'out;
+                        }
+                    }
+
+                    for id in add {
+                        #[cfg(debug_assertions)]
+                        info!("{addr:?} subscribing to {id}");
+
+                        if report_internal_error!(subscriber.subscribe(id).await).is_err() {
+                            subscriber_died = true;
+                            break 'out;
+                        }
+                    }
+                }
+                SubscriptionStateChange::None => {}
+            }
 
         let t1 = message_rx.recv().fuse();
         let t2 = topic_signal_r.recv().fuse();
         let t3 = kill_signal_r.recv().fuse();
-        let t4 = clean_up_r.recv().fuse();
 
-        pin_mut!(t1, t2, t3, t4);
+        pin_mut!(t1, t2, t3);
 
         select! {
-            _ = t4 => {
-                break 'out;
-            },
             _ = t3 => {
                 break 'out;
             },
@@ -333,7 +351,13 @@ async fn listener(
                 // Handle incoming events.
                 let message = match report_internal_error!(message) {
                     Ok(message) => message,
-                    Err(_) => break 'out
+                    Err(_) => {
+                        // The subscriber's message channel closed, which means
+                        // the subscriber is gone (e.g. Redis went away). Rebuild
+                        // it instead of disconnecting the user.
+                        subscriber_died = true;
+                        break 'out;
+                    }
                 };
 
                 let event = match *REDIS_PAYLOAD_TYPE {
@@ -404,9 +428,20 @@ async fn listener(
                 }
             }
         }
-    }
+        }
 
-    report_internal_error!(subscriber.quit().await).ok();
+        report_internal_error!(subscriber.quit().await).ok();
+
+        if subscriber_died {
+            // Only the subscriber died; the user's connection is still fine.
+            // Rebuild the subscriber and carry on.
+            warn!("{addr:?} Redis subscriber died, reconnecting it");
+            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            continue 'subscriber;
+        }
+
+        return;
+    }
 }
 
 #[allow(clippy::too_many_arguments)]

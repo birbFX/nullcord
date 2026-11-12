@@ -34,7 +34,9 @@ const TOKEN =
     process.env.NULLCORD_BOT_TOKEN ||
     fs.readFileSync(path.join(__dirname, '.token'), 'utf8').trim();
 
-const DATA_DIR = path.join(__dirname, 'data');
+// The bot's state lives with the rest of the NullCord data, on the storage
+// volume, so it can be overridden to keep it off the root filesystem.
+const DATA_DIR = process.env.NULLCORD_BOT_DATA_DIR || path.join(__dirname, 'data');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 const WARNS_FILE = path.join(DATA_DIR, 'warns.json');
 const TICKETS_FILE = path.join(DATA_DIR, 'tickets.json');

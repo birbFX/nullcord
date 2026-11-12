@@ -9,6 +9,7 @@ use redis_kiss::{
     get_connection,
     redis::{Pipeline, SetExpiry, SetOptions, aio::Connection},
 };
+use log::warn;
 use revolt_result::ToRevoltError;
 use serde::Serialize;
 
@@ -145,12 +146,23 @@ impl Ratelimiter {
             });
         }
 
-        let mut conn = get_connection()
-            .await
-            .expect("Failed to get redis connection")
-            .into_inner();
-
         let now = now();
+
+        // Rate limiting is best-effort, so an unreachable Redis must not take
+        // the request down with it. Panicking here kills the worker thread that
+        // is serving the request while the listener socket stays open: the API
+        // keeps accepting connections but never answers them, and every client
+        // gives up and reconnects in a loop. Fail open instead.
+        let Ok(mut conn) = get_connection().await else {
+            warn!("Failed to get redis connection; serving request without rate limiting");
+            return Ok(Ratelimiter {
+                key,
+                limit,
+                remaining: limit,
+                reset: now.add(Duration::from_secs(10)).as_millis(),
+            });
+        };
+
         let mut entry = Entry::from(&mut conn, now, key).await;
 
         let remaining = entry.get_remaining(now, limit);

@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
+    volumes:
+      - ${REDIS_DATA_DIR:-./.data/redis}:/data
 
   # MongoDB
   database:
@@ -14,7 +16,7 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - ./.data/db:/data/db
+      - ${MONGO_DATA_DIR:-./.data/db}:/data/db
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
@@ -63,7 +65,7 @@ services:
       RABBITMQ_DEFAULT_USER: rabbituser
       RABBITMQ_DEFAULT_PASS: rabbitpass
     volumes:
-      - ./.data/rabbit:/var/lib/rabbitmq
+      - ${RABBIT_DATA_DIR:-./.data/rabbit}:/var/lib/rabbitmq
       #- ./rabbit_plugins:/opt/rabbitmq/plugins/
       #- ./rabbit_enabled_plugins:/etc/rabbitmq/enabled_plugins
       # uncomment this if you need to enable other plugins
