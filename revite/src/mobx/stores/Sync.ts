@@ -143,7 +143,13 @@ export default class Sync implements Store, Persistent<Data> {
             }
 
             const theme = tryRead("theme");
-            if (theme) {
+            // An empty remote theme must never wipe the local one.
+            if (
+                theme &&
+                theme[1] &&
+                typeof theme[1] === "object" &&
+                Object.keys(theme[1] as object).length > 0
+            ) {
                 this.state.setDisabled("theme");
                 this.state.settings.apply("theme", theme[1], theme[0]);
                 this.setRevision("theme", theme[0]);

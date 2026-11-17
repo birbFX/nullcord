@@ -7,7 +7,7 @@ import { decodeTime } from "ulid";
 
 import { useEffect, useState } from "preact/hooks";
 
-import { parseConnections } from "../../../lib/connections";
+import { useProfileConnections } from "../../../lib/connections";
 import { displayDiscriminator } from "../../../lib/owner";
 
 import { dayjs } from "../../../context/Locale";
@@ -19,6 +19,7 @@ import UserBadges from "../../common/user/UserBadges";
 import UserConnections from "../../common/user/UserConnections";
 import UserIcon from "../../common/user/UserIcon";
 import UserStatus from "../../common/user/UserStatus";
+import { getProfileGradient } from "../../../lib/serverExtras";
 
 const Base = styled.aside.attrs({ className: "dc-thin-scroller" })`
     width: 100%;
@@ -235,7 +236,8 @@ export default observer(({ user }: { user: User }) => {
     const openProfile = () =>
         modalController.push({ type: "user_profile", user_id: user._id });
 
-    const connections = parseConnections(profile?.content);
+    const cardBg = getProfileGradient(user._id);
+    const connections = useProfileConnections(user._id, profile?.content);
     const servers = (mutual?.servers ?? [])
         .map((id) => client.servers.get(id))
         .filter((x) => x);
@@ -244,7 +246,9 @@ export default observer(({ user }: { user: User }) => {
         .filter((x) => x);
 
     return (
-        <Base aria-label="User profile">
+        <Base
+            aria-label="User profile"
+            style={cardBg ? { background: cardBg } : undefined}>
             <Banner
                 style={
                     bannerURL
@@ -257,7 +261,8 @@ export default observer(({ user }: { user: User }) => {
                     <UserIcon target={user} size={80} status />
                 </div>
             </AvatarWrap>
-            <Card>
+            <Card
+                style={cardBg ? { background: "rgba(0, 0, 0, 0.35)", color: "white" } : undefined}>
                 <div className="names">
                     <div className="display">
                         {user.display_name ?? user.username}

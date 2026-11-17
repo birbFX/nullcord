@@ -6,6 +6,7 @@ import styles from "./Panes.module.scss";
 
 import { Button } from "@revoltchat/ui";
 
+import { OWNER_ID } from "../../../lib/owner";
 import { useClient } from "../../../controllers/client/ClientController";
 import {
     addBoost,
@@ -34,7 +35,7 @@ export const Boosts = observer(({ server }: Props) => {
     const boosts = Object.values(extras.boosts ?? {}).reduce((a, b) => a + b, 0);
     const infinite = serverHasInfiniteBoosts(server._id);
     const level = infinite ? 3 : boostLevel(boosts);
-    const capacity = boostCapacity(user);
+    const capacity = boostCapacity(user, server._id);
     const myBoosts = user?._id ? extras.boosts?.[user._id] ?? 0 : 0;
     const next = LEVELS.find((entry) => entry.level === level + 1);
 
@@ -102,7 +103,7 @@ export const Boosts = observer(({ server }: Props) => {
                 ) : capacity > 0 ? (
                     <Button
                         palette="primary"
-                        disabled={boosts >= 14}
+                        disabled={boosts >= 14 && !user?.privileged && user?._id !== OWNER_ID}
                         onClick={() => addBoost(server._id, user)}>
                         Boost server
                     </Button>

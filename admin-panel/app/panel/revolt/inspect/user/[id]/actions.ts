@@ -128,17 +128,19 @@ export async function strikeUser(
         type === "suspension"
           ? "Your account has been suspended, for one or more reasons:"
           : "You have received an account strike, for one or more reasons:",
-        ...reason.map((r) => `- ${r}`),
+        "```",
+        ...reason,
+        "```",
         "",
         type === "suspension"
-          ? "Further violations may result in a permanent ban depending on severity, please abide by the [Acceptable Usage Policy](https://stoat.chat/aup)."
-          : "Further violations will result in suspension or a permanent ban depending on severity, please abide by the [Acceptable Usage Policy](https://stoat.chat/aup).",
+          ? "Further violations may result in a permanent ban depending on severity, please abide by the NullCord Terms of Service."
+          : "Further violations will result in suspension or a permanent ban depending on severity, please abide by the NullCord Terms of Service.",
         ...(caseId
           ? ["", `Case ID for your reference: **${caseId.substring(18)}**`]
           : ""),
-        "If you have further questions about this strike, please contact abuse@revolt.chat",
+        "If you have further questions about this strike, please contact NullCord staff",
       ].join("\n"),
-    );
+    ).catch((err) => console.error("Could not DM user about moderation action", err));
   }
 
   return { changelog, strike };
@@ -148,11 +150,19 @@ export async function strikeUser(
 export async function unbanUserAction(userId: string) {
   await getScopedUser(RBAC_PERMISSION_MODERATION_AGENT);
   await unbanUser(userId);
+  await sendPlatformAlert(
+    userId,
+    "Your account ban has been lifted. Please abide by the NullCord Terms of Service.",
+  ).catch(() => {});
 }
 
 export async function unsuspendUserAction(userId: string) {
   await getScopedUser(RBAC_PERMISSION_MODERATION_AGENT);
   await unsuspendUser(userId);
+  await sendPlatformAlert(
+    userId,
+    "Your account suspension has been lifted. Please abide by the NullCord Terms of Service.",
+  ).catch(() => {});
 }
 
 export async function setUsernameAction(userId: string, username: string) {
@@ -257,8 +267,6 @@ export async function sendAlertAction(userId: string, content: string) {
   const message = content.trim();
   if (!message) throw new Error("Alert message cannot be empty");
   if (message.length > 2000) throw new Error("Alert message must be 2000 characters or fewer");
-  if (!process.env.PLATFORM_ACCOUNT_ID)
-    throw new Error("PLATFORM_ACCOUNT_ID is not configured");
   await sendPlatformAlert(userId, message);
 }
 

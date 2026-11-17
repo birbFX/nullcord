@@ -194,7 +194,19 @@ pub async fn client(db: &'static Database, stream: TcpStream, addr: SocketAddr) 
             db,
         );
 
-        join!(listener, worker);
+        // Keep this session in Redis even if something clears it meanwhile.
+        let heartbeat = async {
+            let mut tick = tokio::time::interval(std::time::Duration::from_secs(30));
+            loop {
+                tick.tick().await;
+                revolt_presence::refresh_session(&user_id, session_id).await;
+            }
+        };
+
+        tokio::select! {
+            _ = async { join!(listener, worker) } => {}
+            _ = heartbeat => {}
+        }
     }
     // Clean up presence session.
     let last_session = delete_session(&user_id, session_id).await;

@@ -15,6 +15,7 @@ import Syncable from "./interfaces/Syncable";
 import Auth from "./stores/Auth";
 import Changelog from "./stores/Changelog";
 import Draft from "./stores/Draft";
+import { setExtrasClient } from "../lib/serverExtras";
 import { economy } from "./stores/Economy";
 import Experiments from "./stores/Experiments";
 import Layout from "./stores/Layout";
@@ -26,6 +27,42 @@ import Plugins from "./stores/Plugins";
 import ServerConfig from "./stores/ServerConfig";
 import Settings from "./stores/Settings";
 import Sync, { Data as DataSync, SyncKeys } from "./stores/Sync";
+
+/**
+ * localStorage copy of the stores that must survive restarts (logins, theme).
+ * IndexedDB can fail or be evicted; this is the fallback.
+ */
+const MIRRORED = new Set(["auth", "settings", "sync"]);
+const mirrorKey = (id: string) => `nullcord:mirror:${id}`;
+
+function mirrorWrite(id: string, value: unknown) {
+    if (!MIRRORED.has(id)) return;
+    try {
+        localStorage.setItem(mirrorKey(id), JSON.stringify(value));
+    } catch {
+        // storage full or blocked
+    }
+}
+
+function mirrorRead(id: string): unknown {
+    try {
+        const raw = localStorage.getItem(mirrorKey(id));
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+}
+
+async function loadStore(id: string): Promise<unknown> {
+    let data: unknown = null;
+    try {
+        data = await localforage.getItem(id);
+    } catch (err) {
+        console.error("localforage read failed", err);
+    }
+    if (typeof data === "object" && data !== null) return data;
+    return MIRRORED.has(id) ? mirrorRead(id) : null;
+}
 
 export const MIGRATIONS = {
     REDUX: 1640305719826,
@@ -131,10 +168,13 @@ export default class State {
      */
     async save() {
         for (const [id, store] of this.persistent) {
-            await localforage.setItem(
-                id,
-                JSON.parse(stringify(store.toJSON())),
-            );
+            const value = JSON.parse(stringify(store.toJSON()));
+            mirrorWrite(id, value);
+            try {
+                await localforage.setItem(id, value);
+            } catch (err) {
+                console.error("localforage write failed", err);
+            }
         }
     }
 
@@ -185,6 +225,10 @@ export default class State {
 
             // Server-authoritative Orbs, Nitro and quest state.
             economy.fetch(client).catch(console.error);
+            window.addEventListener("focus", () => {
+                economy.fetch(client).catch(console.error);
+            });
+            setExtrasClient(client);
         }
 
         // Register all the listeners required for saving and syncing state.
@@ -194,6 +238,7 @@ export default class State {
                 async (value) => {
                     try {
                         // Save updated store to local storage.
+                        mirrorWrite(id, JSON.parse(value));
                         await localforage.setItem(id, JSON.parse(value));
 
                         // Skip if meta store or client not available.
@@ -295,12 +340,20 @@ export default class State {
      * Load data stores from local storage.
      */
     async hydrate() {
+        // Ask the browser not to evict our storage, so login and theme
+        // survive restarts.
+        try {
+            await navigator.storage?.persist?.();
+        } catch {
+            // ignore
+        }
+
         // Load MobX store.
-        const sync = (await localforage.getItem("sync")) as DataSync;
+        const sync = (await loadStore("sync")) as DataSync;
         const { revision } = sync ?? { revision: {} };
         for (const [id, store] of this.persistent) {
             if (id === "sync") continue;
-            const data = await localforage.getItem(id);
+            const data = await loadStore(id);
             if (typeof data === "object" && data !== null) {
                 store.hydrate(data, revision[id] ?? +new Date());
             }
@@ -352,6 +405,7 @@ export default class State {
     reset() {
         runInAction(() => {
             economy.reset();
+            setExtrasClient(undefined);
             this.draft = new Draft();
             this.experiments = new Experiments();
             this.layout = new Layout();

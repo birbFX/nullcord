@@ -794,6 +794,8 @@ export class WebSocketClient {
             };
 
             ws.onclose = () => {
+                // A superseded socket closing must not drop the new one.
+                if (this.ws !== ws) return;
                 this.client.emit("dropped");
                 this.connected = false;
                 this.ready = false;

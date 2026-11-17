@@ -1,3 +1,4 @@
+import { getUserNitro } from "./serverExtras";
 import { economy } from "../mobx/stores/Economy";
 
 /**
@@ -50,13 +51,13 @@ export function getNitroTier(
     if (typeof userOrId === "string") {
         if (NITRO_IDS.has(userOrId) || userOrId === OWNER_ID) return "nitro";
         if (economy.userId === userOrId) return economy.nitro;
-        return null;
+        return (getUserNitro(userOrId) as NitroTier | null) ?? null;
     }
 
     if (userOrId.privileged || isOwner(userOrId._id)) return "nitro";
     const id = userOrId._id ?? undefined;
     if (id && economy.userId === id) return economy.nitro;
-    return null;
+    return (getUserNitro(id) as NitroTier | null) ?? null;
 }
 
 export function isNitro(

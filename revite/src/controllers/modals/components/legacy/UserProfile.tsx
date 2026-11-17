@@ -25,8 +25,9 @@ import {
     Preloader,
 } from "@revoltchat/ui";
 
-import { parseConnections } from "../../../../lib/connections";
+import { useProfileConnections } from "../../../../lib/connections";
 import { noop } from "../../../../lib/js";
+import { getProfileGradient } from "../../../../lib/serverExtras";
 import { displayDiscriminator } from "../../../../lib/owner";
 
 import ChannelIcon from "../../../../components/common/ChannelIcon";
@@ -63,6 +64,8 @@ export const UserProfile = observer(
         const session = useSession()!;
         const client = session.client!;
         const [tab, setTab] = useState("profile");
+        // Linked apps and accounts added in Settings, plus |service|:|handle| lines in the bio.
+        const connections = useProfileConnections(user_id, profile?.content);
 
         const user = client.users.get(user_id);
         if (!user) {
@@ -157,6 +160,7 @@ export const UserProfile = observer(
                 true,
             );
 
+        const cardBg = getProfileGradient(user._id);
         const badges = user.badges ?? 0;
         const flags = user.flags ?? 0;
         const blocked =
@@ -164,15 +168,24 @@ export const UserProfile = observer(
             user.relationship === "BlockedOther";
 
         const children = (
-            <>
+            <div
+                style={{
+                    background: cardBg,
+                    borderRadius: "var(--border-radius)",
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
+                }}>
                 <div
                     className={styles.header}
-                    data-force={profile?.background ? "light" : undefined}
+                    data-force={
+                        profile?.background || cardBg ? "light" : undefined
+                    }
                     style={{
-                        backgroundImage:
-                            backgroundURL &&
-                            `linear-gradient( rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7) ), url('${backgroundURL}')`,
-                        paddingBottom: "1px",
+                        backgroundImage: backgroundURL
+                            ? `linear-gradient( rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7) ), url('${backgroundURL}')`
+                            : undefined,
+                        backgroundColor: cardBg && !backgroundURL ? "transparent" : undefined,
                     }}>
                     <div className={styles.profile}>
                         <UserIcon
@@ -375,7 +388,13 @@ export const UserProfile = observer(
                         </div>
                     )}
                 </div>
-                <div className={styles.content}>
+                <div
+                    className={styles.content}
+                    style={
+                        cardBg
+                            ? { background: "rgba(0, 0, 0, 0.35)", color: "white" }
+                            : undefined
+                    }>
                     {user.relationship === "BlockedOther" && (
                         <Category>
                             <Error error="Unavailable" />
@@ -521,15 +540,15 @@ export const UserProfile = observer(
                             </div>
                         ))}
                     {tab === "connections" &&
-                        (parseConnections(profile?.content).length === 0 ? (
+                        (connections.length === 0 ? (
                             <div className={styles.empty}>
                                 <ListUl size="72" />
-                                No connections. Add lines like
-                                &quot;github: name&quot; to the bio.
+                                No connections. Add some in Settings, or
+                                put lines like {"|github|:|name|"} in the bio.
                             </div>
                         ) : (
                             <UserConnections
-                                connections={parseConnections(profile?.content)}
+                                connections={connections}
                             />
                         ))}
                     {tab === "servers" &&
@@ -559,7 +578,7 @@ export const UserProfile = observer(
                             </div>
                         ))}
                 </div>
-            </>
+            </div>
         );
 
         if (isPlaceholder) return <div>{children}</div>;

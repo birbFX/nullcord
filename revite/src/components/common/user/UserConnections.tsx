@@ -19,13 +19,23 @@ export default function UserConnections({
                         background: "var(--secondary-background)",
                     }}>
                     <b>{c.label}</b>
-                    {c.url ? (
-                        <a href={c.url} target="_blank" rel="noreferrer noopener">
-                            {c.handle}
-                        </a>
-                    ) : (
-                        <span>{c.handle}</span>
-                    )}
+                    <div style={{ textAlign: "right" }}>
+                        {c.url ? (
+                            <a
+                                href={c.url}
+                                target="_blank"
+                                rel="noreferrer noopener nofollow">
+                                {c.handle}
+                            </a>
+                        ) : (
+                            <span>{c.handle}</span>
+                        )}
+                        {c.detail && (
+                            <div style={{ opacity: 0.7, fontSize: "0.85em" }}>
+                                {c.detail}
+                            </div>
+                        )}
+                    </div>
                 </div>
             ))}
         </div>

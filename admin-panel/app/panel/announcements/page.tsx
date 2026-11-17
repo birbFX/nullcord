@@ -23,10 +23,9 @@ export default async function AnnouncementsPage() {
         Announcements
       </Heading>
       <Text color="gray" size="2" mb="5" as="p">
-        Send a direct message from the platform account to every active,
+        Send a direct message from the NullCord System bot to every active,
         non-bot account. Messages are stored in the normal DM channel, so users
-        can reply and see them on every client. The platform account is{" "}
-        <Code>{process.env.PLATFORM_ACCOUNT_ID ?? "not configured"}</Code>.
+        can reply and see them on every client. It is sent by a dedicated bot account, not a personal one.
       </Text>
 
       <Card>

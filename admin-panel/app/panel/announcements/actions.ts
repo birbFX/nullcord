@@ -26,8 +26,6 @@ export async function broadcastAnnouncement(
 
   if (!confirmed)
     throw new Error("Tick the confirmation box before broadcasting");
-  if (!process.env.PLATFORM_ACCOUNT_ID)
-    throw new Error("PLATFORM_ACCOUNT_ID is not configured");
 
   const content = message.trim();
   if (!content) throw new Error("Announcement cannot be empty");

@@ -120,7 +120,7 @@ const Message = observer(
                     contrast={contrast}
                     sending={typeof queued !== "undefined"}
                     mention={
-                        client.user
+                        client.user && message.author_id !== client.user._id
                             ? message.mention_ids?.includes(client.user._id) ||
                               message.mentionsEveryone
                             : undefined

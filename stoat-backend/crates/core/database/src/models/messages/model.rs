@@ -584,6 +584,9 @@ impl Message {
             }
         }
 
+        // Never let a message ping its own author
+        user_mentions.remove(&message.author);
+
         if !user_mentions.is_empty() {
             message
                 .mentions

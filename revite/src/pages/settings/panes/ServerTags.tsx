@@ -14,6 +14,7 @@ import {
     SERVER_EXTRAS_EVENT,
     equipServerTag,
     getEquippedServerTag,
+    getLastExtrasError,
     getServerTag,
     unequipServerTag,
     useServerExtras,
@@ -33,6 +34,7 @@ function ServerTagRow({
     const extras = useServerExtras(server._id);
     const tag = extras.tag || (server._id === CLL_SERVER_ID ? "CLL" : "");
     const isEquipped = equipped === server._id;
+    const [error, setError] = useState("");
 
     return (
         <div
@@ -58,6 +60,9 @@ function ServerTagRow({
                     ) : (
                         "No server tag set"
                     )}
+                    {error && (
+                        <div style={{ color: "var(--error)" }}>{error}</div>
+                    )}
                 </div>
             </div>
             {tag ? (
@@ -73,8 +78,9 @@ function ServerTagRow({
                 ) : (
                     <Button
                         palette="primary"
-                        onClick={() => {
-                            equipServerTag(userId, server._id);
+                        onClick={async () => {
+                            const ok = await equipServerTag(userId, server._id);
+                            setError(ok ? "" : getLastExtrasError());
                             onChanged();
                         }}>
                         Equip

@@ -53,14 +53,8 @@ class ClientController {
         // Hydrating a saved session before this resolves meant the session
         // lifecycle received a null configuration and never sent the login
         // requests. Keep the promise so hydrate() can wait for it.
-        this.ready = this.apiClient
-            .fetchConfiguration()
-            .then(() => {
-                this.configuration = this.apiClient.configuration!;
-            })
-            .catch((error) => {
-                console.error("Failed to fetch server configuration:", error);
-            });
+        // If the API is down (reboot, restart) keep retrying every 3 seconds.
+        this.ready = this.fetchConfig();
 
         makeAutoObservable(this, {
             apiClient: false,
@@ -72,6 +66,19 @@ class ClientController {
 
         // Inject globally
         injectController("client", this);
+    }
+
+    private async fetchConfig(): Promise<void> {
+        for (;;) {
+            try {
+                await this.apiClient.fetchConfiguration();
+                this.configuration = this.apiClient.configuration!;
+                return;
+            } catch (error) {
+                console.error("Failed to fetch server configuration:", error);
+                await new Promise((r) => setTimeout(r, 3000));
+            }
+        }
     }
 
     @action pickNextSession() {
@@ -151,6 +158,34 @@ class ClientController {
         return this.getActiveSession()?.ready;
     }
 
+    private async retryLogin(
+        session: Session,
+        entry: { session: SessionPrivate; apiUrl?: string },
+    ) {
+        const user_id = entry.session.user_id!;
+        try {
+            await this.fetchConfig();
+            await session.emit({
+                action: "LOGIN",
+                session: entry.session,
+                apiUrl: entry.apiUrl,
+                configuration: this.configuration!,
+                knowledge: "existing",
+            });
+        } catch (err) {
+            if (takeError(err) === "Unauthorized") {
+                this.sessions.delete(user_id);
+                this.current = null;
+                this.pickNextSession();
+                state.auth.removeSession(user_id);
+                modalController.push({ type: "signed_out" });
+                session.destroy();
+            } else if (this.sessions.get(user_id) === session) {
+                setTimeout(() => this.retryLogin(session, entry), 3000);
+            }
+        }
+    }
+
     /**
      * Start a new client lifecycle
      * @param entry Session Information
@@ -183,6 +218,18 @@ class ClientController {
                     state.auth.removeSession(user_id);
                     modalController.push({ type: "signed_out" });
                     session.destroy();
+                } else if (
+                    knowledge === "existing" &&
+                    this.sessions.get(user_id) === session
+                ) {
+                    // Server unreachable or erroring: never give up on a
+                    // saved login, retry quietly every 3 seconds.
+                    console.warn("Login failed, retrying in 3s:", err);
+                    setTimeout(() => {
+                        if (this.sessions.get(user_id) === session) {
+                            this.retryLogin(session, entry);
+                        }
+                    }, 3000);
                 } else {
                     modalController.push({
                         type: "error",

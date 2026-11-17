@@ -40,7 +40,12 @@ pub async fn message_send(
     let channel = target.as_channel(db).await?;
     let mut query = DatabasePermissionQuery::new(db, &user).channel(&channel);
     let permissions = calculate_channel_permissions(&mut query).await;
-    permissions.throw_if_lacking_channel_permission(ChannelPermission::SendMessage)?;
+    if let Err(err) = permissions.throw_if_lacking_channel_permission(ChannelPermission::SendMessage) {
+        if matches!(channel, Channel::DirectMessage { .. }) {
+            notify_undelivered(db, &user).await;
+        }
+        return Err(err);
+    }
 
     // Verify permissions for masquerade
     if let Some(masq) = &data.masquerade {
@@ -767,4 +772,36 @@ mod test {
             "Message has no role mentions"
         );
     }
+}
+
+/// Id of the NullCord System bot account
+const SYSTEM_BOT_ID: &str = "0000000000SYSTEM0000000000";
+
+/// Let the sender know, from the system bot, that their direct message was not delivered
+async fn notify_undelivered(db: &Database, user: &User) {
+    if user.id == SYSTEM_BOT_ID {
+        return;
+    }
+
+    let Ok(bot) = db.fetch_user(SYSTEM_BOT_ID).await else {
+        return;
+    };
+    let Ok(dm) = Channel::create_dm(db, user, &bot).await else {
+        return;
+    };
+
+    let mut message = Message {
+        id: ulid::Ulid::new().to_string(),
+        channel: dm.id().to_string(),
+        author: bot.id.clone(),
+        content: Some(
+            "Your message could not be delivered. The person you tried to message is not accepting messages from you."
+                .to_string(),
+        ),
+        ..Default::default()
+    };
+
+    let _ = message
+        .send_without_notifications(db, None, None, true, false, false)
+        .await;
 }

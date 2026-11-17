@@ -7482,6 +7482,7 @@ dependencies = [
  "livekit-protocol",
  "log",
  "lru",
+ "mongodb",
  "nanoid",
  "num_enum",
  "once_cell",

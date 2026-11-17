@@ -68,12 +68,25 @@ export default class Economy {
         if (this.loading) return;
         this.loading = true;
         try {
-            const data = (await client.api.get(
-                "/users/@me/economy",
-            )) as unknown as EconomyData;
+            let data: EconomyData | undefined;
+            let lastError: unknown;
+            // Retry so a backend restart or brief 5xx doesn't leave Nitro
+            // looking inactive for the whole session.
+            for (let attempt = 0; attempt < 4 && !data; attempt++) {
+                try {
+                    data = (await client.api.get(
+                        "/users/@me/economy",
+                    )) as unknown as EconomyData;
+                } catch (err) {
+                    lastError = err;
+                    await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+                }
+            }
+            if (!data) throw lastError;
+            const loaded = data;
             runInAction(() => {
                 this.userId = client.user?._id;
-                this.apply(data);
+                this.apply(loaded);
             });
         } catch (err) {
             runInAction(() => {
@@ -97,8 +110,9 @@ export default class Economy {
 
     async redeem(client: Client, plan: "basic" | "nitro") {
         const data = (await client.api.post(
-            "/users/@me/economy/nitro/redeem",
-            { plan },
+            "/users/@me/economy/nitro/redeem" as any,
+            undefined,
+            { data: { plan } } as any,
         )) as unknown as EconomyData;
         runInAction(() => this.apply(data));
         return data;

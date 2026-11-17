@@ -1,3 +1,4 @@
+import { useClient } from "../../../controllers/client/ClientController";
 import { XCircle } from "@styled-icons/boxicons-regular";
 import { observer } from "mobx-react-lite";
 import { Virtuoso } from "react-virtuoso";
@@ -67,7 +68,7 @@ export const Invites = ({ server }: Props) => {
 
     const unlimited = serverHasInfiniteBoosts(server._id);
     const boosts = boostCount(server._id);
-    const allowed = canSetVanity(server._id);
+    const allowed = canSetVanity(server._id, useClient().user);
 
     useEffect(() => {
         server.fetchInvites().then((v) => setInvites(v));

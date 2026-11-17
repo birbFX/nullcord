@@ -11,6 +11,11 @@ import { Modal, ModalForm } from "@revoltchat/ui";
 import { useClient } from "../../client/ClientController";
 import { mapError } from "../../client/jsx/error";
 import { recordQuestEvent } from "../../../lib/quests";
+import {
+    fetchTemplate,
+    importTemplate,
+    parseTemplateCode,
+} from "../../../lib/discordTemplate";
 import { ModalProps } from "../types";
 
 const Options = styled.div`
@@ -87,7 +92,7 @@ export default function CreateServer({
 }: ModalProps<"create_server">) {
     const history = useHistory();
     const client = useClient();
-    const [step, setStep] = useState<"choose" | "create" | "join">("choose");
+    const [step, setStep] = useState<"choose" | "create" | "join" | "template">("choose");
 
     if (step === "choose") {
         return (
@@ -108,6 +113,18 @@ export default function CreateServer({
                         </span>
                         <ChevronRight size={24} />
                     </Option>
+                    <Option onClick={() => setStep("template")}>
+                        <span className="icon join">
+                            <LinkAlt size={24} />
+                        </span>
+                        <span className="text">
+                            Import Discord Template
+                            <span className="sub">
+                                Paste a discord.new template link
+                            </span>
+                        </span>
+                        <ChevronRight size={24} />
+                    </Option>
                     <Option onClick={() => setStep("join")}>
                         <span className="icon join">
                             <LinkAlt size={24} />
@@ -122,6 +139,48 @@ export default function CreateServer({
                     </Option>
                 </Options>
             </Modal>
+        );
+    }
+
+    if (step === "template") {
+        return (
+            <ModalForm
+                {...props}
+                title="Import Discord Template"
+                description="Paste a Discord template link (discord.new/… or discord.com/template/…). Channels, categories and roles are copied into a new server."
+                schema={{
+                    template: "text",
+                }}
+                data={{
+                    template: {
+                        field: "Template link",
+                        placeholder: "https://discord.new/abc123",
+                    },
+                }}
+                callback={async ({ template }) => {
+                    const code = parseTemplateCode(template);
+                    if (!code) throw "InvalidTemplate";
+                    const data = await fetchTemplate(client, code).catch(() => {
+                        throw "That template could not be found.";
+                    });
+                    const id = await importTemplate(client, data);
+                    recordQuestEvent(client.user?._id, "server_created");
+                    history.push(`/server/${id}`);
+                }}
+                submit={{
+                    children: "Import Server",
+                }}
+                actions={[
+                    {
+                        palette: "plain",
+                        children: "Back",
+                        onClick: () => {
+                            setStep("choose");
+                            return false;
+                        },
+                    },
+                ]}
+            />
         );
     }
 

@@ -7,6 +7,7 @@ import { col } from "@/lib/db";
 import { Badge, Button, Card, Code, Flex, Table, Text, TextField } from "@radix-ui/themes";
 import { Metadata } from "next";
 import Link from "next/link";
+import { DmButton, JoinServerBox } from "./UserActions";
 
 export const metadata: Metadata = {
   title: "Users",
@@ -83,6 +84,8 @@ export default async function UsersPage({
         </form>
       </Flex>
 
+      <JoinServerBox />
+
       <Card>
         <Table.Root size="1">
           <Table.Header>
@@ -91,6 +94,7 @@ export default async function UsersPage({
               <Table.ColumnHeaderCell>ID</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell>Email</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell>Flags</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>Actions</Table.ColumnHeaderCell>
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -122,11 +126,14 @@ export default async function UsersPage({
                     {user.disabled ? <Badge color="gray">disabled</Badge> : null}
                   </Flex>
                 </Table.Cell>
+                <Table.Cell>
+                  <DmButton userId={String(user._id)} />
+                </Table.Cell>
               </Table.Row>
             ))}
             {users.length === 0 ? (
               <Table.Row>
-                <Table.Cell colSpan={4}>
+                <Table.Cell colSpan={5}>
                   <Text color="gray">No users match that query.</Text>
                 </Table.Cell>
               </Table.Row>

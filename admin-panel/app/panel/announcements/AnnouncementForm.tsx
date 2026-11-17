@@ -28,7 +28,7 @@ export function AnnouncementForm() {
         rows={8}
         value={message}
         maxLength={2000}
-        placeholder="Message sent to every active account from the platform account…"
+        placeholder="Message sent to every active account from the NullCord System bot…"
         onChange={(e) => {
           setMessage(e.currentTarget.value);
           setResult(null);

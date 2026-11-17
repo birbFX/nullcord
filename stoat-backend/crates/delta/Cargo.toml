@@ -41,6 +41,7 @@ iso8601-timestamp = { workspace = true }
 
 # async
 futures = { workspace = true }
+mongodb = { workspace = true }
 chrono = { workspace = true }
 async-channel = { workspace = true }
 reqwest = { workspace = true, features = ["json"] }

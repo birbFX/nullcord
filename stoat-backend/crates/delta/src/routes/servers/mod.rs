@@ -8,6 +8,7 @@ mod ban_remove;
 mod channel_create;
 mod discover;
 mod emoji_list;
+pub(crate) mod extras;
 mod invites_fetch;
 mod member_edit;
 mod member_experimental_query;
@@ -33,6 +34,9 @@ pub fn routes() -> (Vec<Route>, OpenApi) {
         server_delete::delete,
         server_fetch::fetch,
         server_edit::edit,
+        extras::fetch_extras,
+        extras::edit_extras,
+        extras::set_boost,
         server_ack::ack,
         channel_create::create_server_channel,
         member_fetch_all::fetch_all,

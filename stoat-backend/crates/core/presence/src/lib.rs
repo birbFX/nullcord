@@ -51,6 +51,21 @@ pub async fn create_session(user_id: &str, flags: u8) -> (bool, u32) {
     }
 }
 
+/// Re-assert a live session in Redis if something cleared it. Returns true if restored.
+pub async fn refresh_session(user_id: &str, session_id: u32) -> bool {
+    if let Ok(mut conn) = get_connection().await {
+        let key = format!("sessions:{user_id}");
+        let present: bool = conn.sismember(&key, session_id).await.unwrap_or(true);
+        if !present {
+            __add_to_set_u32(&mut conn, &key, session_id).await;
+            __add_to_set_string(&mut conn, ONLINE_SET, user_id).await;
+            __add_to_set_string(&mut conn, &REGION_KEY, &format!("{user_id}:{session_id}")).await;
+            return true;
+        }
+    }
+    false
+}
+
 /// Delete existing presence session
 pub async fn delete_session(user_id: &str, session_id: u32) -> bool {
     delete_session_internal(user_id, session_id, false).await
@@ -84,8 +99,15 @@ async fn delete_session_internal(user_id: &str, session_id: u32, skip_region: bo
     }
 }
 
+/// Accounts that always appear online, since they never hold a session (the NullCord System bot)
+const ALWAYS_ONLINE: &[&str] = &["0000000000SYSTEM0000000000"];
+
 /// Check whether a given user ID is online
 pub async fn is_online(user_id: &str) -> bool {
+    if ALWAYS_ONLINE.contains(&user_id) {
+        return true;
+    }
+
     if let Ok(mut conn) = get_connection().await {
         conn.exists(format!("sessions:{user_id}"))
             .await
@@ -97,7 +119,7 @@ pub async fn is_online(user_id: &str) -> bool {
 
 /// Check whether a set of users is online, returns a set of the online user IDs
 #[cfg(feature = "redis-is-patched")]
-pub async fn filter_online(user_ids: &'_ [String]) -> HashSet<String> {
+async fn filter_online_sessions(user_ids: &'_ [String]) -> HashSet<String> {
     // Ignore empty list immediately, to save time.
     let mut set = HashSet::new();
     if user_ids.is_empty() {
@@ -145,7 +167,7 @@ pub async fn filter_online(user_ids: &'_ [String]) -> HashSet<String> {
 
 /// Check whether a set of users is online, returns a set of the online user IDs
 #[cfg(not(feature = "redis-is-patched"))]
-pub async fn filter_online(user_ids: &'_ [String]) -> HashSet<String> {
+async fn filter_online_sessions(user_ids: &'_ [String]) -> HashSet<String> {
     if user_ids.is_empty() {
         HashSet::new()
     } else if let Ok(mut conn) = get_connection().await {
@@ -160,6 +182,18 @@ pub async fn filter_online(user_ids: &'_ [String]) -> HashSet<String> {
     } else {
         HashSet::new()
     }
+}
+
+/// Check whether a set of users is online, returns a set of the online user IDs
+pub async fn filter_online(user_ids: &'_ [String]) -> HashSet<String> {
+    let mut set = filter_online_sessions(user_ids).await;
+    set.extend(
+        user_ids
+            .iter()
+            .filter(|id| ALWAYS_ONLINE.contains(&id.as_str()))
+            .cloned(),
+    );
+    set
 }
 
 /// Reset any stale presence data

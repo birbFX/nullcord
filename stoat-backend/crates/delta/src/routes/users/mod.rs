@@ -24,6 +24,10 @@ pub fn routes() -> (Vec<Route>, OpenApi) {
         economy::fetch,
         economy::claim_quest,
         economy::redeem_nitro,
+        crate::routes::servers::extras::fetch_user_tag,
+        crate::routes::servers::extras::equip_tag,
+        crate::routes::servers::extras::set_accent,
+        crate::routes::servers::extras::fetch_discord_template,
         // User Information
         fetch_self::fetch,
         fetch_user::fetch,

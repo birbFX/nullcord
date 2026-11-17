@@ -7,6 +7,11 @@ import { resetMemberSidebarFetched } from "../../components/navigation/right/Mem
 import { modalController } from "../modals/ModalController";
 
 /**
+ * How often to retry a dropped connection
+ */
+const RETRY_MS = 3000;
+
+/**
  * Current lifecycle state
  */
 type State = "Ready" | "Connecting" | "Online" | "Disconnected" | "Offline";
@@ -41,11 +46,24 @@ export default class Session {
     user_id: string | null = null;
     client: Client | null = null;
 
+    private retryTimer?: ReturnType<typeof setTimeout>;
+    private watchdog?: ReturnType<typeof setInterval>;
+    private lastPacket = Date.now();
+    private lastTick = Date.now();
+    private connectingSince = 0;
+
     /**
      * Create a new Session
      */
     constructor() {
-        makeAutoObservable(this);
+        makeAutoObservable(this, {
+            // plain bookkeeping, nothing observes these
+            retryTimer: false,
+            watchdog: false,
+            lastPacket: false,
+            lastTick: false,
+            connectingSince: false,
+        } as never);
 
         this.onDropped = this.onDropped.bind(this);
         this.onReady = this.onReady.bind(this);
@@ -54,6 +72,62 @@ export default class Session {
 
         window.addEventListener("online", this.onOnline);
         window.addEventListener("offline", this.onOffline);
+
+        this.nudge = this.nudge.bind(this);
+        this.tick = this.tick.bind(this);
+        window.addEventListener("focus", this.nudge);
+        document.addEventListener("visibilitychange", this.nudge);
+        this.watchdog = setInterval(this.tick, RETRY_MS);
+    }
+
+    /**
+     * Retry right away if we are not connected (tab focused, wake from sleep).
+     */
+    private nudge() {
+        if (document.visibilityState === "hidden") return;
+        if (this.client && this.state !== "Online" && this.state !== "Ready") {
+            this.retryNow();
+        }
+    }
+
+    /**
+     * Runs every few seconds: detects dead sockets (sleep, reboot, server
+     * restart) and keeps retrying until we are back online.
+     */
+    private tick() {
+        const now = Date.now();
+        const slept = now - this.lastTick > RETRY_MS * 3;
+        this.lastTick = now;
+        if (!this.client || this.state === "Ready") return;
+
+        if (this.state === "Online") {
+            const heartbeat = (this.client.heartbeat || 30) * 1000;
+            if (slept || now - this.lastPacket > heartbeat * 2 + 5000) {
+                this.client.websocket.disconnect();
+                this.emit({ action: "DISCONNECT" });
+            }
+        } else if (
+            this.state === "Connecting" &&
+            now - this.connectingSince > 10_000
+        ) {
+            this.emit({ action: "DISCONNECT" });
+        } else if (this.state === "Disconnected" || this.state === "Offline") {
+            this.retryNow();
+        }
+    }
+
+    private retryNow() {
+        if (this.retryTimer) clearTimeout(this.retryTimer);
+        this.retryTimer = undefined;
+        this.emit({ action: "RETRY" });
+    }
+
+    private scheduleRetry() {
+        if (this.retryTimer) clearTimeout(this.retryTimer);
+        this.retryTimer = setTimeout(() => {
+            this.retryTimer = undefined;
+            this.emit({ action: "RETRY" });
+        }, RETRY_MS);
     }
 
     /**
@@ -112,18 +186,22 @@ export default class Session {
         this.client = new Client({
             unreads: true,
             autoReconnect: false,
-            onPongTimeout: "EXIT",
             apiURL: apiUrl ?? import.meta.env.VITE_API_URL,
         });
 
         this.client.addListener("dropped", this.onDropped);
         this.client.addListener("ready", this.onReady);
+        this.client.addListener("packet", () => {
+            this.lastPacket = Date.now();
+        });
     }
 
     /**
      * Destroy the client including any listeners.
      */
     private destroyClient() {
+        if (this.retryTimer) clearTimeout(this.retryTimer);
+        this.retryTimer = undefined;
         this.client!.removeAllListeners();
         this.client!.logout();
         this.user_id = null;
@@ -175,90 +253,108 @@ export default class Session {
             case "LOGIN": {
                 this.assert("Ready");
                 this.state = "Connecting";
+                this.connectingSince = Date.now();
+                this.lastPacket = Date.now();
                 this.createClient(data.apiUrl);
 
-                if (data.configuration) {
-                    this.client!.configuration = data.configuration;
-                }
-
-                if (data.knowledge === "new") {
-                    await this.client!.fetchConfiguration();
-                    this.client!.session = data.session;
-                    (this.client! as any).$updateHeaders();
-
-                    const { onboarding } = await this.client!.api.get(
-                        "/onboard/hello",
-                    );
-
-                    if (onboarding) {
-                        modalController.push({
-                            type: "onboarding",
-                            callback: async (username: string) =>
-                                this.client!.completeOnboarding(
-                                    { username },
-                                    false,
-                                ).then(() => this.continueLogin(data)),
-                        });
-
-                        return;
+                try {
+                    if (data.configuration) {
+                        this.client!.configuration = data.configuration;
                     }
-                }
 
-                await this.continueLogin(data);
+                    if (data.knowledge === "new") {
+                        await this.client!.fetchConfiguration();
+                        this.client!.session = data.session;
+                        (this.client! as any).$updateHeaders();
+
+                        const { onboarding } = await this.client!.api.get(
+                            "/onboard/hello",
+                        );
+
+                        if (onboarding) {
+                            modalController.push({
+                                type: "onboarding",
+                                callback: async (username: string) =>
+                                    this.client!.completeOnboarding(
+                                        { username },
+                                        false,
+                                    ).then(() => this.continueLogin(data)),
+                            });
+
+                            return;
+                        }
+                    }
+
+                    await this.continueLogin(data);
+                } catch (err) {
+                    // Leave a clean slate so the caller can retry.
+                    this.state = "Ready";
+                    this.client?.removeAllListeners();
+                    this.client = null;
+                    throw err;
+                }
 
                 break;
             }
             // Ready successfully received
             case "SUCCESS": {
-                this.assert("Connecting");
+                if (this.state === "Ready") break;
                 this.state = "Online";
+                this.lastPacket = Date.now();
                 break;
             }
             // Client got disconnected
             case "DISCONNECT": {
-                if (navigator.onLine) {
-                    this.assert("Online");
-                    this.state = "Disconnected";
-
-                    setTimeout(() => {
-                        // Check we are still disconnected before retrying.
-                        if (this.state === "Disconnected") {
-                            this.emit({
-                                action: "RETRY",
-                            });
-                        }
-                    }, 1000);
-                }
-
+                if (!this.client) break;
+                if (this.state === "Ready" || this.state === "Offline") break;
+                this.state = "Disconnected";
+                this.scheduleRetry();
                 break;
             }
             // We should try reconnecting
             case "RETRY": {
-                this.assert("Disconnected");
-                this.client!.websocket.connect();
+                if (!this.client) break;
+                if (this.state !== "Disconnected" && this.state !== "Offline")
+                    break;
+                if (!navigator.onLine) {
+                    this.state = "Offline";
+                    break;
+                }
+
                 this.state = "Connecting";
+                this.connectingSince = Date.now();
+                this.lastPacket = Date.now();
+
+                const client = this.client;
+                try {
+                    client.websocket.disconnect();
+                } catch (_) {}
+
+                // The API may still be down (reboot, restart): keep trying.
+                client.websocket.connect().catch(() => {
+                    if (this.client === client && this.state === "Connecting") {
+                        this.emit({ action: "DISCONNECT" });
+                    }
+                });
                 break;
             }
             // User instructed logout
             case "LOGOUT": {
-                this.assert("Connecting", "Online", "Disconnected");
+                if (this.state === "Ready" || !this.client) break;
                 this.state = "Ready";
                 this.destroyClient();
                 break;
             }
             // Browser went offline
             case "OFFLINE": {
-                this.state = "Offline";
+                if (this.state !== "Ready") this.state = "Offline";
                 break;
             }
             // Browser went online
             case "ONLINE": {
-                this.assert("Offline");
                 if (this.client) {
                     this.state = "Disconnected";
-                    this.emit({
-                        action: "RETRY",
-                    });
+                    this.emit({ action: "RETRY" });
                 } else {
                     this.state = "Ready";
                 }

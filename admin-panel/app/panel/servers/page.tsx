@@ -7,6 +7,7 @@ import { col } from "@/lib/db";
 import { Badge, Button, Card, Code, Flex, Table, Text, TextField } from "@radix-ui/themes";
 import { Metadata } from "next";
 import Link from "next/link";
+import { JoinServerButton } from "../users/UserActions";
 
 export const metadata: Metadata = {
   title: "Servers",
@@ -84,6 +85,7 @@ export default async function ServersPage({
               <Table.ColumnHeaderCell>Members</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell>Channels</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell>Flags</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>Moderate</Table.ColumnHeaderCell>
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -112,11 +114,14 @@ export default async function ServersPage({
                     {server.analytics ? <Badge color="gray">analytics</Badge> : null}
                   </Flex>
                 </Table.Cell>
+                <Table.Cell>
+                  <JoinServerButton serverId={String(server._id)} />
+                </Table.Cell>
               </Table.Row>
             ))}
             {servers.length === 0 ? (
               <Table.Row>
-                <Table.Cell colSpan={6}>
+                <Table.Cell colSpan={7}>
                   <Text color="gray">No servers match that query.</Text>
                 </Table.Cell>
               </Table.Row>

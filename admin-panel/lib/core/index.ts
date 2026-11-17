@@ -62,16 +62,48 @@ export async function createOrFindDM(userA: string, userB: string) {
 }
 
 /**
- * Send a platform alert from moderation user
+ * Id of the dedicated bot account that announcements and alerts come from
+ */
+export const SYSTEM_BOT_ID = "0000000000SYSTEM0000000000";
+
+/**
+ * Make sure the system bot account exists and return its id
+ */
+export async function ensureSystemBot() {
+  const owner = process.env.PLATFORM_ACCOUNT_ID ?? SYSTEM_BOT_ID;
+  await users().updateOne(
+    { _id: SYSTEM_BOT_ID },
+    {
+      $setOnInsert: {
+        _id: SYSTEM_BOT_ID,
+        username: "NullCord System",
+        discriminator: "0001",
+        bot: { owner },
+        last_acknowledged_policy_change: new Date(0),
+      },
+    } as never,
+    { upsert: true },
+  );
+  // repair a bot document created before this field was required
+  await users().updateOne(
+    { _id: SYSTEM_BOT_ID, last_acknowledged_policy_change: { $exists: false } },
+    { $set: { last_acknowledged_policy_change: new Date(0) } } as never,
+  );
+  return SYSTEM_BOT_ID;
+}
+
+/**
+ * Send a platform alert from the system bot
  * @param userId Target user
  * @param content Content to send
  */
 export async function sendPlatformAlert(userId: string, content: string) {
-  const dm = await createOrFindDM(userId, process.env.PLATFORM_ACCOUNT_ID!);
+  const botId = await ensureSystemBot();
+  const dm = await createOrFindDM(userId, botId);
 
   await sendMessage({
     channel: dm._id,
-    author: process.env.PLATFORM_ACCOUNT_ID!,
+    author: botId,
     content,
   });
 }

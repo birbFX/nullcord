@@ -13,6 +13,12 @@ import { Button, LineDivider, Tip, CategoryButton } from "@revoltchat/ui";
 import TextAreaAutoSize from "../../../lib/TextAreaAutoSize";
 import { useTranslation } from "../../../lib/i18n";
 import { recordQuestEvent } from "../../../lib/quests";
+import {
+    MAX_GRADIENT_COLORS,
+    buildGradient,
+    getProfileColors,
+    setProfileColors,
+} from "../../../lib/serverExtras";
 
 import AutoComplete, {
     useAutoComplete,
@@ -80,6 +86,8 @@ export const Profile = observer(() => {
                     {...({} as any)}
                 />
             </div>
+            <h3>Profile Card Colours</h3>
+            <GradientEditor userId={client.user!._id} />
             <div className={styles.titleNew}>
                 Display Name
                 <div className={styles.new}>NEW</div>
@@ -242,3 +250,91 @@ export const Profile = observer(() => {
         </div>
     );
 });
+
+function GradientEditor({ userId }: { userId: string }) {
+    const saved = getProfileColors(userId);
+    const [colors, setColors] = useState<string[] | null>(null);
+    const [angle, setAngle] = useState<number | null>(null);
+    const cur = colors ?? saved.colors;
+    const ang = angle ?? saved.angle;
+    const dirty = colors !== null || angle !== null;
+
+    const update = (next: string[]) => setColors(next);
+
+    return (
+        <div style={{ marginBottom: 16 }}>
+            <div
+                style={{
+                    height: 48,
+                    borderRadius: 8,
+                    marginBottom: 8,
+                    background:
+                        buildGradient(cur, ang) ?? "var(--secondary-background)",
+                }}
+            />
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 8 }}>
+                {cur.map((c, i) => (
+                    <span key={i} style={{ display: "inline-flex", gap: 2 }}>
+                        <input
+                            type="color"
+                            value={c}
+                            onInput={(e) => {
+                                const n = [...cur];
+                                n[i] = (e.target as HTMLInputElement).value;
+                                update(n);
+                            }}
+                        />
+                        <button
+                            type="button"
+                            title="Remove colour"
+                            onClick={() => update(cur.filter((_, j) => j !== i))}>
+                            ×
+                        </button>
+                    </span>
+                ))}
+                {cur.length < MAX_GRADIENT_COLORS && (
+                    <Button
+                        palette="secondary"
+                        onClick={() => update([...cur, cur[cur.length - 1] ?? "#5865f2"])}>
+                        + Add colour
+                    </Button>
+                )}
+            </div>
+            {cur.length > 1 && (
+                <label style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
+                    Angle {ang}°
+                    <input
+                        type="range"
+                        min={0}
+                        max={360}
+                        value={ang}
+                        onInput={(e) => setAngle(Number((e.target as HTMLInputElement).value))}
+                    />
+                </label>
+            )}
+            <div style={{ display: "flex", gap: 8 }}>
+                <Button
+                    palette="accent"
+                    disabled={!dirty}
+                    onClick={() =>
+                        setProfileColors(userId, cur, ang).then(() => {
+                            setColors(null);
+                            setAngle(null);
+                        })
+                    }>
+                    Save
+                </Button>
+                <Button
+                    palette="secondary"
+                    onClick={() =>
+                        setProfileColors(userId, [], 135).then(() => {
+                            setColors(null);
+                            setAngle(null);
+                        })
+                    }>
+                    Reset
+                </Button>
+            </div>
+        </div>
+    );
+}

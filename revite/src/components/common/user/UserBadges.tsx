@@ -71,6 +71,7 @@ export default observer(function UserBadges({
     const items: Item[] = [];
     const earlyMember = (() => {
         if (!uid) return false;
+        if (client.users.get(uid)?.bot) return false;
         const server = client.servers.get(CLL_SERVER_ID);
         if (!server) return false;
         return !!client.members.getKey({

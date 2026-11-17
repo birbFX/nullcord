@@ -17,6 +17,18 @@ import {
 
 import Settings from "../Settings";
 
+const SURFACES = [
+    "primary-background",
+    "background",
+    "secondary-background",
+    "tertiary-background",
+    "primary-header",
+    "secondary-header",
+    "block",
+    "message-box",
+];
+const TEXT = ["foreground", "secondary-foreground", "tertiary-foreground"];
+
 /**
  * Helper class for reading and writing themes.
  */
@@ -101,11 +113,58 @@ export default class STheme {
         };
     }
 
-    @computed computeVariables(): ComputedVariables {
-        const variables = this.getVariables() as Record<
+    /**
+     * When only some surfaces are recoloured, shift the untouched ones by the
+     * same amount so the whole page blends instead of mixing palettes.
+     */
+    @computed private blendedOverrides(): Record<string, string> {
+        const overrides = (this.settings.get("appearance:theme:overrides") ??
+            {}) as Record<string, string>;
+        const preset = PRESETS[this.getBase()] as unknown as Record<
             string,
-            string | boolean | number
+            string
         >;
+
+        const anchorKey = SURFACES.find((k) => overrides[k]);
+        if (!anchorKey) return overrides;
+
+        const to = rgba(overrides[anchorKey]);
+        const from = rgba(preset[anchorKey]);
+        // gradients and other non-colour values: leave everything as set
+        if (!to || !from) return overrides;
+        if (SURFACES.some((k) => overrides[k] && !rgba(overrides[k])))
+            return overrides;
+
+        const delta = [0, 1, 2].map((i) => to[i] - from[i]);
+        const blended: Record<string, string> = { ...overrides };
+        for (const key of SURFACES) {
+            if (overrides[key]) continue;
+            const base = rgba(preset[key]);
+            if (!base) continue;
+            const [r, g, b] = [0, 1, 2].map((i) =>
+                Math.max(0, Math.min(255, Math.round(base[i] + delta[i]))),
+            );
+            blended[key] = `rgb(${r}, ${g}, ${b})`;
+        }
+
+        // readable text on the new surface if the user didn't pick any
+        const text = getContrastingColour(overrides[anchorKey]);
+        const light = text === "black";
+        for (const key of TEXT) {
+            if (overrides[key]) continue;
+            const wantLight = !light;
+            const presetIsLight = !this.isLight();
+            if (wantLight !== presetIsLight)
+                blended[key] = light ? "#2E3338" : "#F2F3F5";
+        }
+        return blended;
+    }
+
+    @computed computeVariables(): ComputedVariables {
+        const variables = {
+            ...this.getVariables(),
+            ...this.blendedOverrides(),
+        } as Record<string, string | boolean | number>;
 
         for (const key of Object.keys(variables)) {
             const value = variables[key];
