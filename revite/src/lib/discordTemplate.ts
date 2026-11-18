@@ -50,6 +50,25 @@ function mapPermissions(raw: string | number): number {
     return Number(out);
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Run an API call, waiting out rate limits (429) instead of failing. */
+async function paced<T>(fn: () => Promise<T>): Promise<T> {
+    for (let attempt = 0; ; attempt++) {
+        try {
+            return await fn();
+        } catch (err: any) {
+            const res = err?.response;
+            if (res?.status !== 429 || attempt >= 8) throw err;
+            const header = Number(res.headers?.["x-ratelimit-reset-after"]);
+            const body = Number(res.data?.retry_after);
+            const wait = header || body || 2000;
+            // headers are in ms for this API, but guard against seconds
+            await sleep(Math.min(Math.max(wait < 50 ? wait * 1000 : wait, 500), 15000) + 100);
+        }
+    }
+}
+
 const clamp = (s: string, n: number) => (s ?? "").slice(0, n) || "channel";
 
 export async function fetchTemplate(client: Client, code: string) {
@@ -68,9 +87,11 @@ export async function importTemplate(
     if (!src) throw "InvalidTemplate";
 
     onProgress?.("Creating server…");
-    const server = await client.servers.createServer({
-        name: clamp(src.name || template.name, 32),
-    });
+    const server = await paced(() =>
+        client.servers.createServer({
+            name: clamp(src.name || template.name, 32),
+        }),
+    );
     const defaults = [...((server as any).channel_ids ?? [])] as string[];
 
     // Roles (highest position first, so ranking matches Discord).
@@ -81,29 +102,33 @@ export async function importTemplate(
         const perms = mapPermissions(role.permissions);
         if (role.id === src.id || role.name === "@everyone" || role.id === 0) {
             if (perms) {
-                await server
-                    .setPermissions("default", perms)
-                    .catch(() => undefined);
+                await paced(() => server.setPermissions("default", perms)).catch(
+                    () => undefined,
+                );
             }
             continue;
         }
         onProgress?.(`Role: ${role.name}`);
         try {
-            const created: any = await server.createRole(
-                clamp(role.name, 32),
+            const created: any = await paced(() =>
+                server.createRole(clamp(role.name, 32)),
             );
             const colour = role.color
                 ? `#${role.color.toString(16).padStart(6, "0")}`
                 : undefined;
-            await server.editRole(created.id, {
-                colour,
-                hoist: !!role.hoist,
-            } as any);
+            await paced(() =>
+                server.editRole(created.id, {
+                    colour,
+                    hoist: !!role.hoist,
+                } as any),
+            );
             if (perms)
-                await server.setPermissions(created.id, {
-                    allow: perms,
-                    deny: 0,
-                } as any);
+                await paced(() =>
+                    server.setPermissions(created.id, {
+                        allow: perms,
+                        deny: 0,
+                    } as any),
+                );
         } catch (err) {
             console.error("Template role failed", role.name, err);
         }
@@ -120,12 +145,16 @@ export async function importTemplate(
         const voice = ch.type === 2 || ch.type === 13;
         onProgress?.(`Channel: ${ch.name}`);
         try {
-            const created: any = await server.createChannel({
-                type: voice ? "Voice" : "Text",
-                name: clamp(ch.name, 32),
-                description: ch.topic ? String(ch.topic).slice(0, 1024) : undefined,
-                nsfw: ch.nsfw ? true : undefined,
-            } as any);
+            const created: any = await paced(() =>
+                server.createChannel({
+                    type: voice ? "Voice" : "Text",
+                    name: clamp(ch.name, 32),
+                    description: ch.topic
+                        ? String(ch.topic).slice(0, 1024)
+                        : undefined,
+                    nsfw: ch.nsfw ? true : undefined,
+                } as any),
+            );
             made.set(String(ch.id), created._id);
         } catch (err) {
             console.error("Template channel failed", ch.name, err);
@@ -149,12 +178,16 @@ export async function importTemplate(
     if (loose.length)
         categories.unshift({ id: "uncategorized", title: "Channels", channels: loose });
     if (categories.length)
-        await server.edit({ categories } as any).catch(() => undefined);
+        await paced(() => server.edit({ categories } as any)).catch(
+            () => undefined,
+        );
 
     // Remove the auto-created default channel(s) once real ones exist.
     if (made.size) {
         for (const id of defaults)
-            await client.api.delete(`/channels/${id}` as any).catch(() => undefined);
+            await paced(() => client.api.delete(`/channels/${id}` as any)).catch(
+                () => undefined,
+            );
     }
 
     return server._id;

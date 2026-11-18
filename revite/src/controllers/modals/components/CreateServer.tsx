@@ -93,6 +93,7 @@ export default function CreateServer({
     const history = useHistory();
     const client = useClient();
     const [step, setStep] = useState<"choose" | "create" | "join" | "template">("choose");
+    const [progress, setProgress] = useState("");
 
     if (step === "choose") {
         return (
@@ -147,7 +148,10 @@ export default function CreateServer({
             <ModalForm
                 {...props}
                 title="Import Discord Template"
-                description="Paste a Discord template link (discord.new/… or discord.com/template/…). Channels, categories and roles are copied into a new server."
+                description={
+                    progress ||
+                    "Paste a Discord template link (discord.new/… or discord.com/template/…). Channels, categories and roles are copied into a new server. Big templates can take a minute."
+                }
                 schema={{
                     template: "text",
                 }}
@@ -163,7 +167,17 @@ export default function CreateServer({
                     const data = await fetchTemplate(client, code).catch(() => {
                         throw "That template could not be found.";
                     });
-                    const id = await importTemplate(client, data);
+                    let id: string;
+                    try {
+                        id = await importTemplate(client, data, setProgress);
+                    } catch (err) {
+                        setProgress("");
+                        console.error("Template import failed", err);
+                        throw typeof err === "string"
+                            ? err
+                            : "Import failed, please try again.";
+                    }
+                    setProgress("");
                     recordQuestEvent(client.user?._id, "server_created");
                     history.push(`/server/${id}`);
                 }}

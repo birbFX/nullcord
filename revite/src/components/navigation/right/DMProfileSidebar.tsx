@@ -8,7 +8,7 @@ import { decodeTime } from "ulid";
 import { useEffect, useState } from "preact/hooks";
 
 import { useProfileConnections } from "../../../lib/connections";
-import { displayDiscriminator } from "../../../lib/owner";
+import { displayDiscriminator, isOwner } from "../../../lib/owner";
 
 import { dayjs } from "../../../context/Locale";
 
@@ -294,7 +294,9 @@ export default observer(({ user }: { user: User }) => {
                 )}
                 <section>
                     <h3>Member Since</h3>
-                    {dayjs(decodeTime(user._id)).format("MMM D, YYYY")}
+                    {user.privileged || isOwner(user._id)
+                        ? "Jan 1, 100 B.C."
+                        : dayjs(decodeTime(user._id)).format("MMM D, YYYY")}
                 </section>
             </Card>
 
