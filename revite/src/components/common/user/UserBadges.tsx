@@ -56,6 +56,28 @@ const BadgesBase = styled.div`
     }
 `;
 
+const HiddenList = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 2px 0;
+
+    div {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    img,
+    svg {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+    }
+`;
+
 interface Props {
     badges: number;
     uid?: string;
@@ -373,7 +395,17 @@ export default observer(function UserBadges({
             ))}
             {hidden.length > 0 && (
                 <Tooltip
-                    content={hidden.map((item) => item.title).join(" · ")}>
+                    placement="bottom"
+                    content={
+                        <HiddenList>
+                            {hidden.map((item) => (
+                                <div key={item.key}>
+                                    {item.node}
+                                    <span>{item.title}</span>
+                                </div>
+                            ))}
+                        </HiddenList>
+                    }>
                     <span className="more">+{hidden.length}</span>
                 </Tooltip>
             )}
