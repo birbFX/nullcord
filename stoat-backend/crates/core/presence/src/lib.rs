@@ -100,7 +100,7 @@ async fn delete_session_internal(user_id: &str, session_id: u32, skip_region: bo
 }
 
 /// Accounts that always appear online, since they never hold a session (the NullCord System bot)
-const ALWAYS_ONLINE: &[&str] = &["0000000000SYSTEM0000000000"];
+const ALWAYS_ONLINE: &[&str] = &["0000000000SYSTEM0000000000", "0000000000CLAUDE0000000000"];
 
 /// Check whether a given user ID is online
 pub async fn is_online(user_id: &str) -> bool {

@@ -11,6 +11,8 @@ import fallback from "../assets/user.png";
 import { useClient } from "../../../controllers/client/ClientController";
 import IconBase, { IconBaseProps } from "../IconBase";
 
+const CLAUDE_BOT_ID = "0000000000CLAUDE0000000000";
+
 type VoiceStatus = "muted" | "deaf";
 interface Props extends IconBaseProps<User> {
     status?: boolean;
@@ -101,7 +103,12 @@ export default observer(
                     override ?? target?.avatar ?? attachment ?? undefined,
                     { max_side: 256 },
                     animate,
-                ) ?? (target ? target.defaultAvatarURL : fallback);
+                ) ??
+                (target?._id === CLAUDE_BOT_ID
+                    ? "/assets/claude.svg"
+                    : target
+                    ? target.defaultAvatarURL
+                    : fallback);
         }
 
         return (

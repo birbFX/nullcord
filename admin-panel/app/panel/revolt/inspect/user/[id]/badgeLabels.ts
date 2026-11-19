@@ -10,4 +10,10 @@ export const BADGE_LABELS: { bit: number; label: string }[] = [
   { bit: 2, label: "Translator" },
   { bit: 8, label: "Responsible Disclosure" },
   { bit: 128, label: "Paw" },
+  { bit: 32, label: "Platform Moderation" },
+  { bit: 64, label: "Active Supporter" },
+  { bit: 256, label: "Early Adopter" },
+  { bit: 512, label: "sus" },
+  { bit: 1024, label: "It's Morbin Time" },
+  { bit: 131072, label: "birbfx's bestie" },
 ];

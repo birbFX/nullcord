@@ -30,6 +30,7 @@ enum Badges {
     TrialMod = 16384,
     Mod = 32768,
     Owner = 65536,
+    Bestie = 131072,
 }
 
 const BadgesBase = styled.div`
@@ -131,6 +132,18 @@ export default observer(function UserBadges({
             node: (
                 <Tooltip content="Administrator">
                     <img src="/assets/badges/admin.svg" alt="Administrator" />
+                </Tooltip>
+            ),
+        });
+    }
+
+    if (badges & Badges.Bestie) {
+        items.push({
+            key: "bestie",
+            title: "birbfx's bestie",
+            node: (
+                <Tooltip content="birbfx's bestie">
+                    <img src="/assets/badges/bestie.svg" alt="birbfx's bestie" />
                 </Tooltip>
             ),
         });

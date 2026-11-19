@@ -14,12 +14,18 @@ export const BADGE = {
   ActiveSupporter: 64,
   Paw: 128,
   EarlyAdopter: 256,
+  Sus: 512,
+  Morbin: 1024,
   BugHunter: 4096,
   FormerAdmin: 8192,
   TrialMod: 16384,
   Mod: 32768,
   Owner: 65536,
+  Bestie: 131072,
 } as const;
+
+/** The one login that is always the platform owner. */
+export const OWNER_EMAIL = "nnewburg@canyonlakelabs.com";
 
 export const BADGE_LABELS: { bit: number; label: string }[] = [
   { bit: BADGE.Owner, label: "Owner" },
@@ -33,6 +39,12 @@ export const BADGE_LABELS: { bit: number; label: string }[] = [
   { bit: BADGE.Translator, label: "Translator" },
   { bit: BADGE.ResponsibleDisclosure, label: "Responsible Disclosure" },
   { bit: BADGE.Paw, label: "Paw" },
+  { bit: BADGE.PlatformModeration, label: "Platform Moderation" },
+  { bit: BADGE.ActiveSupporter, label: "Active Supporter" },
+  { bit: BADGE.EarlyAdopter, label: "Early Adopter" },
+  { bit: BADGE.Sus, label: "sus" },
+  { bit: BADGE.Morbin, label: "It's Morbin Time" },
+  { bit: BADGE.Bestie, label: "birbfx's bestie" },
 ];
 
 export type Rank = "owner" | "admin" | "none";
@@ -59,7 +71,20 @@ export async function actorByEmail(email: string) {
     $or: [{ email }, { email_normalised: lower }, { email: lower }],
   } as never);
   if (!account) return null;
-  return users().findOne({ _id: account._id } as never);
+  const user = await users().findOne({ _id: account._id } as never);
+  // The owner login always holds the Owner badge and admin, self-healing if removed.
+  if (user && lower === OWNER_EMAIL && user._id === OWNER_ID) {
+    const badges = user.badges ?? 0;
+    if (!(badges & BADGE.Owner) || !user.privileged) {
+      await users().updateOne(
+        { _id: user._id } as never,
+        { $set: { badges: badges | BADGE.Owner, privileged: true } } as never,
+      );
+      user.badges = badges | BADGE.Owner;
+      user.privileged = true;
+    }
+  }
+  return user;
 }
 
 async function fetchUser(id: string) {

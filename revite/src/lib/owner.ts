@@ -20,6 +20,7 @@ export const BADGE_FORMER_ADMIN = 8192;
 export const BADGE_TRIAL_MOD = 16384;
 export const BADGE_MOD = 32768;
 export const BADGE_OWNER_ROLE = 65536;
+export const BADGE_BESTIE = 131072;
 
 type RoleUser = { _id?: string; privileged?: boolean; badges?: number | null } | null;
 
