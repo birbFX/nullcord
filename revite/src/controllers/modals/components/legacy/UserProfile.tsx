@@ -28,7 +28,9 @@ import {
 import { useProfileConnections } from "../../../../lib/connections";
 import { noop } from "../../../../lib/js";
 import { getProfileGradient } from "../../../../lib/serverExtras";
-import { displayDiscriminator } from "../../../../lib/owner";
+import { displayDiscriminator, isOwner } from "../../../../lib/owner";
+import { decodeTime } from "ulid";
+import { dayjs } from "../../../../context/Locale";
 
 import ChannelIcon from "../../../../components/common/ChannelIcon";
 import ServerIcon from "../../../../components/common/ServerIcon";
@@ -407,7 +409,7 @@ export const UserProfile = observer(
                     )}
                     {!blocked &&
                         tab === "profile" &&
-                        (profile?.content || flags > 0 || user.bot ? (
+                        (true ? (
                             <div>
                                 {flags & 1 ? (
                                     /** ! FIXME: i18n this area */
@@ -469,6 +471,17 @@ export const UserProfile = observer(
                                         </div>
                                     </>
                                 )}
+
+                                <div className={styles.category}>
+                                    Member Since
+                                </div>
+                                <div className={styles.markdown}>
+                                    {user.privileged || isOwner(user._id)
+                                        ? "Jan 1, 100 B.C."
+                                        : dayjs(decodeTime(user._id)).format(
+                                              "MMM D, YYYY",
+                                          )}
+                                </div>
 
                                 {/*<div className={styles.category}><Text id="app.special.popovers.user_profile.sub.connections" /></div>*/}
                             </div>
