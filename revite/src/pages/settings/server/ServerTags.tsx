@@ -36,13 +36,13 @@ export const ServerTags = observer(({ server }: Props) => {
         setMsg(ok ? "Saved." : getLastExtrasError());
     };
 
-    const clean = tag.replace(/[^a-zA-Z0-9]/g, "").slice(0, 4);
+    const clean = tag.replace(/[^a-zA-Z0-9]/g, "").slice(0, 6);
 
     return (
         <div className={styles.overview}>
             <h3>Server Tags</h3>
             <p style={{ marginTop: -6, color: "var(--secondary-foreground)" }}>
-                Tags are 1–4 letters or numbers shown as a diamond badge next
+                Tags are 1–6 letters or numbers shown as a diamond badge next
                 to the server name and next to member names in this server.
             </p>
 
@@ -56,7 +56,7 @@ export const ServerTags = observer(({ server }: Props) => {
                 }}>
                 <InputBox
                     value={tag}
-                    maxLength={4}
+                    maxLength={6}
                     palette="secondary"
                     placeholder="333"
                     onChange={(e) => setTag(e.currentTarget.value)}

@@ -15,7 +15,6 @@ import {
   setAccountEmail,
   setBotVerified,
   setDisplayName,
-  setUserPrivileged,
   setUsername,
   suspendUser,
   unsuspendUser,
@@ -24,6 +23,14 @@ import {
   unbanUser,
   verifyAccountEmail,
 } from "@/lib/database/revolt";
+import {
+  OWNER_ID,
+  actorByEmail,
+  rankOf,
+  setAdminAs,
+  setBadgesAs,
+  setNitroAs,
+} from "@/lib/database/revolt/roles";
 import { findCaseById } from "@/lib/database/revolt/safety_cases";
 import { createStrike } from "@/lib/database/revolt/safety_strikes";
 import { col } from "@/lib/db";
@@ -179,8 +186,31 @@ export async function setUserPrivilegedAction(
   userId: string,
   privileged: boolean,
 ) {
-  await getScopedUser(RBAC_PERMISSION_MODERATION_AGENT);
-  await setUserPrivileged(userId, privileged);
+  const email = await getScopedUser(RBAC_PERMISSION_MODERATION_AGENT);
+  await setAdminAs(email, userId, privileged);
+}
+
+export async function setUserBadgesAction(userId: string, badges: number) {
+  const email = await getScopedUser(RBAC_PERMISSION_MODERATION_AGENT);
+  if (!Number.isInteger(badges) || badges < 0 || badges > 0x7fffffff)
+    throw new Error("Invalid badges");
+  await setBadgesAs(email, userId, badges);
+}
+
+export async function setUserNitroAction(
+  userId: string,
+  tier: "nitro" | "basic" | null,
+) {
+  const email = await getScopedUser(RBAC_PERMISSION_MODERATION_AGENT);
+  if (tier !== null && tier !== "nitro" && tier !== "basic")
+    throw new Error("Invalid tier");
+  await setNitroAs(email, userId, tier);
+}
+
+export async function getActorRankAction() {
+  const email = await getScopedUser(RBAC_PERMISSION_MODERATION_AGENT);
+  const actor = await actorByEmail(email);
+  return { rank: rankOf(actor as never), isPlatformOwner: actor?._id === OWNER_ID };
 }
 
 export async function forceLogoutAction(userId: string) {

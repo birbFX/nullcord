@@ -179,7 +179,7 @@ export function setServerTag(
     tag: string,
     userId?: string | null,
 ): Promise<boolean> {
-    const clean = tag.replace(/[^a-zA-Z0-9]/g, "").slice(0, 4);
+    const clean = tag.replace(/[^a-zA-Z0-9]/g, "").slice(0, 6);
     return send(
         apiClient?.api.patch(`/servers/${serverId}/extras` as any, undefined, { data: {
             tag: clean,

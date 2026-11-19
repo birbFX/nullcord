@@ -43,7 +43,18 @@ pub async fn edit(
             return Err(create_error!(NotPrivileged));
         }
 
+        // Owner-role accounts can only be edited by the platform owner or themselves.
+        if is_owner_account(&target_user) && !is_platform_owner(&user) {
+            return Err(create_error!(NotPrivileged));
+        }
+
+        if let Some(new_badges) = data.badges {
+            check_badge_change(&user, &target_user, new_badges)?;
+        }
+
         user = target_user;
+    } else if let Some(new_badges) = data.badges {
+        check_badge_change(&user, &user, new_badges)?;
     }
 
     // Exit out early if nothing is changed
@@ -162,4 +173,33 @@ pub async fn edit(
     }
 
     Ok(Json(user.into_self(false).await))
+}
+
+const PLATFORM_OWNER_ID: &str = "01M5KCFRPDZZHPADH5BKJT19VG";
+/// Badge bit granted to platform owners (full power, cannot be demoted).
+const OWNER_BADGE: i32 = 65536;
+
+fn is_platform_owner(user: &revolt_database::User) -> bool {
+    user.id == PLATFORM_OWNER_ID
+}
+
+fn is_owner_account(user: &revolt_database::User) -> bool {
+    is_platform_owner(user) || user.badges.unwrap_or_default() & OWNER_BADGE != 0
+}
+
+/// Only the platform owner can give or take the owner badge, and the platform
+/// owner can never lose it.
+fn check_badge_change(
+    actor: &revolt_database::User,
+    target: &revolt_database::User,
+    new_badges: i32,
+) -> Result<()> {
+    let old_badges = target.badges.unwrap_or_default();
+    if (old_badges ^ new_badges) & OWNER_BADGE != 0 && !is_platform_owner(actor) {
+        return Err(create_error!(NotPrivileged));
+    }
+    if is_platform_owner(target) && new_badges & OWNER_BADGE == 0 {
+        return Err(create_error!(NotPrivileged));
+    }
+    Ok(())
 }

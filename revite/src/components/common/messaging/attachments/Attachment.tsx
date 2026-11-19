@@ -19,6 +19,20 @@ interface Props {
 
 const MAX_ATTACHMENT_WIDTH = 480;
 
+const AUDIO_EXT = /\.(mp3|wav|ogg|oga|opus|m4a|aac|flac|weba)$/i;
+const VIDEO_EXT = /\.(mp4|m4v|webm|mov|mkv|ogv)$/i;
+
+/** Work out what to render, trusting the file itself when metadata says "File". */
+function detectKind(attachment: API.File): string {
+    const type = attachment.metadata.type;
+    if (type !== "File") return type;
+    const mime = attachment.content_type ?? "";
+    const name = attachment.filename ?? "";
+    if (mime.startsWith("video/") || VIDEO_EXT.test(name)) return "LooseVideo";
+    if (mime.startsWith("audio/") || AUDIO_EXT.test(name)) return "Audio";
+    return type;
+}
+
 export default function Attachment({ attachment, hasContent }: Props) {
     const client = useClient();
     const { filename, metadata } = attachment;
@@ -30,8 +44,26 @@ export default function Attachment({ attachment, hasContent }: Props) {
         true,
     );
 
-    switch (metadata.type) {
+    switch (detectKind(attachment)) {
+        case "LooseVideo": {
+            return (
+                <div
+                    className={classNames(styles.container, {
+                        [styles.margin]: hasContent,
+                    })}>
+                    <AttachmentActions attachment={attachment} />
+                    <video
+                        src={url}
+                        controls
+                        preload="metadata"
+                        style={{ maxWidth: "100%", maxHeight: 400 }}
+                    />
+                </div>
+            );
+        }
+
         case "Image": {
+            if (metadata.type !== "Image") return null;
             return (
                 <SizedGrid
                     width={metadata.width}
@@ -54,6 +86,7 @@ export default function Attachment({ attachment, hasContent }: Props) {
         }
 
         case "Video": {
+            if (metadata.type !== "Video") return null;
             return (
                 <div
                     className={classNames(styles.container, {

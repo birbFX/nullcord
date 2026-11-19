@@ -26,6 +26,10 @@ enum Badges {
     ReservedRelevantJokeBadge1 = 512,
     ReservedRelevantJokeBadge2 = 1024,
     BugHunter = 4096,
+    FormerAdmin = 8192,
+    TrialMod = 16384,
+    Mod = 32768,
+    Owner = 65536,
 }
 
 const BadgesBase = styled.div`
@@ -95,7 +99,7 @@ export default observer(function UserBadges({
         });
     }
 
-    if (isOwner(uid)) {
+    if (isOwner(uid) || badges & Badges.Owner) {
         items.push({
             key: "owner",
             title: "NullCord Owner",
@@ -127,6 +131,42 @@ export default observer(function UserBadges({
             node: (
                 <Tooltip content="Administrator">
                     <img src="/assets/badges/admin.svg" alt="Administrator" />
+                </Tooltip>
+            ),
+        });
+    }
+
+    if (badges & Badges.Mod) {
+        items.push({
+            key: "mod",
+            title: "Moderator",
+            node: (
+                <Tooltip content="Moderator">
+                    <img src="/assets/badges/mod.svg" alt="Moderator" />
+                </Tooltip>
+            ),
+        });
+    }
+
+    if (badges & Badges.TrialMod) {
+        items.push({
+            key: "trialmod",
+            title: "Trial Moderator",
+            node: (
+                <Tooltip content="Trial Moderator">
+                    <img src="/assets/badges/trial_mod.svg" alt="Trial Moderator" />
+                </Tooltip>
+            ),
+        });
+    }
+
+    if (badges & Badges.FormerAdmin) {
+        items.push({
+            key: "formeradmin",
+            title: "Former Admin",
+            node: (
+                <Tooltip content="Former Admin">
+                    <img src="/assets/badges/former_admin.svg" alt="Former Admin" />
                 </Tooltip>
             ),
         });

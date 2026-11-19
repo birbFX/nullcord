@@ -37,6 +37,7 @@ import {
 import { IpManagement } from "./ipManagement";
 import { UserStrikes } from "./userManagement";
 import { AlertManagement } from "./alertManagement";
+import { getNitro } from "@/lib/database/revolt/roles";
 import { ProfileManagement } from "./profileManagement";
 
 type Props = { params: { id: string } };
@@ -194,6 +195,8 @@ export default async function User({ params }: Props) {
                 discriminator={user.discriminator}
                 displayName={user.display_name}
                 privileged={user.privileged}
+                badges={user.badges ?? 0}
+                nitro={await getNitro(params.id)}
               />
             </Flex>
           </Card>

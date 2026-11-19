@@ -105,7 +105,7 @@ where
 fn clean_tag(tag: &str) -> String {
     tag.chars()
         .filter(|c| c.is_ascii_alphanumeric())
-        .take(4)
+        .take(6)
         .collect()
 }
 

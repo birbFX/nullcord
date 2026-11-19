@@ -16,6 +16,30 @@ export const OWNER_COLOUR = "#f7c948";
 /** Bit 1 of user.badges = Developer. */
 export const DEVELOPER_BADGE = 1;
 
+export const BADGE_FORMER_ADMIN = 8192;
+export const BADGE_TRIAL_MOD = 16384;
+export const BADGE_MOD = 32768;
+export const BADGE_OWNER_ROLE = 65536;
+
+type RoleUser = { _id?: string; privileged?: boolean; badges?: number | null } | null;
+
+const hasBit = (u: RoleUser | undefined, bit: number) =>
+    !!u && typeof u.badges === "number" && (u.badges & bit) !== 0;
+
+/** Owner role: birbfx or anyone holding the Owner badge. Full power. */
+export function isOwnerRole(u?: RoleUser): boolean {
+    return !!u && (u._id === OWNER_ID || hasBit(u, BADGE_OWNER_ROLE));
+}
+export function isMod(u?: RoleUser): boolean {
+    return hasBit(u, BADGE_MOD);
+}
+export function isTrialMod(u?: RoleUser): boolean {
+    return hasBit(u, BADGE_TRIAL_MOD);
+}
+export function isFormerAdmin(u?: RoleUser): boolean {
+    return hasBit(u, BADGE_FORMER_ADMIN);
+}
+
 export function isOwner(id?: string | null): boolean {
     return !!id && id === OWNER_ID;
 }
