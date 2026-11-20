@@ -164,7 +164,15 @@ export default observer(function UserBadges({
         items.push({
             key: "co-owner",
             title: "NullCord Co-Owner",
-            node: <OwnerCrown size={22} colour="#3b82f6" title="NullCord Co-Owner" />,
+            node: (
+                <Tooltip content="NullCord Co-Owner">
+                    <OwnerCrown
+                        size={22}
+                        colour="#3b82f6"
+                        title="NullCord Co-Owner"
+                    />
+                </Tooltip>
+            ),
         });
     }
 
