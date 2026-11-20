@@ -1,14 +1,3 @@
-                            {invite.type === "Server" && (
-                                <>
-                                    #{invite.channel_name} •{" "}
-                                    <Text
-                                        id="app.special.invite.user_count"
-                                        fields={{
-                                            member_count: invite.member_count,
-                                        }}
-                                    />
-                                </>
-                            )}
 import { ArrowBack } from "@styled-icons/boxicons-regular";
 import { Redirect, useHistory, useParams } from "react-router-dom";
 import { API } from "revolt.js";
