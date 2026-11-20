@@ -145,6 +145,15 @@ pub async fn message_send(
         interactions.validate(db, &permissions).await?;
     }
 
+    // Archived threads are read-only
+    if let Some(server) = query.server_ref() {
+        if crate::routes::servers::threads::is_archived_thread(db, &server.id, channel.id()).await {
+            return Err(create_error!(FailedValidation {
+                error: "This thread is archived".to_string()
+            }));
+        }
+    }
+
     // Server automod: members without Manage Messages are held to the server's rules
     if let (Some(server), Some(content)) = (query.server_ref(), data.content.as_deref()) {
         if !permissions.has_channel_permission(ChannelPermission::ManageMessages) {

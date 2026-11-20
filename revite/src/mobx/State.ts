@@ -16,6 +16,7 @@ import Auth from "./stores/Auth";
 import Changelog from "./stores/Changelog";
 import Draft from "./stores/Draft";
 import { setExtrasClient } from "../lib/serverExtras";
+import { setBadgeClient } from "../lib/customBadges";
 import { economy } from "./stores/Economy";
 import Experiments from "./stores/Experiments";
 import Layout from "./stores/Layout";
@@ -229,6 +230,7 @@ export default class State {
                 economy.fetch(client).catch(console.error);
             });
             setExtrasClient(client);
+            setBadgeClient(client);
         }
 
         // Register all the listeners required for saving and syncing state.
@@ -406,6 +408,7 @@ export default class State {
         runInAction(() => {
             economy.reset();
             setExtrasClient(undefined);
+            setBadgeClient(undefined);
             this.draft = new Draft();
             this.experiments = new Experiments();
             this.layout = new Layout();

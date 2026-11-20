@@ -90,6 +90,8 @@ pub async fn web() -> Rocket<Build> {
     // Ratelimits
     let ratelimits = ratelimiter::RatelimitStorage::new(util::ratelimits::DeltaRatelimits);
 
+    tokio::spawn(routes::temp_ban_sweeper(db.clone()));
+
     routes::mount(config, rocket)
         .attach(prometheus.clone())
         .mount("/metrics", prometheus)

@@ -259,14 +259,26 @@ export default function CreateServer({
                 },
             }}
             callback={async ({ name }) => {
-                const server = await client.servers
-                    .createServer({
-                        name,
-                    })
+                // The server exists as soon as the POST succeeds; local
+                // bookkeeping failing (or racing the websocket event) must
+                // not be reported as a failed create.
+                const created: any = await client.api
+                    .post("/servers/create", { name })
                     .catch(mapError);
+                const serverId: string = created.server._id;
+
+                try {
+                    await client.servers.fetch(
+                        serverId,
+                        created.server,
+                        created.channels,
+                    );
+                } catch (err) {
+                    console.warn("Server created but local sync failed", err);
+                }
 
                 recordQuestEvent(client.user?._id, "server_created");
-                history.push(`/server/${server._id}`);
+                history.push(`/server/${serverId}`);
             }}
             submit={{
                 children: <Text id="app.special.modals.actions.create" />,

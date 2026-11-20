@@ -10,8 +10,10 @@ import { useClient } from "../../../controllers/client/ClientController";
 import earlyMemberIcon from "../../../assets/badges/early_member.svg";
 import developerWrenchIcon from "../../../assets/badges/developer_wrench.svg";
 
+import { CustomBadge, getUserCustomBadges } from "../../../lib/customBadges";
 import Tooltip from "../Tooltip";
 import OwnerBadge from "./OwnerBadge";
+import OwnerCrown from "./OwnerCrown";
 
 enum Badges {
     Developer = 1,
@@ -31,6 +33,7 @@ enum Badges {
     Mod = 32768,
     Owner = 65536,
     Bestie = 131072,
+    CoOwner = 262144,
 }
 
 const BadgesBase = styled.div`
@@ -85,6 +88,33 @@ interface Props {
     max?: number;
 }
 
+export function CustomBadgeArt({ badge }: { badge: CustomBadge }) {
+    const ring = badge.colour
+        ? { boxShadow: `0 0 0 2px ${badge.colour}`, borderRadius: "50%" }
+        : undefined;
+    if (badge.kind === "emoji") {
+        return (
+            <span
+                style={{
+                    fontSize: 20,
+                    lineHeight: "24px",
+                    width: 24,
+                    height: 24,
+                    display: "inline-block",
+                    textAlign: "center",
+                    ...ring,
+                }}>
+                {badge.value}
+            </span>
+        );
+    }
+    const src =
+        badge.kind === "preset"
+            ? `/assets/badges/${badge.value}.svg`
+            : badge.value;
+    return <img src={src} alt={badge.name} style={ring} />;
+}
+
 type Item = { key: string; title: string; node: Children };
 
 export default observer(function UserBadges({
@@ -127,6 +157,14 @@ export default observer(function UserBadges({
             key: "owner",
             title: "NullCord Owner",
             node: <OwnerBadge size={24} />,
+        });
+    }
+
+    if (badges & Badges.CoOwner) {
+        items.push({
+            key: "co-owner",
+            title: "NullCord Co-Owner",
+            node: <OwnerCrown size={22} colour="#3b82f6" title="NullCord Co-Owner" />,
         });
     }
 
@@ -377,6 +415,23 @@ export default observer(function UserBadges({
             node: (
                 <Tooltip content="🦝">
                     <img src="/assets/badges/raccoon.svg" alt="Raccoon" />
+                </Tooltip>
+            ),
+        });
+    }
+
+    for (const badge of getUserCustomBadges(uid)) {
+        items.push({
+            key: `custom:${badge.id}`,
+            title: badge.name,
+            node: (
+                <Tooltip
+                    content={
+                        badge.description
+                            ? `${badge.name} · ${badge.description}`
+                            : badge.name
+                    }>
+                    <CustomBadgeArt badge={badge} />
                 </Tooltip>
             ),
         });

@@ -357,6 +357,15 @@ pub async fn create_warning(
     };
     doc.warnings.push(warning.clone());
     store(db, &warnings_key(&server.id), &doc).await?;
+    super::social::notify(
+        db,
+        &warning.user,
+        "warning",
+        &format!("Warning in {}", server.name),
+        &warning.reason,
+        Some(&server.id),
+    )
+    .await;
     Ok(Json(warning))
 }
 

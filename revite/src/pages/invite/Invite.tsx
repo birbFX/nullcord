@@ -1,3 +1,14 @@
+                            {invite.type === "Server" && (
+                                <>
+                                    #{invite.channel_name} •{" "}
+                                    <Text
+                                        id="app.special.invite.user_count"
+                                        fields={{
+                                            member_count: invite.member_count,
+                                        }}
+                                    />
+                                </>
+                            )}
 import { ArrowBack } from "@styled-icons/boxicons-regular";
 import { Redirect, useHistory, useParams } from "react-router-dom";
 import { API } from "revolt.js";
@@ -20,6 +31,8 @@ import {
 } from "../../controllers/client/ClientController";
 import RequiresOnline from "../../controllers/client/jsx/RequiresOnline";
 import { takeError } from "../../controllers/client/jsx/error";
+
+export const PENDING_INVITE_KEY = "nullcord:pendingInvite";
 
 export default function Invite() {
     const history = useHistory();
@@ -87,15 +100,45 @@ export default function Invite() {
         );
     }
 
-    if (invite.type === "Group") return <h1>unimplemented</h1>;
+    const join = async () => {
+        if (!session) {
+            // Remember the invite so it resumes after logging in / signing up
+            try {
+                localStorage.setItem(PENDING_INVITE_KEY, code);
+            } catch (e) {
+                /* storage unavailable */
+            }
+            return history.push("/login");
+        }
+
+        setProcessing(true);
+        setError(undefined);
+
+        try {
+            await client.joinInvite(invite);
+
+            history.push(
+                invite.type === "Group"
+                    ? `/channel/${invite.channel_id}`
+                    : `/server/${invite.server_id}/channel/${invite.channel_id}`,
+            );
+        } catch (err) {
+            setError(takeError(err));
+        } finally {
+            setProcessing(false);
+        }
+    };
 
     return (
         <div
             className={styles.invite}
             style={{
-                backgroundImage: invite.server_banner
-                    ? `url('${client?.generateFileURL(invite.server_banner)}')`
-                    : undefined,
+                backgroundImage:
+                    invite.type === "Server" && invite.server_banner
+                        ? `url('${client?.generateFileURL(
+                              invite.server_banner,
+                          )}')`
+                        : undefined,
             }}>
             <div className={styles.leave}>
                 <ArrowBack
@@ -106,11 +149,15 @@ export default function Invite() {
 
             {!processing && (
                 <div className={styles.icon}>
-                    <ServerIcon
-                        attachment={invite.server_icon}
-                        server_name={invite.server_name}
-                        size={64}
-                    />
+                    {invite.type === "Server" ? (
+                        <ServerIcon
+                            attachment={invite.server_icon}
+                            server_name={invite.server_name}
+                            size={64}
+                        />
+                    ) : (
+                        <UserIcon size={64} attachment={invite.user_avatar} />
+                    )}
                 </div>
             )}
 
@@ -119,13 +166,22 @@ export default function Invite() {
                     <Preloader type="ring" />
                 ) : (
                     <>
-                        <h1>{invite.server_name}</h1>
+                        <h1>
+                            {invite.type === "Server"
+                                ? invite.server_name
+                                : invite.channel_name}
+                        </h1>
                         <h2>
-                            #{invite.channel_name} •{" "}
+                            {invite.type === "Server" && (
+                                <>#{invite.channel_name} • </>
+                            )}
                             <Text
                                 id="app.special.invite.user_count"
                                 fields={{
-                                    member_count: invite.member_count,
+                                    member_count:
+                                        invite.type === "Server"
+                                            ? invite.member_count
+                                            : 0,
                                 }}
                             />
                         </h2>
@@ -150,26 +206,7 @@ export default function Invite() {
                         </Category>
                         <Button
                             palette="secondary"
-                            onClick={async () => {
-                                if (!session) {
-                                    return history.push("/");
-                                }
-
-                                setProcessing(true);
-
-                                try {
-                                    await client.joinInvite(invite);
-
-                                    history.push(
-                                        `/server/${invite.server_id}/channel/${invite.channel_id}`,
-                                    );
-                                } catch (err) {
-                                    setError(takeError(err));
-                                } finally {
-                                    setProcessing(false);
-                                }
-                            }}>
-                            {!session ? (
+                            onClick={join}>                            {!session ? (
                                 <Text id="app.special.invite.login" />
                             ) : (
                                 <Text id="app.special.invite.accept" />

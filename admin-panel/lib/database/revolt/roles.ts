@@ -22,6 +22,7 @@ export const BADGE = {
   Mod: 32768,
   Owner: 65536,
   Bestie: 131072,
+  CoOwner: 262144,
 } as const;
 
 /** The one login that is always the platform owner. */
@@ -29,6 +30,7 @@ export const OWNER_EMAIL = "nnewburg@canyonlakelabs.com";
 
 export const BADGE_LABELS: { bit: number; label: string }[] = [
   { bit: BADGE.Owner, label: "Owner" },
+  { bit: BADGE.CoOwner, label: "Co-Owner" },
   { bit: BADGE.Mod, label: "Moderator" },
   { bit: BADGE.TrialMod, label: "Trial Moderator" },
   { bit: BADGE.FormerAdmin, label: "Former Admin" },

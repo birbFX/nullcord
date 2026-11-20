@@ -107,6 +107,7 @@ type Action =
     | { action: "open_settings" }
     | { action: "open_channel_settings"; id: string }
     | { action: "open_server_settings"; id: string }
+    | { action: "boost_server"; id: string }
     | { action: "open_server_channel_settings"; server: string; id: string }
     | {
           action: "set_notification_state";
@@ -466,6 +467,9 @@ export default function ContextMenus() {
                     break;
                 case "open_server_settings":
                     history.push(`/server/${data.id}/settings`);
+                    break;
+                case "boost_server":
+                    history.push(`/server/${data.id}/settings/boosts`);
                     break;
                 case "report":
                     modalController.push({
@@ -1074,6 +1078,11 @@ export default function ContextMenus() {
                                     },
                                     "edit_identity",
                                 );
+
+                            generateAction(
+                                { action: "boost_server", id: server._id },
+                                "boost_server",
+                            );
 
                             if (serverPermissions & Permission.ManageServer)
                                 generateAction(

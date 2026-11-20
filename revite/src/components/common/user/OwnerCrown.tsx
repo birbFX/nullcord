@@ -1,13 +1,13 @@
 import styled from "styled-components/macro";
 
-const Svg = styled.svg<{ $size: number }>`
+const Svg = styled.svg<{ $size: number; $colour: string }>`
     width: ${(p) => p.$size}px;
     height: ${(p) => p.$size}px;
     flex-shrink: 0;
-    color: #f7c948;
+    color: ${(p) => p.$colour};
     vertical-align: -0.15em;
     margin-inline-start: 4px;
-    filter: drop-shadow(0 0 4px rgba(247, 201, 72, 0.45));
+    filter: drop-shadow(0 0 4px ${(p) => p.$colour}73);
 `;
 
 /**
@@ -20,13 +20,16 @@ const Svg = styled.svg<{ $size: number }>`
 export default function OwnerCrown({
     size = 14,
     title = "Owner",
+    colour = "#f7c948",
 }: {
     size?: number;
     title?: string;
+    colour?: string;
 }) {
     return (
         <Svg
             $size={size}
+            $colour={colour}
             viewBox="0 0 24 24"
             fill="currentColor"
             role="img"

@@ -21,6 +21,7 @@ export const BADGE_TRIAL_MOD = 16384;
 export const BADGE_MOD = 32768;
 export const BADGE_OWNER_ROLE = 65536;
 export const BADGE_BESTIE = 131072;
+export const BADGE_CO_OWNER = 262144;
 
 type RoleUser = { _id?: string; privileged?: boolean; badges?: number | null } | null;
 
@@ -30,6 +31,9 @@ const hasBit = (u: RoleUser | undefined, bit: number) =>
 /** Owner role: birbfx or anyone holding the Owner badge. Full power. */
 export function isOwnerRole(u?: RoleUser): boolean {
     return !!u && (u._id === OWNER_ID || hasBit(u, BADGE_OWNER_ROLE));
+}
+export function isCoOwner(u?: RoleUser): boolean {
+    return hasBit(u, BADGE_CO_OWNER);
 }
 export function isMod(u?: RoleUser): boolean {
     return hasBit(u, BADGE_MOD);

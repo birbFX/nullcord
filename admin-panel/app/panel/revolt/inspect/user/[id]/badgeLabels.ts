@@ -1,5 +1,6 @@
 export const BADGE_LABELS: { bit: number; label: string }[] = [
   { bit: 65536, label: "Owner" },
+  { bit: 262144, label: "Co-Owner" },
   { bit: 32768, label: "Moderator" },
   { bit: 16384, label: "Trial Moderator" },
   { bit: 8192, label: "Former Admin" },

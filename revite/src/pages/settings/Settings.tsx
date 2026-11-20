@@ -53,6 +53,8 @@ import { Notifications } from "./panes/Notifications";
 import { PluginsPage } from "./panes/Plugins";
 import { Profile } from "./panes/Profile";
 import { ServerTags } from "./panes/ServerTags";
+import { CustomBadges } from "./panes/CustomBadges";
+import { isOwner } from "../../lib/owner";
 import { Connections } from "./panes/Connections";
 import { Sessions } from "./panes/Sessions";
 import { Sync } from "./panes/Sync";
@@ -150,6 +152,15 @@ export default observer(() => {
                     icon: <Tag size={20} />,
                     title: "Server Tags",
                 },
+                ...(isOwner(client.user?._id)
+                    ? [
+                          {
+                              id: "badges",
+                              icon: <IdCard size={20} />,
+                              title: "Custom Badges",
+                          },
+                      ]
+                    : []),
                 {
                     id: "sessions",
                     icon: <CheckShield size={20} />,
@@ -225,6 +236,11 @@ export default observer(() => {
                     <Route path="/settings/connections">
                         <RequiresOnline>
                             <Connections />
+                        </RequiresOnline>
+                    </Route>
+                    <Route path="/settings/badges">
+                        <RequiresOnline>
+                            <CustomBadges />
                         </RequiresOnline>
                     </Route>
                     <Route path="/settings/server-tags">

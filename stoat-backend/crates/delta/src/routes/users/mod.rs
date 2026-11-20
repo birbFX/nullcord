@@ -27,6 +27,13 @@ pub fn routes() -> (Vec<Route>, OpenApi) {
         crate::routes::servers::extras::fetch_user_tag,
         crate::routes::servers::extras::equip_tag,
         crate::routes::servers::extras::set_accent,
+        crate::routes::servers::badges::fetch_catalog,
+        crate::routes::servers::badges::create_badge,
+        crate::routes::servers::badges::edit_badge,
+        crate::routes::servers::badges::delete_badge,
+        crate::routes::servers::badges::give_badge,
+        crate::routes::servers::badges::take_badge,
+        crate::routes::servers::badges::fetch_user_badges,
         crate::routes::servers::extras::fetch_discord_template,
         // User Information
         fetch_self::fetch,

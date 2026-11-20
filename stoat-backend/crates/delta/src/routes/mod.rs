@@ -14,6 +14,7 @@ mod push;
 mod root;
 mod safety;
 mod servers;
+pub use servers::social::temp_ban_sweeper;
 mod sync;
 mod users;
 mod webhooks;

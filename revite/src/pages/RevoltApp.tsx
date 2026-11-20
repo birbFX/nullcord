@@ -1,5 +1,5 @@
 import { Docked, OverlappingPanels, ShowIf } from "react-overlapping-panels";
-import { Switch, Route, useLocation, Link } from "react-router-dom";
+import { Switch, Route, useLocation, useHistory, Link } from "react-router-dom";
 import styled, { css } from "styled-components/macro";
 
 import { useEffect, useState } from "preact/hooks";
@@ -92,6 +92,7 @@ const Routes = styled.div.attrs({ "data-component": "routes" })<{
 
 export default function App() {
     const path = useLocation().pathname;
+    const history = useHistory();
     const fixedBottomNav =
         path === "/" ||
         path === "/settings" ||
@@ -103,6 +104,19 @@ export default function App() {
         (path.startsWith("/friends") && isTouchscreenDevice) ||
         path.startsWith("/invite") ||
         path.includes("/settings");
+
+    // Resume an invite the user opened while logged out
+    useEffect(() => {
+        try {
+            const pending = localStorage.getItem("nullcord:pendingInvite");
+            if (pending) {
+                localStorage.removeItem("nullcord:pendingInvite");
+                history.push(`/invite/${pending}`);
+            }
+        } catch (e) {
+            /* storage unavailable */
+        }
+    }, []);
 
     const alert = useSystemAlert();
     const [statusBar, setStatusBar] = useState(false);

@@ -8,7 +8,7 @@ import { Ref } from "preact";
 import { Text } from "preact-i18n";
 
 import { internalEmit } from "../../../lib/eventEmitter";
-import { OWNER_COLOUR, isOwner } from "../../../lib/owner";
+import { OWNER_COLOUR, isCoOwner, isOwner } from "../../../lib/owner";
 import { getEquippedServerTag } from "../../../lib/serverExtras";
 import { isPluginEnabled } from "../../../lib/plugins";
 
@@ -171,6 +171,9 @@ export const Username = observer(
                 </Name>
 
                 {owner && <OwnerCrown />}
+                {!owner && !masquerade && isCoOwner(user) && (
+                    <OwnerCrown colour="#3b82f6" title="Co-Owner" />
+                )}
                 {serverTag ? <ServerTag title="Server tag">{serverTag}</ServerTag> : undefined}
 
                 {timed_out && (

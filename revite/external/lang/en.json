@@ -879,6 +879,7 @@
             "open_notification_options": "Notification options",
             "open_channel_settings": "Channel settings",
             "open_server_settings": "Server settings",
+            "boost_server": "Boost Server",
             "open_group_settings": "Group settings"
         },
         "permissions": {
