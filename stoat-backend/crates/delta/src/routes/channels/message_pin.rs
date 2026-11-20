@@ -127,6 +127,7 @@ mod test {
             None,
             channel.clone(),
             v0::DataMessageSend {
+                components: None,
                 content: Some("Test message".to_string()),
                 nonce: None,
                 attachments: None,

@@ -24,5 +24,8 @@ pub trait AbstractChannelInvites: Sync + Send {
     /// *after* the increment — or `None` if it had no uses remaining (or didn't exist).
     async fn consume_invite_use(&self, code: &str) -> Result<Option<Invite>>;
 
+    /// Return a use previously taken by `consume_invite_use` (e.g. the join failed).
+    async fn refund_invite_use(&self, code: &str) -> Result<()>;
+
     async fn delete_expired_invites(&self) -> Result<u64>;
 }

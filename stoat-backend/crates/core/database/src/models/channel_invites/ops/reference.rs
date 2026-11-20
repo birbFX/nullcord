@@ -76,6 +76,14 @@ impl AbstractChannelInvites for ReferenceDb {
         Ok(Some(invite.clone()))
     }
 
+    async fn refund_invite_use(&self, code: &str) -> Result<()> {
+        let mut invites = self.channel_invites.lock().await;
+        if let Some(Invite::Server { uses, .. } | Invite::Group { uses, .. }) = invites.get_mut(code) {
+            *uses = uses.saturating_sub(1);
+        }
+        Ok(())
+    }
+
     async fn delete_expired_invites(&self) -> Result<u64> {
         let mut invites = self.channel_invites.lock().await;
         let now = Timestamp::now_utc();
@@ -103,5 +111,45 @@ impl AbstractChannelInvites for ReferenceDb {
         }
 
         Ok(count)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{AbstractChannelInvites, Invite, ReferenceDb};
+
+    fn invite(max_uses: Option<u64>) -> Invite {
+        Invite::Server {
+            code: "testcode".into(),
+            server: "s".into(),
+            creator: "c".into(),
+            channel: "ch".into(),
+            max_uses,
+            uses: 0,
+            expires: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn max_uses_enforced_and_refundable() {
+        let db = ReferenceDb::default();
+        db.insert_invite(&invite(Some(2))).await.unwrap();
+
+        assert!(db.consume_invite_use("testcode").await.unwrap().is_some());
+        assert!(db.consume_invite_use("testcode").await.unwrap().is_some());
+        assert!(db.consume_invite_use("testcode").await.unwrap().is_none());
+
+        db.refund_invite_use("testcode").await.unwrap();
+        assert!(db.consume_invite_use("testcode").await.unwrap().is_some());
+        assert!(db.consume_invite_use("testcode").await.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn unlimited_never_exhausts() {
+        let db = ReferenceDb::default();
+        db.insert_invite(&invite(None)).await.unwrap();
+        for _ in 0..50 {
+            assert!(db.consume_invite_use("testcode").await.unwrap().is_some());
+        }
     }
 }

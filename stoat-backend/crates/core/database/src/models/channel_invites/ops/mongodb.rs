@@ -90,6 +90,17 @@ impl AbstractChannelInvites for MongoDb {
             .map_err(|_| create_database_error!("find_one_and_update", COL))
     }
 
+    async fn refund_invite_use(&self, code: &str) -> Result<()> {
+        self.col::<Invite>(COL)
+            .update_one(
+                doc! { "_id": code, "uses": { "$gt": 0 } },
+                doc! { "$inc": { "uses": -1 } },
+            )
+            .await
+            .map(|_| ())
+            .map_err(|_| create_database_error!("update_one", COL))
+    }
+
     async fn delete_expired_invites(&self) -> Result<u64> {
         let now = bson::DateTime::now().timestamp_millis();
 

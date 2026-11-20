@@ -145,6 +145,18 @@ pub async fn message_send(
         interactions.validate(db, &permissions).await?;
     }
 
+    // Server automod: members without Manage Messages are held to the server's rules
+    if let (Some(server), Some(content)) = (query.server_ref(), data.content.as_deref()) {
+        if !permissions.has_channel_permission(ChannelPermission::ManageMessages) {
+            let config = crate::routes::servers::community::load_automod(db, &server.id).await;
+            if let Some(reason) = crate::routes::servers::community::automod_violation(&config, content) {
+                return Err(create_error!(FailedValidation {
+                    error: format!("Blocked by server automod: {reason}")
+                }));
+            }
+        }
+    }
+
     // Disallow mentions for new users (TRUST-0: <12 hours age) in public servers
     let allow_mentions = if let Some(server) = query.server_ref() {
         if server.discoverable {
@@ -306,6 +318,7 @@ mod test {
             Some(&harness.amqp),
             locked_channel.clone(),
             v0::DataMessageSend {
+                components: None,
                 content: Some(format!("<@{}>", second_user.id)),
                 nonce: None,
                 attachments: None,
@@ -346,6 +359,7 @@ mod test {
             Some(&harness.amqp),
             locked_channel.clone(),
             v0::DataMessageSend {
+                components: None,
                 content: Some(format!("<@{}>", second_user.id)),
                 nonce: None,
                 attachments: None,
@@ -395,6 +409,7 @@ mod test {
             Some(&harness.amqp),
             locked_channel.clone(),
             v0::DataMessageSend {
+                components: None,
                 content: Some(format!("<@{}>", second_user.id)),
                 nonce: None,
                 attachments: None,
@@ -437,6 +452,7 @@ mod test {
             Some(&harness.amqp),
             channel.clone(),
             v0::DataMessageSend {
+                components: None,
                 content: Some("Message with reply".to_string()),
                 nonce: None,
                 attachments: None,
@@ -488,6 +504,7 @@ mod test {
             Some(&harness.amqp),
             channel.clone(),
             v0::DataMessageSend {
+                components: None,
                 content: Some("Message with missing reply".to_string()),
                 nonce: None,
                 attachments: None,
@@ -525,6 +542,7 @@ mod test {
             Some(&harness.amqp),
             channel.clone(),
             v0::DataMessageSend {
+                components: None,
                 content: Some("Message with missing reply".to_string()),
                 nonce: None,
                 attachments: None,
@@ -556,6 +574,7 @@ mod test {
             Some(&harness.amqp),
             channel.clone(),
             v0::DataMessageSend {
+                components: None,
                 content: Some("Message with missing reply".to_string()),
                 nonce: None,
                 attachments: None,
@@ -610,6 +629,7 @@ mod test {
             Some(&harness.amqp),
             channel.clone(),
             v0::DataMessageSend {
+                components: None,
                 content: Some(format!("Mentioning @everyone and role <%{}>", &role.id)),
                 nonce: None,
                 attachments: None,
@@ -655,6 +675,7 @@ mod test {
             Some(&harness.amqp),
             channel.clone(),
             v0::DataMessageSend {
+                components: None,
                 content: Some(format!("Mentioning `@everyone` and role `<%{}>`", &role.id)),
                 nonce: None,
                 attachments: None,
@@ -725,6 +746,7 @@ mod test {
             Some(&harness.amqp),
             channel.clone(),
             v0::DataMessageSend {
+                components: None,
                 content: Some(format!("Mentioning @everyone and role <%{}>", &role.id)),
                 nonce: None,
                 attachments: None,

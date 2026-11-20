@@ -39,6 +39,9 @@ pub async fn join(
         .await;
     }
 
+    // The use was already consumed above; give it back if the join itself fails
+    // (banned, already a member, ...) so failed attempts can't exhaust the invite.
+    let result: Result<Json<v0::InviteJoinResponse>> = async {
     match &invite {
         Invite::Server { server, .. } => {
             let server = db.fetch_server(server).await?;
@@ -64,4 +67,12 @@ pub async fn join(
             }
         }
     }
+    }
+    .await;
+
+    if result.is_err() {
+        let _ = db.refund_invite_use(invite.code()).await;
+    }
+
+    result
 }
