@@ -17,11 +17,9 @@ let registration: ServiceWorkerRegistration | undefined;
 
 export const updateSW = registerSW({
     onNeedRefresh() {
-        if (forceUpdate) {
-            updateSW(true);
-        } else {
-            internalEmit("PWA", "update");
-        }
+        // Always apply updates straight away; a stale client keeps running
+        // old buggy code until it is reloaded.
+        updateSW(true);
     },
     onOfflineReady() {
         console.info("Ready to work offline.");
@@ -31,7 +29,8 @@ export const updateSW = registerSW({
         registration = r;
 
         // Check for updates every hour
-        setInterval(() => r!.update(), INTERVAL_HOUR);
+        r?.update();
+        setInterval(() => r!.update(), 10 * 60 * 1000);
     },
 });
 

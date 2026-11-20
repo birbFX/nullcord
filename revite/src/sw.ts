@@ -3,6 +3,17 @@ import { precacheAndRoute, cleanupOutdatedCaches } from "workbox-precaching";
 
 declare let self: ServiceWorkerGlobalScope;
 
+// Take over as soon as a new build is deployed. Otherwise the old worker keeps
+// serving the cached app shell (and the old hashed bundle) until every tab is
+// closed, so fixes never reach people who just refresh.
+self.addEventListener("install", () => {
+    self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+    event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener("message", (event) => {
     if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
 });
