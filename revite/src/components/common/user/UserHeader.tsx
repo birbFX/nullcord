@@ -11,7 +11,9 @@ import { Header, IconButton } from "@revoltchat/ui";
 
 import { isTouchscreenDevice } from "../../../lib/isTouchscreenDevice";
 import {
+    CO_OWNER_COLOUR,
     OWNER_COLOUR,
+    isCoOwner,
     displayDiscriminator,
     isNitro,
     isOwner,
@@ -20,6 +22,7 @@ import {
 import { modalController } from "../../../controllers/modals/ModalController";
 import Tooltip from "../Tooltip";
 import OwnerBadge from "./OwnerBadge";
+import OwnerCrown from "./OwnerCrown";
 import UserStatus from "./UserStatus";
 
 const HeaderBase = styled.div`
@@ -77,15 +80,20 @@ interface Props {
 
 export default observer(({ user }: Props) => {
     const owner = isOwner(user._id);
+    const coOwner = !owner && isCoOwner(user);
+    const nameColour = owner ? OWNER_COLOUR : coOwner ? CO_OWNER_COLOUR : undefined;
 
     return (
         <Header topBorder palette="secondary">
             <HeaderBase>
                 <div
                     className="new-name"
-                    style={owner ? { color: OWNER_COLOUR } : undefined}>
+                    style={nameColour ? { color: nameColour } : undefined}>
                     {user.display_name ?? user.username}
                     {owner && <OwnerBadge size={16} />}
+                    {coOwner && (
+                        <OwnerCrown colour={CO_OWNER_COLOUR} title="Co-Owner" />
+                    )}
                     {isNitro(user) && (
                         <span className="nitro-pill">NITRO</span>
                     )}
@@ -94,7 +102,7 @@ export default observer(({ user }: Props) => {
                     <Tooltip content={<Text id="app.special.copy_username" />}>
                         <span
                             className="username"
-                            style={owner ? { color: OWNER_COLOUR } : undefined}
+                            style={nameColour ? { color: nameColour } : undefined}
                             onClick={() =>
                                 modalController.writeText(user.username)
                             }>

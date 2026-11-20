@@ -13,6 +13,9 @@ export const OWNER_ID = "01M5KCFRPDZZHPADH5BKJT19VG";
 /** Gold used for the owner's name. */
 export const OWNER_COLOUR = "#f7c948";
 
+/** Blue used for the co-owner's name. */
+export const CO_OWNER_COLOUR = "#3b82f6";
+
 /** Bit 1 of user.badges = Developer. */
 export const DEVELOPER_BADGE = 1;
 

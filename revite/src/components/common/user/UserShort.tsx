@@ -8,7 +8,7 @@ import { Ref } from "preact";
 import { Text } from "preact-i18n";
 
 import { internalEmit } from "../../../lib/eventEmitter";
-import { OWNER_COLOUR, isCoOwner, isOwner } from "../../../lib/owner";
+import { CO_OWNER_COLOUR, OWNER_COLOUR, isCoOwner, isOwner } from "../../../lib/owner";
 import { getEquippedServerTag } from "../../../lib/serverExtras";
 import { isPluginEnabled } from "../../../lib/plugins";
 
@@ -159,6 +159,8 @@ export const Username = observer(
         if (owner) {
             // The owner's name is always gold, even if a role colour is set.
             color = OWNER_COLOUR;
+        } else if (!masquerade && isCoOwner(user)) {
+            color = CO_OWNER_COLOUR;
         }
 
         const el = (

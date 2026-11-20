@@ -124,7 +124,7 @@ export default observer(function UserBadges({
     max = 6,
 }: Props) {
     const client = useClient();
-    const ownerAccount = isOwner(uid);
+    const ownerAccount = isOwner(uid) || !!(badges & Badges.CoOwner);
     const items: Item[] = [];
     const earlyMember = (() => {
         if (!uid) return false;
@@ -137,7 +137,7 @@ export default observer(function UserBadges({
         });
     })();
 
-    if (earlyMember || isOwner(uid)) {
+    if (earlyMember || ownerAccount) {
         items.push({
             key: "early_member",
             title: "Early Member (under 1k)",
