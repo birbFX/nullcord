@@ -258,7 +258,9 @@ export default function CreateServer({
                     ) as React.ReactChild,
                 },
             }}
-            callback={async ({ name }) => {
+            callback={async ({ name: rawName }) => {
+                const name = (rawName ?? "").trim();
+                if (!name) throw "Your server needs a name.";
                 // The server exists as soon as the POST succeeds; local
                 // bookkeeping failing (or racing the websocket event) must
                 // not be reported as a failed create.

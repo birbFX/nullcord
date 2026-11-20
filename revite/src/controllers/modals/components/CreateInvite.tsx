@@ -53,17 +53,21 @@ export default function CreateInvite({
         setError(undefined);
         setCode(undefined);
 
-        target
-            .createInvite()
+        (client.api.post(`/channels/${target._id}/invites`, {}) as Promise<{
+            _id: string;
+        }>)
             .then(({ _id }) => {
                 setCode(_id);
-                recordInviteCreated(
-                    client.user?._id,
-                    target.server_id,
-                    _id,
-                );
+                try {
+                    recordInviteCreated(client.user?._id, target.server_id, _id);
+                } catch (err) {
+                    console.warn("Invite bookkeeping failed", err);
+                }
             })
-            .catch((err) => setError(String(takeError(err))))
+            .catch((err) => {
+                console.error("Invite creation failed", err);
+                setError(String(takeError(err)));
+            })
             .finally(() => setProcessing(false));
     };
 

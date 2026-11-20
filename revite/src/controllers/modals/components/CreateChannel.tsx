@@ -4,6 +4,7 @@ import { Text } from "preact-i18n";
 
 import { ModalForm } from "@revoltchat/ui";
 
+import { setForum } from "../../../lib/forums";
 import { ModalProps } from "../types";
 
 /**
@@ -47,17 +48,29 @@ export default function CreateChannel({
                             ) as React.ReactChild,
                             value: "Voice",
                         },
+                        {
+                            name: "Forum" as any,
+                            value: "Forum",
+                        },
                     ],
                 },
             }}
             defaults={{
                 type: "Text",
             }}
-            callback={async ({ name, type }) => {
+            callback={async ({ name: rawName, type }) => {
+                const name = (rawName ?? "").trim();
+                if (!name) throw "Your channel needs a name.";
+
                 const channel = await target.createChannel({
-                    type: type as "Text" | "Voice",
+                    type: type === "Voice" ? "Voice" : "Text",
                     name,
                 });
+                if (type === "Forum") {
+                    await setForum(target._id, channel._id, true).catch(
+                        (err) => console.warn("Could not mark forum", err),
+                    );
+                }
 
                 if (cb) {
                     cb(channel as any);

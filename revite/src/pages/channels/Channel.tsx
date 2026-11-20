@@ -27,6 +27,8 @@ import { PageHeader } from "../../components/ui/Header";
 import { useClient } from "../../controllers/client/ClientController";
 import ChannelHeader from "./ChannelHeader";
 import { MessageArea } from "./messaging/MessageArea";
+import ForumView from "./ForumView";
+import { useThreads } from "../../lib/forums";
 import VoiceHeader from "./voice/VoiceHeader";
 import { voiceState } from "../../lib/vortex/VoiceState";
 import { isVoiceChannel } from "../../lib/voiceChannels";
@@ -133,9 +135,17 @@ export const Channel = observer(
             return <VoiceChannel channel={channel} />;
         }
 
-        return <TextChannel channel={channel} />;
+        return <ForumOrText channel={channel} />;
     },
 );
+
+const ForumOrText = observer(({ channel }: { channel: ChannelI }) => {
+    const list = useThreads(channel.server_id);
+    if (list?.forums.includes(channel._id)) {
+        return <ForumView channel={channel} />;
+    }
+    return <TextChannel channel={channel} />;
+});
 
 const TextChannel = observer(({ channel }: { channel: ChannelI }) => {
     const layout = useApplicationState().layout;

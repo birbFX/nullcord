@@ -23,7 +23,13 @@ pub async fn create_server_channel(
     server: Reference<'_>,
     data: Json<v0::DataCreateServerChannel>,
 ) -> Result<Json<v0::Channel>> {
-    let data = data.into_inner();
+    let mut data = data.into_inner();
+    data.name = data.name.trim().to_string();
+    if data.name.is_empty() {
+        return Err(create_error!(FailedValidation {
+            error: "Your channel needs a name.".to_string()
+        }));
+    }
     data.validate().map_err(|error| {
         create_error!(FailedValidation {
             error: error.to_string()
