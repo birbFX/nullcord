@@ -26,14 +26,16 @@ export function takeError(error: any): string {
             case 403:
                 return "Forbidden";
             default:
-                return "UnknownError";
+                console.error("API error", error.response.status, data);
+                return `UnknownError (HTTP ${error.response.status})`;
         }
     } else if (error.request) {
         return "NetworkError";
     }
 
     console.error(error);
-    return "UnknownError";
+    const detail = error?.message ?? (typeof error === "string" ? error : "");
+    return detail ? `UnknownError (${detail})` : "UnknownError";
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
