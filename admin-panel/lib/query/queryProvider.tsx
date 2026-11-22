@@ -5,11 +5,9 @@ import { ReactNode } from "react";
 
 export const queryClient = new QueryClient();
 
-export async function ClientQueryProvider({
-  children,
-}: {
-  children: ReactNode;
-}) {
+// Client components must not be async: React 19 re-suspends on the promise
+// every render and throws error #482.
+export function ClientQueryProvider({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
