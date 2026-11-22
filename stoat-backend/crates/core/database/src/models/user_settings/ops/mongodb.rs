@@ -1,6 +1,6 @@
 use ::mongodb::options::FindOneOptions;
 use bson::to_bson;
-use bson::Document;
+use bson::{Bson, Document};
 use mongodb::options::UpdateOptions;
 use revolt_result::Result;
 
@@ -23,16 +23,34 @@ impl AbstractUserSettings for MongoDb {
             projection.insert(key, 1);
         }
 
-        Ok(query!(
-            self,
-            find_one_with_options,
-            COL,
-            doc! {
-                "_id": id
-            },
-            FindOneOptions::builder().projection(projection).build()
-        )?
-        .unwrap_or_default())
+        // Read as a raw document and coerce, so a legacy/foreign writer that
+        // stored the timestamp as a double or int32 cannot break (or panic) the
+        // request.
+        let doc = self
+            .col::<Document>(COL)
+            .find_one(doc! { "_id": id })
+            .with_options(FindOneOptions::builder().projection(projection).build())
+            .await
+            .map_err(|_| create_database_error!("find_one", "user_settings"))?
+            .unwrap_or_default();
+
+        let mut out = UserSettings::new();
+        for (key, value) in doc {
+            if let Bson::Array(parts) = value {
+                let ts = match parts.first() {
+                    Some(Bson::Int64(n)) => *n,
+                    Some(Bson::Int32(n)) => *n as i64,
+                    Some(Bson::Double(n)) => *n as i64,
+                    _ => 0,
+                };
+                let data = match parts.get(1) {
+                    Some(Bson::String(s)) => s.clone(),
+                    _ => String::new(),
+                };
+                out.insert(key, (ts, data));
+            }
+        }
+        Ok(out)
     }
 
     /// Update a subset of user settings

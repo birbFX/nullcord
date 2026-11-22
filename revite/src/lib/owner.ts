@@ -24,6 +24,7 @@ export const BADGE_TRIAL_MOD = 16384;
 export const BADGE_MOD = 32768;
 export const BADGE_OWNER_ROLE = 65536;
 export const BADGE_BESTIE = 131072;
+export const BADGE_HRNR_BESTIE = 524288;
 export const BADGE_CO_OWNER = 262144;
 
 type RoleUser = { _id?: string; privileged?: boolean; badges?: number | null } | null;

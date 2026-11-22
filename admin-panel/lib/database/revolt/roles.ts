@@ -23,6 +23,7 @@ export const BADGE = {
   Owner: 65536,
   Bestie: 131072,
   CoOwner: 262144,
+  HrnrBestie: 524288,
 } as const;
 
 /** The one login that is always the platform owner. */
@@ -47,6 +48,7 @@ export const BADGE_LABELS: { bit: number; label: string }[] = [
   { bit: BADGE.Sus, label: "sus" },
   { bit: BADGE.Morbin, label: "It's Morbin Time" },
   { bit: BADGE.Bestie, label: "birbfx's bestie" },
+  { bit: BADGE.HrnrBestie, label: "hrnr's bestie" },
 ];
 
 export type Rank = "owner" | "admin" | "none";

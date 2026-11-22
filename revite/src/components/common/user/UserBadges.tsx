@@ -34,6 +34,7 @@ enum Badges {
     Owner = 65536,
     Bestie = 131072,
     CoOwner = 262144,
+    HrnrBestie = 524288,
 }
 
 const BadgesBase = styled.div`
@@ -212,6 +213,21 @@ export default observer(function UserBadges({
             node: (
                 <Tooltip content="birbfx's bestie">
                     <img src="/assets/badges/bestie.svg" alt="birbfx's bestie" />
+                </Tooltip>
+            ),
+        });
+    }
+
+    if (badges & Badges.HrnrBestie) {
+        items.push({
+            key: "hrnr-bestie",
+            title: "hrnr's bestie",
+            node: (
+                <Tooltip content="hrnr's bestie">
+                    <img
+                        src="/assets/badges/hrnr-bestie.svg"
+                        alt="hrnr's bestie"
+                    />
                 </Tooltip>
             ),
         });
