@@ -141,9 +141,9 @@ export default observer(() => {
                             </Link>
 
                             {client.servers.get(
-                                "01M5KCHRW16JAS02MQN2SWRNX8",
+                                "YOUR_COMMUNITY_SERVER_ID",
                             ) ? (
-                                <Link to="/server/01M5KCHRW16JAS02MQN2SWRNX8">
+                                <Link to="/server/YOUR_COMMUNITY_SERVER_ID">
                                     <CategoryButton
                                         action="chevron"
                                         icon={<RightArrowCircle size={32} />}

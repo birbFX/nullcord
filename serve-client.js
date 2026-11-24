@@ -17,6 +17,18 @@ const PORT = Number(process.env.CLIENT_PORT || 5173);
 
 function headers(res, pathname) {
     res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("Permissions-Policy", "interest-cohort=()");
+
+    // The public deployment terminates TLS at Cloudflare. HSTS is only
+    // meaningful (and only safe) once the request is known to be HTTPS.
+    if (res.req?.headers["x-forwarded-proto"] === "https") {
+        res.setHeader(
+            "Strict-Transport-Security",
+            "max-age=31536000; includeSubDomains",
+        );
+    }
 
     if (
         /\/assets\/[^/]+[.-][A-Za-z0-9_-]{6,}\.(js|css|woff2?|png|jpe?g|gif|webp|svg|json|ico)$/.test(
@@ -49,6 +61,25 @@ const forwebHandler = fs.existsSync(path.join(FORWEB_DIST, "index.html"))
     : null;
 
 const server = http.createServer((req, res) => {
+    // Cloudflare passes the original scheme in X-Forwarded-Proto. Redirect
+    // safe requests to HTTPS and refuse to serve anything else over
+    // plaintext. Do not blindly forward request bodies across protocols.
+    if (req.headers["x-forwarded-proto"] === "http") {
+        const host = String(req.headers.host || "").replace(/[^A-Za-z0-9.:\[\]-]/g, "");
+        if (req.method === "GET" || req.method === "HEAD") {
+            res.writeHead(308, {
+                Location: `https://${host}${req.url}`,
+                "Cache-Control": "no-store",
+            });
+            res.end();
+            return;
+        }
+
+        res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+        res.end("HTTPS required\n");
+        return;
+    }
+
     // Connections sidecar (gitclone / TubeClone / ToKTok account linking)
     if (req.url.startsWith("/connections-api/")) {
         const up = http.request(

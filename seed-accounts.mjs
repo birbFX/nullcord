@@ -24,6 +24,8 @@
  * Env:
  *   NULLCORD_API_URL   API base URL (default http://127.0.0.1:14702)
  *   NULLCORD_INVITE    invite code (default canyonlake)
+ *   NULLCORD_INTERNAL_REGISTRATION_KEY  required when email verification is
+ *                      enabled; only accepted over direct loopback
  *   SEED_MODEL         Ollama model (default qwen2.5:3b)
  *   OLLAMA_HOST        Ollama base URL (default http://127.0.0.1:11434)
  */
@@ -688,6 +690,9 @@ class Api {
                     headers: {
                         "Content-Type": "application/json",
                         ...(token ? { "x-session-token": token } : {}),
+                        ...(process.env.NULLCORD_INTERNAL_REGISTRATION_KEY
+                            ? { "x-nullcord-internal": process.env.NULLCORD_INTERNAL_REGISTRATION_KEY }
+                            : {}),
                     },
                     body: body === undefined ? undefined : JSON.stringify(body),
                     signal: AbortSignal.timeout(45000),

@@ -9,6 +9,13 @@ use revolt_result::Result;
 use revolt_database::{Database, util::{email::{normalise_email, validate_email}, captcha::check_captcha}, EmailVerification};
 use revolt_models::v0;
 
+use crate::util::security::{TrustedIp, enforce_rate_limit};
+
+/// Verification emails are limited per address and per source so the
+/// endpoint cannot be used to mail-bomb an inbox or enumerate accounts.
+const RESEND_PER_EMAIL_PER_HOUR: u32 = 3;
+const RESEND_PER_IP_PER_HOUR: u32 = 10;
+
 /// # Resend Verification
 ///
 /// Resend account creation verification email.
@@ -16,6 +23,7 @@ use revolt_models::v0;
 #[post("/reverify", data = "<data>")]
 pub async fn resend_verification(
     db: &State<Database>,
+    client_ip: TrustedIp,
     data: Json<v0::DataResendVerification>,
 ) -> Result<EmptyResponse> {
     let data = data.into_inner();
@@ -29,11 +37,31 @@ pub async fn resend_verification(
     // Make sure email is valid and not blocked
     validate_email(&data.email)?;
 
-    // From this point on, do not report failure to the
-    // remote client, as this will open us up to user enumeration.
+    if let Ok(Some(ip_ban)) = db.fetch_ip_ban(&client_ip.0).await {
+        return Err(ip_ban.ban_error());
+    }
 
     // Normalise the email
     let email_normalised = normalise_email(data.email);
+
+    // Bound resends before touching the database or sending mail.
+    enforce_rate_limit(
+        "resend_ip",
+        &client_ip.0,
+        RESEND_PER_IP_PER_HOUR,
+        60 * 60,
+    )
+    .await?;
+    enforce_rate_limit(
+        "resend_email",
+        &email_normalised,
+        RESEND_PER_EMAIL_PER_HOUR,
+        60 * 60,
+    )
+    .await?;
+
+    // From this point on, do not report failure to the
+    // remote client, as this will open us up to user enumeration.
 
     // Try to find the relevant account
     if let Ok(Some(mut account)) = db

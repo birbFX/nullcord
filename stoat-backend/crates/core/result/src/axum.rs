@@ -121,6 +121,11 @@ impl IntoResponse for Error {
                 ).into_response()
             }
             ErrorType::LockedOut => StatusCode::FORBIDDEN,
+            ErrorType::EmailInUse => StatusCode::CONFLICT,
+            ErrorType::RateLimited { .. } => StatusCode::TOO_MANY_REQUESTS,
+            ErrorType::InsecureRequest => StatusCode::FORBIDDEN,
+            ErrorType::EmailUnavailable => StatusCode::SERVICE_UNAVAILABLE,
+            ErrorType::RiskBlocked { .. } => StatusCode::FORBIDDEN,
             ErrorType::TotpAlreadyEnabled => StatusCode::BAD_REQUEST,
             ErrorType::DisallowedMFAMethod => StatusCode::BAD_REQUEST,
             ErrorType::OperationFailed => StatusCode::INTERNAL_SERVER_ERROR,

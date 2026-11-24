@@ -957,7 +957,13 @@
         "ReachedMaximumBots": "You user has reached the limit of possible bots to create",
         "AudioPermissionBlock": "No access to your microphone. Please check your browser's configuration.",
         "DiscriminatorChangeRatelimited": "Too many tag changes.",
-        "LockedOut": "Too many login attempts, try again later or reset password."
+        "LockedOut": "Too many login attempts, try again later or reset password.",
+        "RateLimited": "Too many requests. Please wait a moment and try again.",
+        "TooManyRequests": "Too many requests. Please wait a moment and try again.",
+        "EmailUnavailable": "Registration is temporarily unavailable because email delivery is not configured. Please contact the instance operator.",
+        "InsecureRequest": "This request must be made over HTTPS.",
+        "RiskBlocked": "This network is temporarily blocked from that action. Please try again later or contact support.",
+        "UnverifiedAccountLogin": "Your account has not been verified yet. Check your email for the verification link."
     },
     "shortcuts": {
         "ctrlc": "Ctrl + C"

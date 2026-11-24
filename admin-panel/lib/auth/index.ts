@@ -1,13 +1,15 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
+import { authOptions } from "./serverConfig";
+
 /**
  * The admin panel is gated at login: only NullCord accounts with the
  * `privileged` flag (platform admins) can obtain a session. Once inside,
  * every panel scope is available.
  */
 async function requireEmail(): Promise<string> {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session?.user?.email) return redirect("/");
   return session.user.email;
 }

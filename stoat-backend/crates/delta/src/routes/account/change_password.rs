@@ -2,7 +2,7 @@
 //! PATCH /account/change/password
 use revolt_database::{
     util::password::{assert_safe, hash_password},
-    Account, Database, ValidatedTicket,
+    Account, Database, Session, ValidatedTicket,
 };
 use revolt_models::v0;
 use revolt_result::{create_error, Result};
@@ -17,6 +17,7 @@ use rocket_empty::EmptyResponse;
 #[patch("/change/password", data = "<data>")]
 pub async fn change_password(
     db: &State<Database>,
+    session: Session,
     validated_ticket: Option<ValidatedTicket>,
     mut account: Account,
     data: Json<v0::DataChangePassword>,
@@ -37,7 +38,14 @@ pub async fn change_password(
     account.password = hash_password(data.password)?;
 
     // Commit to database
-    account.save(db).await.map(|_| EmptyResponse)
+    account.save(db).await?;
+
+    // A password change invalidates every other session: a stolen session
+    // must not survive the credential rotation. Keep the caller signed in.
+    account
+        .delete_all_sessions(db, Some(session.id))
+        .await
+        .map(|_| EmptyResponse)
 }
 
 #[cfg(test)]

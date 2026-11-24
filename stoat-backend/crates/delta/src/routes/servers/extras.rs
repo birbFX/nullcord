@@ -127,7 +127,7 @@ pub struct ServerExtrasResponse {
 }
 
 fn is_admin(user: &User) -> bool {
-    user.privileged || user.id == "01M5KCFRPDZZHPADH5BKJT19VG"
+    user.privileged || user.id == "YOUR_PLATFORM_OWNER_ID"
 }
 
 async fn capacity(db: &Database, user: &User) -> u32 {

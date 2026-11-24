@@ -173,7 +173,7 @@ class ClientController {
                 knowledge: "existing",
             });
         } catch (err) {
-            if (takeError(err) === "Unauthorized") {
+            if (["Unauthorized", "InvalidSession", "MissingHeaders"].includes(takeError(err))) {
                 this.sessions.delete(user_id);
                 this.current = null;
                 this.pickNextSession();
@@ -211,7 +211,7 @@ class ClientController {
             })
             .catch((err) => {
                 const error = takeError(err);
-                if (error === "Unauthorized") {
+                if (["Unauthorized", "InvalidSession", "MissingHeaders"].includes(error)) {
                     this.sessions.delete(user_id);
                     this.current = null;
                     this.pickNextSession();

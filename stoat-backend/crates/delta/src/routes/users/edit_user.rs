@@ -175,7 +175,7 @@ pub async fn edit(
     Ok(Json(user.into_self(false).await))
 }
 
-const PLATFORM_OWNER_ID: &str = "01M5KCFRPDZZHPADH5BKJT19VG";
+const PLATFORM_OWNER_ID: &str = "YOUR_PLATFORM_OWNER_ID";
 /// Badge bit granted to platform owners (full power, cannot be demoted).
 const OWNER_BADGE: i32 = 65536;
 

@@ -1,5 +1,9 @@
-use crate::{AbstractAccounts, Account, DeletionInfo, EmailVerification, Lockout, ReferenceDb};
+use crate::{
+    util::email::{hash_token, is_token_digest},
+    AbstractAccounts, Account, DeletionInfo, EmailVerification, Lockout, ReferenceDb,
+};
 use iso8601_timestamp::{Duration, Timestamp};
+use revolt_config::config;
 use revolt_result::Result;
 
 #[async_trait]
@@ -27,12 +31,17 @@ impl AbstractAccounts for ReferenceDb {
 
     /// Find account with active pending email verification
     async fn fetch_account_with_email_verification(&self, token_to_match: &str) -> Result<Account> {
+        let config = config().await;
+        let digest = hash_token(token_to_match, &config.api.security.token_pepper);
         let accounts = self.accounts.lock().await;
         accounts
             .values()
             .find(|account| match &account.verification {
                 EmailVerification::Pending { token, .. }
-                | EmailVerification::Moving { token, .. } => token == token_to_match,
+                | EmailVerification::Moving { token, .. } => {
+                    token == &digest
+                        || (!is_token_digest(token_to_match) && token == token_to_match)
+                }
                 _ => false,
             })
             .cloned()
@@ -41,12 +50,15 @@ impl AbstractAccounts for ReferenceDb {
 
     /// Find account with active password reset
     async fn fetch_account_with_password_reset(&self, token: &str) -> Result<Account> {
+        let config = config().await;
+        let digest = hash_token(token, &config.api.security.token_pepper);
         let accounts = self.accounts.lock().await;
         accounts
             .values()
             .find(|account| {
                 if let Some(reset) = &account.password_reset {
-                    reset.token == token
+                    reset.token == digest
+                        || (!is_token_digest(token) && reset.token == token)
                 } else {
                     false
                 }
@@ -57,13 +69,16 @@ impl AbstractAccounts for ReferenceDb {
 
     /// Find account with active deletion token
     async fn fetch_account_with_deletion_token(&self, token_to_match: &str) -> Result<Account> {
+        let config = config().await;
+        let digest = hash_token(token_to_match, &config.api.security.token_pepper);
         let accounts = self.accounts.lock().await;
         accounts
             .values()
             .find(|account| {
                 if let Some(DeletionInfo::WaitingForVerification { token, .. }) = &account.deletion
                 {
-                    token == token_to_match
+                    token == &digest
+                        || (!is_token_digest(token_to_match) && token == token_to_match)
                 } else {
                     false
                 }

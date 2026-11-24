@@ -7,6 +7,23 @@ use std::{collections::HashMap, sync::LazyLock};
 
 static CLIENT: LazyLock<Client> = LazyLock::new(Client::new);
 
+/// Headers that must never be forwarded to an external risk/intelligence
+/// provider.
+fn is_sensitive_header(name: &str) -> bool {
+    matches!(
+        name.to_ascii_lowercase().as_str(),
+        "authorization"
+            | "proxy-authorization"
+            | "cookie"
+            | "set-cookie"
+            | "x-session-token"
+            | "x-mfa-ticket"
+            | "x-bot-token"
+            | "x-admin-key"
+            | "x-nullcord-internal"
+    )
+}
+
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct ShieldValidationInput {
     /// Remote user IP
@@ -93,6 +110,7 @@ impl<'r> rocket::request::FromRequest<'r> for ShieldValidationInput {
                 request
                     .headers()
                     .iter()
+                    .filter(|entry| !is_sensitive_header(entry.name.as_str()))
                     .map(|entry| (entry.name.to_string(), entry.value.to_string()))
                     .collect(),
             ),
@@ -126,6 +144,7 @@ impl<S> axum::extract::FromRequestParts<S> for ShieldValidationInput {
                 parts
                     .headers
                     .iter()
+                    .filter(|(name, _)| !is_sensitive_header(name.as_str()))
                     .map(|(name, value)| {
                         (
                             name.to_string(),

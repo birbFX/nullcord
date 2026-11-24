@@ -10,6 +10,11 @@ use revolt_result::Result;
 use revolt_database::{Database, EmailVerification, util::{email::{normalise_email, validate_email}, captcha::check_captcha}};
 use revolt_models::v0;
 
+use crate::util::security::{TrustedIp, enforce_rate_limit};
+
+const RESET_PER_EMAIL_PER_HOUR: u32 = 3;
+const RESET_PER_IP_PER_HOUR: u32 = 10;
+
 /// # Send Password Reset
 ///
 /// Send an email to reset account password.
@@ -17,6 +22,7 @@ use revolt_models::v0;
 #[post("/reset_password", data = "<data>")]
 pub async fn send_password_reset(
     db: &State<Database>,
+    client_ip: TrustedIp,
     data: Json<v0::DataSendPasswordReset>,
 ) -> Result<EmptyResponse> {
     let data = data.into_inner();
@@ -30,11 +36,29 @@ pub async fn send_password_reset(
     // Make sure email is valid and not blocked
     validate_email(&data.email)?;
 
+    // Bound reset emails per address and source.
+    let email_normalised = normalise_email(data.email);
+    enforce_rate_limit(
+        "reset_ip",
+        &client_ip.0,
+        RESET_PER_IP_PER_HOUR,
+        60 * 60,
+    )
+    .await?;
+    enforce_rate_limit(
+        "reset_email",
+        &email_normalised,
+        RESET_PER_EMAIL_PER_HOUR,
+        60 * 60,
+    )
+    .await?;
+
+    if let Ok(Some(ip_ban)) = db.fetch_ip_ban(&client_ip.0).await {
+        return Err(ip_ban.ban_error());
+    }
+
     // From this point on, do not report failure to the
     // remote client, as this will open us up to user enumeration.
-
-    // Normalise the email
-    let email_normalised = normalise_email(data.email);
 
     // Try to find the relevant account
     if let Ok(Some(mut account)) = db

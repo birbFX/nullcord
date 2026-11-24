@@ -1,4 +1,6 @@
 use crate::{Database, Session};
+use iso8601_timestamp::Timestamp;
+use revolt_config::config;
 use revolt_result::Error;
 use rocket::{
     Request,
@@ -35,6 +37,33 @@ impl<'r> FromRequest<'r> for Session {
                         .fetch_session_by_token(token)
                         .await
                     {
+                        let config = config().await;
+                        if session.is_expired(
+                            config.api.security.session_idle_timeout,
+                            config.api.security.session_absolute_timeout,
+                        ) {
+                            // Expired sessions are removed on first use so a
+                            // stolen token cannot be replayed after the
+                            // configured lifetime.
+                            let _ = session.clone().delete(db).await;
+                            return Outcome::Error((
+                                Status::Unauthorized,
+                                create_error!(InvalidSession),
+                            ));
+                        }
+
+                        // Refresh the idle deadline at most once a minute to
+                        // avoid a write on every request.
+                        if Timestamp::now_utc()
+                            .duration_since(session.last_seen)
+                            .whole_seconds()
+                            > 60
+                        {
+                            let _ = db
+                                .update_session_last_seen(&session.id, Timestamp::now_utc())
+                                .await;
+                        }
+
                         Outcome::Success(session)
                     } else {
                         Outcome::Error((Status::Unauthorized, create_error!(InvalidSession)))

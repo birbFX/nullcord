@@ -29,6 +29,16 @@ impl<'r> FromRequest<'r> for Account {
             Outcome::Success(session) => {
                 let db = request.rocket().state::<Database>().expect("`Database`");
                 if let Ok(account) = db.fetch_account(&session.user_id).await {
+                    if matches!(
+                        account.verification,
+                        crate::EmailVerification::Pending { .. }
+                    ) {
+                        return Outcome::Error((
+                            Status::Forbidden,
+                            create_error!(UnverifiedAccount),
+                        ));
+                    }
+
                     match db.fetch_user(&session.user_id).await {
                         Ok(user) => match user.ban_error() {
                             Some(error) => {

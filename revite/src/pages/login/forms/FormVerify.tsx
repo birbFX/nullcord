@@ -1,10 +1,9 @@
-import { useHistory, useParams } from "react-router-dom";
+import { useHistory, useParams, Link } from "react-router-dom";
 
 import { useEffect, useState } from "preact/hooks";
+import { Text } from "preact-i18n";
 
 import { Category, Preloader } from "@revoltchat/ui";
-
-import { I18nError } from "../../../context/Locale";
 
 import { useApi } from "../../../controllers/client/ClientController";
 import { takeError } from "../../../controllers/client/jsx/error";
@@ -25,22 +24,49 @@ export function FormResend() {
 
 export function FormVerify() {
     const [error, setError] = useState<undefined | string>(undefined);
+    const [verifying, setVerifying] = useState(true);
     const { token } = useParams<{ token: string }>();
     const history = useHistory();
     const api = useApi();
 
     useEffect(() => {
         api.post(`/auth/account/verify/${token as ""}`)
-            .then(() => history.push("/login"))
-            .catch((err) => setError(takeError(err)));
+            .then(() => {
+                setVerifying(false);
+                history.push("/login");
+            })
+            .catch((err) => {
+                setError(takeError(err));
+                setVerifying(false);
+            });
         // eslint-disable-next-line
     }, []);
 
-    return error ? (
+    if (verifying) return <Preloader type="ring" />;
+
+    if (!error) {
+        return (
+            <Category>
+                <Text id="login.verified_account" />
+            </Category>
+        );
+    }
+
+    return (
         <Category>
-            <I18nError error={error} />
+            <p style={{ fontSize: "0.9em", marginBottom: "1em" }}>
+                <Text id={`error.${error}`} children={error} />
+            </p>
+            <p style={{ fontSize: "0.85em" }}>
+                <Link to="/login/resend">
+                    <Text id="login.resend" />
+                </Link>
+            </p>
+            <p style={{ fontSize: "0.85em" }}>
+                <Link to="/login">
+                    <Text id="login.remembered" />
+                </Link>
+            </p>
         </Category>
-    ) : (
-        <Preloader type="ring" />
     );
 }

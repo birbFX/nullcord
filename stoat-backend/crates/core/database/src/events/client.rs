@@ -348,8 +348,12 @@ pub enum EventV1 {
     },
 
     /// Auth events
+    ///
+    /// Deliberately carries only the account id: the full account record
+    /// contains the password hash and email address and must never be
+    /// published to the shared event bus.
     CreateAccount {
-        account: Account,
+        account_id: String,
     },
     CreateSession {
         session: Session,
@@ -424,7 +428,9 @@ impl EventV1 {
     /// Publish helper wrapper
     pub async fn p(self, channel: String) {
         #[cfg(debug_assertions)]
-        info!("Publishing event to {channel}: {self:?}");
+        // Never log the event payload: authentication events contain email
+        // addresses, password hashes and session tokens.
+        info!("Publishing event to {channel}");
 
         let redis_channel = self.redis_suffix(channel.clone());
 
@@ -441,7 +447,8 @@ impl EventV1 {
 
     pub async fn p_broadcast(self, channels: Vec<String>) {
         #[cfg(debug_assertions)]
-        info!("Broadcasting event to channels: {channels:?}: {self:?}");
+        // Payloads may contain credentials or private message content.
+        info!("Broadcasting event to channels: {channels:?}");
 
         for channel in &channels {
             let redis_channel = self.redis_suffix(channel.clone());

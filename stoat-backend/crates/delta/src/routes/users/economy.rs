@@ -6,8 +6,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-const OWNER_ID: &str = "01M5KCFRPDZZHPADH5BKJT19VG";
-const CLL_SERVER_ID: &str = "01M5KCHRW16JAS02MQN2SWRNX8";
+const OWNER_ID: &str = "YOUR_PLATFORM_OWNER_ID";
+const CLL_SERVER_ID: &str = "YOUR_COMMUNITY_SERVER_ID";
 const ECONOMY_KEY: &str = "nullcord:economy";
 const DAILY_QUESTS: usize = 6;
 

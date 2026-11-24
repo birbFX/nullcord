@@ -20,14 +20,32 @@ pub struct IpBan {
     #[serde(default)]
     pub message: Option<String>,
     /// Expiry in milliseconds since Unix epoch; absent/null means permanent
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_timestamp_opt")]
     pub expires_at: Option<Timestamp>,
     /// Moderator who applied the ban
     #[serde(default)]
     pub created_by: Option<String>,
     /// Creation time
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_timestamp_opt")]
     pub created_at: Option<Timestamp>,
+}
+
+/// Accept both the ISO-8601 strings written by the Rust API and the Unix
+/// millisecond numbers written by the admin panel/legacy JSON file.
+fn deserialize_timestamp_opt<'de, D>(deserializer: D) -> Result<Option<Timestamp>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::Deserialize;
+
+    match Option::<serde_json::Value>::deserialize(deserializer)? {
+        None | Some(serde_json::Value::Null) => Ok(None),
+        Some(serde_json::Value::String(value)) => Ok(Timestamp::parse(&value)),
+        Some(serde_json::Value::Number(value)) => {
+            Ok(value.as_i64().map(Timestamp::from_unix_timestamp_ms))
+        }
+        _ => Ok(None),
+    }
 }
 
 impl IpBan {

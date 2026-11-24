@@ -96,6 +96,11 @@ impl<'r> Responder<'r, 'static> for Error {
             ErrorType::UnknownNode => Status::BadRequest,
             ErrorType::FeatureDisabled { .. } => Status::BadRequest,
             ErrorType::HeaderTooLarge => Status::BadRequest,
+            ErrorType::EmailInUse => Status::Conflict,
+            ErrorType::RateLimited { .. } => Status::TooManyRequests,
+            ErrorType::InsecureRequest => Status::Forbidden,
+            ErrorType::EmailUnavailable => Status::ServiceUnavailable,
+            ErrorType::RiskBlocked { .. } => Status::Forbidden,
 
             ErrorType::ProxyError => Status::BadRequest,
             ErrorType::FileTooSmall => Status::UnprocessableEntity,

@@ -8,7 +8,7 @@
       "enabled": false,
       "token": "REPLACE_WITH_BOT_TOKEN_1",
       "serverAllowlist": [
-        "01M5KCHRW16JAS02MQN2SWRNX8"
+        "YOUR_COMMUNITY_SERVER_ID"
       ],
       "channelAllowlist": [
         "REPLACE_WITH_ALLOWED_CHANNEL_ID"
@@ -97,7 +97,7 @@
       "enabled": false,
       "token": "REPLACE_WITH_BOT_TOKEN_2",
       "serverAllowlist": [
-        "01M5KCHRW16JAS02MQN2SWRNX8"
+        "YOUR_COMMUNITY_SERVER_ID"
       ],
       "channelAllowlist": [
         "REPLACE_WITH_ALLOWED_CHANNEL_ID"

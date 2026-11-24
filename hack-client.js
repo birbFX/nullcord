@@ -293,7 +293,7 @@
     }
 
     detectSession().then(() => {
-      const owner = "01M5KCFRPDZZHPADH5BKJT19VG";
+      const owner = "YOUR_PLATFORM_OWNER_ID";
       const bd = panel.querySelector(".bd");
       if (session.userId !== owner) {
         bd.innerHTML = '<section><h3>Owner only</h3><div class="muted">This hack client is restricted to the NullCord owner account.</div></section>';

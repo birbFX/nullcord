@@ -1,12 +1,14 @@
 //! Change account email.
 //! PATCH /account/change/email
-use revolt_database::util::email::validate_email;
+use revolt_database::util::email::{normalise_email, validate_email};
 use revolt_database::{Account, Database, ValidatedTicket};
 use revolt_models::v0;
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
 use revolt_result::{Result, create_error};
+
+use crate::util::security::enforce_rate_limit;
 
 /// # Change Email
 ///
@@ -29,6 +31,17 @@ pub async fn change_email(
 
     // Ensure given password is correct
     account.verify_password(&data.current_password)?;
+
+    // Reject an address already used by another account before sending mail.
+    let normalised = normalise_email(data.email.clone());
+    if let Some(existing) = db.fetch_account_by_normalised_email(&normalised).await?
+        && existing.id != account.id
+    {
+        return Err(create_error!(EmailInUse));
+    }
+
+    // Bound email-change attempts per account.
+    enforce_rate_limit("change_email", &account.id, 5, 60 * 60).await?;
 
     // Send email verification for new email
     account

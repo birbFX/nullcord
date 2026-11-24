@@ -54,11 +54,14 @@ macro_rules! report_internal_error {
 }
 
 /// Paths to search for configuration
-static CONFIG_SEARCH_PATHS: [&str; 3] = [
+static CONFIG_SEARCH_PATHS: [&str; 4] = [
     // current working directory
     "Revolt.toml",
-    // current working directory - overrides file
+    // current working directory - deployment overrides file
     "Revolt.overrides.toml",
+    // current working directory - security policy (kept separate so the
+    // launcher can rewrite deployment URLs without resetting hardening)
+    "Revolt.security.toml",
     // root directory, for Docker containers
     "/Revolt.toml",
 ];
@@ -66,9 +69,49 @@ static CONFIG_SEARCH_PATHS: [&str; 3] = [
 /// Path to search for test overrides
 static TEST_OVERRIDE_PATH: &str = "Revolt.test-overrides.toml";
 
+/// Documented, deployment-friendly environment variable names.
+///
+/// The configuration crate natively understands `REVOLT__SECTION__KEY`
+/// variables. These aliases let operators use the conventional `SMTP_*`
+/// names (and keep secrets out of TOML files) without changing every deploy
+/// script. Existing `REVOLT__*` values always win.
+const ENV_ALIASES: &[(&str, &str)] = &[
+    ("SMTP_HOST", "REVOLT__API__SMTP__HOST"),
+    ("SMTP_PORT", "REVOLT__API__SMTP__PORT"),
+    ("SMTP_USERNAME", "REVOLT__API__SMTP__USERNAME"),
+    ("SMTP_PASSWORD", "REVOLT__API__SMTP__PASSWORD"),
+    ("SMTP_FROM_ADDRESS", "REVOLT__API__SMTP__FROM_ADDRESS"),
+    ("SMTP_REPLY_TO", "REVOLT__API__SMTP__REPLY_TO"),
+    ("SMTP_USE_TLS", "REVOLT__API__SMTP__USE_TLS"),
+    ("SMTP_USE_STARTTLS", "REVOLT__API__SMTP__USE_STARTTLS"),
+    ("PUBLIC_APPLICATION_URL", "REVOLT__HOSTS__APP"),
+    ("PUBLIC_API_URL", "REVOLT__HOSTS__API"),
+    ("PUBLIC_EVENTS_URL", "REVOLT__HOSTS__EVENTS"),
+    ("EMAIL_VERIFICATION_SECRET", "REVOLT__API__SECURITY__TOKEN_PEPPER"),
+    ("NULLCORD_REQUIRE_HTTPS", "REVOLT__API__SECURITY__REQUIRE_HTTPS"),
+    (
+        "NULLCORD_INTERNAL_REGISTRATION_KEY",
+        "REVOLT__API__REGISTRATION__INTERNAL_REGISTRATION_KEY",
+    ),
+];
+
+fn apply_env_aliases() {
+    for (from, to) in ENV_ALIASES {
+        if std::env::var_os(to).is_none()
+            && let Some(value) = std::env::var_os(from)
+        {
+            // Safe: configuration is built once during process start-up,
+            // before any worker threads read the environment.
+            unsafe { std::env::set_var(to, value) };
+        }
+    }
+}
+
 /// Configuration builder
 static CONFIG_BUILDER: LazyLock<RwLock<Config>> = LazyLock::new(|| {
     RwLock::new({
+        apply_env_aliases();
+
         let mut builder = Config::builder().add_source(File::from_str(
             include_str!("../Revolt.toml"),
             FileFormat::Toml,
@@ -153,6 +196,26 @@ pub struct Hosts {
 #[derive(Deserialize, Debug, Clone)]
 pub struct ApiRegistration {
     pub invite_only: bool,
+    /// Require a verified email address before an account can log in.
+    ///
+    /// Defaults to `true`. When SMTP is not configured and this is enabled,
+    /// registration fails closed instead of silently creating a verified
+    /// account (see [`ApiSmtp::host`]).
+    #[serde(default = "default_true")]
+    pub require_email_verification: bool,
+    /// Maximum registrations allowed per source address inside the
+    /// configured window.
+    #[serde(default = "default_registration_limit")]
+    pub rate_limit_count: u32,
+    /// Length of the registration rate-limit window, in hours.
+    #[serde(default = "default_registration_window_hours")]
+    pub rate_limit_window_hours: u32,
+    /// Optional shared secret allowing trusted internal tooling (seed scripts)
+    /// to create pre-verified accounts. Sent as `X-NullCord-Internal`.
+    ///
+    /// Leave empty to disable. Never expose this to a browser or remote client.
+    #[serde(default)]
+    pub internal_registration_key: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -230,6 +293,132 @@ pub struct ApiSecurity {
     pub easypwned: String,
     pub tenor_key: String,
     pub admin_keys: Vec<String>,
+
+    /// Reject plaintext HTTP requests instead of serving them.
+    ///
+    /// Clients behind a trusted reverse proxy must present
+    /// `X-Forwarded-Proto: https`; direct connections from loopback are
+    /// treated as internal and allowed.
+    #[serde(default = "default_true")]
+    pub require_https: bool,
+    /// Only honour `X-Forwarded-*` / `CF-Connecting-IP` from these proxy
+    /// addresses. Loopback is always trusted. Values may be IPs or CIDRs.
+    #[serde(default)]
+    pub trusted_proxies: Vec<String>,
+    /// HSTS `max-age` in seconds. `0` disables the header.
+    #[serde(default = "default_hsts_max_age")]
+    pub hsts_max_age: u64,
+    /// Origins permitted to make browser CORS requests. An empty list allows
+    /// the configured app origin, localhost dev origins and opaque (`null`)
+    /// origins. Set to `["*"]` to restore the historical wildcard behaviour.
+    #[serde(default)]
+    pub cors_allowed_origins: Vec<String>,
+
+    /// Idle session timeout in seconds. `0` disables idle expiry.
+    #[serde(default = "default_session_idle_timeout")]
+    pub session_idle_timeout: i64,
+    /// Absolute session lifetime in seconds. `0` disables absolute expiry.
+    #[serde(default = "default_session_absolute_timeout")]
+    pub session_absolute_timeout: i64,
+
+    /// Failed login attempts before an account is temporarily locked.
+    #[serde(default = "default_login_max_attempts")]
+    pub login_max_attempts: i32,
+    /// Lockout duration in seconds once the attempt limit is reached.
+    #[serde(default = "default_login_lockout_seconds")]
+    pub login_lockout_seconds: i64,
+    /// Failed login attempts allowed per source IP inside the window.
+    #[serde(default = "default_login_ip_max_attempts")]
+    pub login_ip_max_attempts: u32,
+    /// Login attempt window in seconds.
+    #[serde(default = "default_login_window_seconds")]
+    pub login_window_seconds: u64,
+
+    /// Secret used to derive stored verification/reset token digests.
+    ///
+    /// Prefer the `EMAIL_VERIFICATION_SECRET` environment variable. Empty
+    /// means tokens are stored as an unkeyed SHA-256 digest (still never
+    /// plaintext, but a keyed digest is stronger).
+    #[serde(default)]
+    pub token_pepper: String,
+
+    /// Optional risk-based IP intelligence policy.
+    #[serde(default)]
+    pub ip_risk: ApiSecurityIpRisk,
+}
+
+/// Configurable, risk-based IP intelligence.
+///
+/// The engine combines local lists (VPN/proxy/Tor/abuse) with an optional
+/// external provider. It is disabled by default so no existing client is
+/// affected until an operator opts in.
+#[derive(Deserialize, Debug, Clone, Default)]
+pub struct ApiSecurityIpRisk {
+    #[serde(default)]
+    pub enabled: bool,
+    /// HTTP endpoint accepting `POST {"ip": "..."}` and returning
+    /// `{"score": 0-100, "categories": ["vpn"], "action": "allow|challenge|block"}`.
+    #[serde(default)]
+    pub provider_url: String,
+    /// Bearer token for the provider.
+    #[serde(default)]
+    pub provider_key: String,
+    /// Local newline-delimited `CIDR,score,category` list. Empty disables.
+    #[serde(default)]
+    pub blocklist_file: String,
+    /// Newline-delimited Tor exit node list. Empty disables.
+    #[serde(default)]
+    pub tor_exit_file: String,
+    #[serde(default = "default_ip_risk_medium")]
+    pub medium_threshold: i32,
+    #[serde(default = "default_ip_risk_high")]
+    pub high_threshold: i32,
+    /// Policy for registration: `allow`, `challenge` or `block`.
+    #[serde(default = "default_ip_risk_policy")]
+    pub registration_policy: String,
+    /// Policy for login: `allow`, `challenge` or `block`.
+    #[serde(default = "default_ip_risk_policy")]
+    pub login_policy: String,
+}
+
+fn default_true() -> bool {
+    true
+}
+fn default_registration_limit() -> u32 {
+    10
+}
+fn default_registration_window_hours() -> u32 {
+    10
+}
+fn default_hsts_max_age() -> u64 {
+    31_536_000
+}
+fn default_session_idle_timeout() -> i64 {
+    60 * 60 * 24 * 30
+}
+fn default_session_absolute_timeout() -> i64 {
+    60 * 60 * 24 * 180
+}
+fn default_login_max_attempts() -> i32 {
+    10
+}
+fn default_login_lockout_seconds() -> i64 {
+    15 * 60
+}
+fn default_login_ip_max_attempts() -> u32 {
+    20
+}
+fn default_login_window_seconds() -> u64 {
+    10 * 60
+}
+fn default_ip_risk_medium() -> i32 {
+    30
+}
+fn default_ip_risk_high() -> i32 {
+    60
+}
+fn default_ip_risk_policy() -> String {
+    "challenge".to_string()
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -489,19 +678,53 @@ pub struct Settings {
 impl Settings {
     pub fn preflight_checks(&self) {
         if self.api.smtp.host.is_empty() {
-            log::warn!("No SMTP settings specified! Remember to configure email.");
+            if self.api.registration.require_email_verification {
+                log::error!(
+                    "Email verification is required but SMTP is not configured. \
+                     Registration will be refused until SMTP_HOST/SMTP_PORT/\
+                     SMTP_USERNAME/SMTP_PASSWORD/SMTP_FROM_ADDRESS are set. \
+                     See SECURITY.md."
+                );
+            } else {
+                log::warn!("No SMTP settings specified! Remember to configure email.");
+            }
         }
 
         if self.api.security.captcha.hcaptcha_key.is_empty() {
             log::warn!("No Captcha key specified! Remember to add hCaptcha key.");
         }
+
+        if self.api.security.token_pepper.is_empty() {
+            log::warn!(
+                "EMAIL_VERIFICATION_SECRET is not set; verification and reset \
+                 token digests use an unkeyed hash. Set a long random secret."
+            );
+        }
+
+        if !self.api.security.require_https {
+            log::warn!(
+                "require_https is disabled; plaintext authentication traffic \
+                 will be accepted. This is only appropriate for isolated \
+                 development instances."
+            );
+        }
     }
 }
 
 pub async fn init() {
+    // Never print the full configuration: it contains SMTP passwords, S3
+    // keys, LiveKit secrets, VAPID private keys and admin keys.
+    let config = config().await;
     println!(
-        ":: Revolt Configuration ::\n\x1b[32m{:?}\x1b[0m",
-        config().await
+        ":: Revolt Configuration ::\nenvironment={:?} app={} api={} smtp_configured={} \
+         captcha={} https_required={} email_verification_required={}",
+        config.environment,
+        config.hosts.app,
+        config.hosts.api,
+        !config.api.smtp.host.is_empty(),
+        !config.api.security.captcha.hcaptcha_key.is_empty(),
+        config.api.security.require_https,
+        config.api.registration.require_email_verification,
     );
 }
 

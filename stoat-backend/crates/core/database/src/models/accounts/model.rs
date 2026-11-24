@@ -8,7 +8,7 @@ use serde_json::json;
 use crate::{
     events::client::EventV1,
     util::{
-        email::{email_templates, normalise_email, send_email},
+        email::{email_templates, hash_token, normalise_email, send_email},
         password::hash_password,
     },
     Database, MFATicket, Session,
@@ -327,9 +327,9 @@ impl Account {
                 account.save(db).await?;
             }
 
-            // Create and push event
+            // Create and push event (id only; see EventV1::CreateAccount)
             EventV1::CreateAccount {
-                account: account.clone(),
+                account_id: account.id.clone(),
             }
             .global()
             .await;
@@ -350,6 +350,12 @@ impl Account {
         name: String,
         ip: Option<String>,
     ) -> Result<Session> {
+        // Defence in depth: an unverified account can never obtain a session,
+        // regardless of which route attempts to create one.
+        if let EmailVerification::Pending { .. } = self.verification {
+            return Err(create_error!(UnverifiedAccount));
+        }
+
         let config = config().await;
 
         let session = Session {
@@ -400,7 +406,7 @@ impl Account {
             )?;
 
             self.verification = EmailVerification::Pending {
-                token,
+                token: hash_token(&token, &config.api.security.token_pepper),
                 expiry: Timestamp::now_utc()
                     .checked_add(Duration::seconds(
                         config.api.smtp.expiry.expire_verification,
@@ -411,7 +417,15 @@ impl Account {
             self.verification = EmailVerification::Verified;
         }
 
-        self.save(db).await
+        self.save(db).await?;
+
+        // An account pending verification must not retain any existing
+        // sessions (for example if an administrator re-opened verification).
+        if let EmailVerification::Pending { .. } = self.verification {
+            self.delete_all_sessions(db, None).await?;
+        }
+
+        Ok(())
     }
 
     /// Send account verification to new email
@@ -435,14 +449,14 @@ impl Account {
                 new_email.clone(),
                 &templates.verify,
                 json!({
-                    "email": self.email.clone(),
+                    "email": new_email.clone(),
                     "url": url
                 }),
             )?;
 
             self.verification = EmailVerification::Moving {
                 new_email,
-                token,
+                token: hash_token(&token, &config.api.security.token_pepper),
                 expiry: Timestamp::now_utc()
                     .checked_add(Duration::seconds(
                         config.api.smtp.expiry.expire_verification,
@@ -488,7 +502,7 @@ impl Account {
             )?;
 
             self.password_reset = Some(PasswordReset {
-                token,
+                token: hash_token(&token, &config.api.security.token_pepper),
                 expiry: Timestamp::now_utc()
                     .checked_add(Duration::seconds(
                         config.api.smtp.expiry.expire_password_reset,
@@ -525,7 +539,7 @@ impl Account {
             )?;
 
             self.deletion = Some(DeletionInfo::WaitingForVerification {
-                token,
+                token: hash_token(&token, &config.api.security.token_pepper),
                 expiry: Timestamp::now_utc()
                     .checked_add(Duration::seconds(
                         config.api.smtp.expiry.expire_password_reset,

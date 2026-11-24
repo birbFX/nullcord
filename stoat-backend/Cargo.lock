@@ -7455,6 +7455,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha1 0.10.6",
+ "sha2 0.10.9",
  "tokio",
  "totp-lite",
  "ulid",
@@ -7469,6 +7470,7 @@ name = "revolt-delta"
 version = "0.15.5"
 dependencies = [
  "async-channel",
+ "async-trait",
  "bitfield",
  "chrono",
  "dashmap",
@@ -7505,6 +7507,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
  "tokio",
  "ulid",
  "url",

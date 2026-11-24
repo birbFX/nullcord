@@ -20,14 +20,51 @@ static REVOLT_SOURCE_LIST: LazyLock<HashSet<String>> = LazyLock::new(|| {
 });
 
 /// Strip special characters and aliases from emails
+///
+/// Invalid addresses (for example a login attempt with `"x"`) are returned
+/// trimmed and lower-cased instead of panicking. Callers that create or
+/// change an account still validate the address first.
 pub fn normalise_email(original: String) -> String {
-    let split = SPLIT.captures(&original).unwrap();
+    let original = original.trim().to_string();
+
+    let Some(split) = SPLIT.captures(&original) else {
+        return original.to_lowercase();
+    };
+
     let mut clean = SYMBOL_RE
-        .replace_all(split.get(1).unwrap().as_str(), "")
+        .replace_all(split.get(1).map(|m| m.as_str()).unwrap_or_default(), "")
         .to_string();
 
-    clean.push_str(split.get(2).unwrap().as_str());
+    clean.push_str(split.get(2).map(|m| m.as_str()).unwrap_or_default());
     clean.to_lowercase()
+}
+
+/// Derive the value stored in the database for a single-use token.
+///
+/// Raw verification, password-reset and deletion tokens are only ever sent
+/// to the account owner by email. The database stores a SHA-256 digest,
+/// optionally keyed with `EMAIL_VERIFICATION_SECRET`, so a database leak alone
+/// cannot be replayed against the API.
+pub fn hash_token(token: &str, pepper: &str) -> String {
+    use sha2::{Digest, Sha256};
+
+    let mut hasher = Sha256::new();
+    if !pepper.is_empty() {
+        hasher.update(pepper.as_bytes());
+        hasher.update(b":");
+    }
+    hasher.update(token.as_bytes());
+    hasher
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+/// Whether a stored token value is already a digest (rather than a legacy
+/// plaintext token written by an older build).
+pub fn is_token_digest(value: &str) -> bool {
+    value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
 }
 
 /// Email template
@@ -268,4 +305,28 @@ pub fn validate_email(email: &str) -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod security_tests {
+    use super::*;
+
+    #[test]
+    fn normalise_email_does_not_panic_on_invalid_input() {
+        assert_eq!(normalise_email("x".to_string()), "x");
+        assert_eq!(normalise_email(" USER+tag@Example.COM ".to_string()), "user@example.com");
+    }
+
+    #[test]
+    fn token_digests_are_deterministic_and_keyed() {
+        let a = hash_token("abc", "");
+        let b = hash_token("abc", "");
+        let c = hash_token("abc", "pepper");
+
+        assert_eq!(a, b);
+        assert_ne!(a, c);
+        assert!(is_token_digest(&a));
+        assert!(!is_token_digest("abc"));
+        assert_ne!(hash_token("abc", ""), hash_token("abd", ""));
+    }
 }

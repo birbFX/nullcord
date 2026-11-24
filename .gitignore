@@ -33,3 +33,15 @@ stoat-backend/Revolt.overrides.toml
 # upstream submodules / local data
 admin-panel/server/modules/
 admin-panel/.data/
+
+# ---- security/instance data — never publish ----
+.env*
+*.crt
+*.key
+*.pem
+__pycache__/
+*.pyc
+ip-bans.json
+.security-backup*/
+*.jsonl
+stoat-backend/Revolt.security.toml

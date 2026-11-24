@@ -1,9 +1,13 @@
 //! Verify an account
 //! POST /verify/<code>
 use rocket::{serde::json::Json, State};
-use revolt_database::{Database, EmailVerification, MFATicket, util::email::normalise_email};
+use revolt_database::{
+    Database, EmailVerification, MFATicket, SecurityEvent, util::email::normalise_email,
+};
 use revolt_result::Result;
 use revolt_models::v0;
+
+use crate::util::security::{RequestId, TrustedIp, enforce_rate_limit};
 
 /// # Verify Email
 ///
@@ -12,14 +16,32 @@ use revolt_models::v0;
 #[post("/verify/<code>")]
 pub async fn verify_email(
     db: &State<Database>,
+    client_ip: TrustedIp,
+    request_id: RequestId,
     code: String,
 ) -> Result<Json<v0::ResponseVerify>> {
+    if let Ok(Some(ip_ban)) = db.fetch_ip_ban(&client_ip.0).await {
+        return Err(ip_ban.ban_error());
+    }
+
+    enforce_rate_limit("verify_ip", &client_ip.0, 30, 60 * 60).await?;
+
     // Find the account
-    let mut account = db
-        .fetch_account_with_email_verification(&code)
-        .await?;
+    let mut account = match db.fetch_account_with_email_verification(&code).await {
+        Ok(account) => account,
+        Err(error) => {
+            db.log_security_event(
+                SecurityEvent::new("email.verify_failure", "failure")
+                    .ip(client_ip.0.clone())
+                    .request(request_id.0.clone()),
+            )
+            .await;
+            return Err(error);
+        }
+    };
 
     // Update account email
+    let moved = matches!(account.verification, EmailVerification::Moving { .. });
     let response = if let EmailVerification::Moving { new_email, .. } = &account.verification {
         account.email = new_email.clone();
         account.email_normalised = normalise_email(new_email.clone());
@@ -36,6 +58,22 @@ pub async fn verify_email(
 
     // Save to database
     account.save(db).await?;
+
+    // Changing the account address is a sensitive identity change: force
+    // every other session to re-authenticate with the new address.
+    if moved {
+        account.delete_all_sessions(db, None).await?;
+    }
+
+    db.log_security_event(
+        SecurityEvent::new("email.verify_success", "success")
+            .account(account.id.clone())
+            .ip(client_ip.0.clone())
+            .request(request_id.0)
+            .metadata(serde_json::json!({ "email_move": moved })),
+    )
+    .await;
+
     Ok(Json(response))
 }
 

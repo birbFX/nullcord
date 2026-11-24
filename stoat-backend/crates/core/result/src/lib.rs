@@ -58,16 +58,14 @@ impl serde::Serialize for Error {
             location: Option<&'a str>,
         }
 
-        let location = match self.error_type {
-            ErrorType::InvalidCredentials
-                | ErrorType::InvalidSession
-                | ErrorType::InvalidToken
-                | ErrorType::UnverifiedAccount
-                | ErrorType::LockedOut
-                | ErrorType::AccountBanned { .. }
-                | ErrorType::IpBanned { .. }
-                | ErrorType::DisallowedMFAMethod => None,
-            _ => Some(self.location.as_deref().unwrap()),
+        // Internal source locations (file:line:column) are never exposed to
+        // API clients by default: they reveal server paths and implementation
+        // details. Set REVOLT_EXPOSE_ERROR_LOCATION=1 only on a private
+        // development instance when debugging.
+        let location = if std::env::var("REVOLT_EXPOSE_ERROR_LOCATION").as_deref() == Ok("1") {
+            self.location.as_deref()
+        } else {
+            None
         };
 
         Body {
@@ -254,6 +252,20 @@ pub enum ErrorType {
     ShortPassword,
     Blacklisted,
     LockedOut,
+    EmailInUse,
+
+    /// Too many requests; retry after `retry_after` seconds.
+    RateLimited {
+        retry_after: u64,
+    },
+    /// The request arrived over plaintext HTTP and was rejected.
+    InsecureRequest,
+    /// Email delivery is required but unavailable; registration is closed.
+    EmailUnavailable,
+    /// Risk-based IP policy blocked this operation.
+    RiskBlocked {
+        retry_after: Option<u64>,
+    },
 
     TotpAlreadyEnabled,
     DisallowedMFAMethod,

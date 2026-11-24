@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use super::extras::{load, store};
 
-const OWNER_ID: &str = "01M5KCFRPDZZHPADH5BKJT19VG";
+const OWNER_ID: &str = "YOUR_PLATFORM_OWNER_ID";
 const CATALOG_KEY: &str = "badges:catalog";
 const MAX_BADGES: usize = 100;
 const MAX_PER_USER: usize = 24;

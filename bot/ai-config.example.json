@@ -3,7 +3,7 @@
   "model": "qwen2.5:3b",
   "ollamaUrl": "http://127.0.0.1:11434",
   "serverAllowlist": [
-    "01M5KCHRW16JAS02MQN2SWRNX8"
+    "YOUR_COMMUNITY_SERVER_ID"
   ],
   "channelAllowlist": [
     "REPLACE_WITH_SAFETY_TEST_CHANNEL_ID"

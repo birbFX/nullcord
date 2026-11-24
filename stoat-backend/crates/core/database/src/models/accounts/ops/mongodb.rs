@@ -1,10 +1,14 @@
-use crate::{AbstractAccounts, Account, MongoDb};
+use crate::{
+    util::email::{hash_token, is_token_digest},
+    AbstractAccounts, Account, EmailVerification, MongoDb,
+};
 use bson::{to_bson, to_document};
 use iso8601_timestamp::{Duration, Timestamp};
 use mongodb::options::{
     Collation, CollationStrength, FindOneAndUpdateOptions, FindOneOptions, ReturnDocument,
     UpdateOptions,
 };
+use revolt_config::config;
 use revolt_result::Result;
 
 const COL: &str = "accounts";
@@ -41,50 +45,135 @@ impl AbstractAccounts for MongoDb {
 
     /// Find account with active pending email verification
     async fn fetch_account_with_email_verification(&self, token: &str) -> Result<Account> {
-        query!(
+        let config = config().await;
+        let digest = hash_token(token, &config.api.security.token_pepper);
+        let expiry = to_bson(&Timestamp::now_utc()).unwrap();
+
+        if let Some(account) = query!(
             self,
             find_one,
             COL,
             doc! {
-                "verification.token": token,
-                "verification.expiry": {
-                    "$gte": to_bson(&Timestamp::now_utc()).unwrap()
-                }
+                "verification.token": &digest,
+                "verification.expiry": { "$gte": &expiry }
             }
-        )?
-        .ok_or_else(|| create_error!(InvalidToken))
+        )? {
+            return Ok(account);
+        }
+
+        // Compatibility with tokens issued before digests were stored.
+        // Accept the legacy value once, then immediately upgrade it.
+        if !is_token_digest(token) {
+            let legacy: Option<Account> = query!(
+                self,
+                find_one,
+                COL,
+                doc! {
+                    "verification.token": token,
+                    "verification.expiry": { "$gte": &expiry }
+                }
+            )?;
+
+            if let Some(mut account) = legacy {
+                match &mut account.verification {
+                    EmailVerification::Pending {
+                        token: stored, ..
+                    }
+                    | EmailVerification::Moving {
+                        token: stored, ..
+                    } => *stored = digest,
+                    EmailVerification::Verified => {}
+                }
+                self.save_account(&account).await?;
+                return Ok(account);
+            }
+        }
+
+        Err(create_error!(InvalidToken))
     }
 
     /// Find account with active password reset
     async fn fetch_account_with_password_reset(&self, token: &str) -> Result<Account> {
-        query!(
+        let config = config().await;
+        let digest = hash_token(token, &config.api.security.token_pepper);
+        let expiry = to_bson(&Timestamp::now_utc()).unwrap();
+
+        if let Some(account) = query!(
             self,
             find_one,
             COL,
             doc! {
-                "password_reset.token": token,
-                "password_reset.expiry": {
-                    "$gte": to_bson(&Timestamp::now_utc()).unwrap()
-                }
+                "password_reset.token": &digest,
+                "password_reset.expiry": { "$gte": &expiry }
             }
-        )?
-        .ok_or_else(|| create_error!(InvalidToken))
+        )? {
+            return Ok(account);
+        }
+
+        if !is_token_digest(token) {
+            let legacy: Option<Account> = query!(
+                self,
+                find_one,
+                COL,
+                doc! {
+                    "password_reset.token": token,
+                    "password_reset.expiry": { "$gte": &expiry }
+                }
+            )?;
+
+            if let Some(mut account) = legacy {
+                if let Some(reset) = &mut account.password_reset {
+                    reset.token = digest;
+                }
+                self.save_account(&account).await?;
+                return Ok(account);
+            }
+        }
+
+        Err(create_error!(InvalidToken))
     }
 
     /// Find account with active deletion token
     async fn fetch_account_with_deletion_token(&self, token: &str) -> Result<Account> {
-        query!(
+        let config = config().await;
+        let digest = hash_token(token, &config.api.security.token_pepper);
+        let expiry = to_bson(&Timestamp::now_utc()).unwrap();
+
+        if let Some(account) = query!(
             self,
             find_one,
             COL,
             doc! {
-                "deletion.token": token,
-                "deletion.expiry": {
-                    "$gte": to_bson(&Timestamp::now_utc()).unwrap()
-                }
+                "deletion.token": &digest,
+                "deletion.expiry": { "$gte": &expiry }
             }
-        )?
-        .ok_or_else(|| create_error!(InvalidToken))
+        )? {
+            return Ok(account);
+        }
+
+        if !is_token_digest(token) {
+            let legacy: Option<Account> = query!(
+                self,
+                find_one,
+                COL,
+                doc! {
+                    "deletion.token": token,
+                    "deletion.expiry": { "$gte": &expiry }
+                }
+            )?;
+
+            if let Some(mut account) = legacy {
+                if let Some(crate::DeletionInfo::WaitingForVerification { token: stored, .. }) =
+                    &mut account.deletion
+                {
+                    *stored = digest;
+                }
+                self.save_account(&account).await?;
+                return Ok(account);
+            }
+        }
+
+        Err(create_error!(InvalidToken))
     }
 
     /// Find accounts which are due to be deleted

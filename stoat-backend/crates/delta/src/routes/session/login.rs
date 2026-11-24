@@ -3,16 +3,23 @@
 use std::time::Duration;
 
 use iso8601_timestamp::Timestamp;
+use revolt_config::config;
 use revolt_database::{
-    util::{email::normalise_email, password::assert_safe},
-    Database, EmailVerification, MFATicket,
+    util::{
+        email::normalise_email,
+        password::{assert_safe, hash_password, password_needs_rehash},
+    },
+    Database, EmailVerification, Lockout, MFATicket,
 };
 use revolt_models::v0;
 use revolt_result::{create_error, Result};
 use rocket::serde::json::Json;
 use rocket::State;
-use std::net::IpAddr;
 use tokio::time::sleep;
+
+use crate::util::security::{RequestId, TrustedIp, enforce_rate_limit};
+use revolt_database::util::ip_risk::{RiskAction, assess as assess_ip_risk};
+use revolt_database::SecurityEvent;
 
 /// # Login
 ///
@@ -21,7 +28,8 @@ use tokio::time::sleep;
 #[post("/login", data = "<data>")]
 pub async fn login(
     db: &State<Database>,
-    client_addr: IpAddr,
+    client_ip: TrustedIp,
+    request_id: RequestId,
     data: Json<v0::DataLogin>,
 ) -> Result<Json<v0::ResponseLogin>> {
     // Random jitter from 0-1000ms
@@ -29,6 +37,52 @@ pub async fn login(
         (rand::random::<f32>() * 1000.) as u64,
     ))
     .await;
+
+    let config = config().await;
+
+    // IP bans apply before any credential or rate-limit processing.
+    if let Ok(Some(ip_ban)) = db.fetch_ip_ban(&client_ip.0).await {
+        return Err(ip_ban.ban_error());
+    }
+
+    // Per-source-address limit before any credential processing, so
+    // distributed credential-stuffing runs out of attempts even when every
+    // request targets a different account.
+    if let Err(error) = enforce_rate_limit(
+        "login_ip",
+        &client_ip.0,
+        config.api.security.login_ip_max_attempts,
+        config.api.security.login_window_seconds,
+    )
+    .await
+    {
+        db.log_security_event(
+            SecurityEvent::new("login.rate_limited", "blocked")
+                .ip(client_ip.0.clone())
+                .request(request_id.0.clone()),
+        )
+        .await;
+        return Err(error);
+    }
+
+    // Risk policy for login. High-risk networks are blocked only when the
+    // operator configured that policy; otherwise the attempt is logged and
+    // normal account controls (password, MFA, lockout) still apply.
+    let risk = assess_ip_risk(&client_ip.0, false).await;
+    if risk.action == RiskAction::Block {
+        db.log_security_event(
+            SecurityEvent::new("login.risk_blocked", "blocked")
+                .ip(client_ip.0.clone())
+                .request(request_id.0.clone())
+                .risk(risk.risk.clone())
+                .metadata(serde_json::json!({
+                    "score": risk.score,
+                    "categories": risk.categories
+                })),
+        )
+        .await;
+        return Err(create_error!(RiskBlocked { retry_after: None }));
+    }
 
     let (account, name) = match data.into_inner() {
         v0::DataLogin::Email {
@@ -44,19 +98,68 @@ pub async fn login(
                 .fetch_account_by_normalised_email(&email_normalised)
                 .await?
             {
-                // Make sure the account has been verified
-                if let EmailVerification::Pending { .. } = account.verification {
-                    return Err(create_error!(UnverifiedAccount));
+                // Refuse requests while a temporary lockout is active.
+                if let Some(lockout) = &account.lockout
+                    && let Some(expiry) = lockout.expiry
+                    && expiry > Timestamp::now_utc()
+                {
+                    return Err(create_error!(LockedOut));
                 }
 
                 // Make sure password has not been compromised
                 assert_safe(&password).await?;
 
                 // Verify the password is correct.
-                // Intentionally no account lockout: wrong passwords simply
-                // fail immediately instead of making the user wait.
                 if let Err(err) = account.verify_password(&password) {
+                    // Count the failure against the account, with a
+                    // configurable threshold and cooldown. Unknown addresses
+                    // are not counted, which avoids leaking account existence.
+                    let attempts = account
+                        .lockout
+                        .as_ref()
+                        .map(|lockout| lockout.attempts)
+                        .unwrap_or(0)
+                        + 1;
+
+                    let expiry = if attempts >= config.api.security.login_max_attempts {
+                        Some(
+                            Timestamp::now_utc()
+                                + iso8601_timestamp::Duration::seconds(
+                                    config.api.security.login_lockout_seconds,
+                                ),
+                        )
+                    } else {
+                        None
+                    };
+
+                    account.lockout = Some(Lockout { attempts, expiry });
+                    account.save(db).await?;
+
+                    db.log_security_event(
+                        SecurityEvent::new("login.failure", "failure")
+                            .account(account.id.clone())
+                            .ip(client_ip.0.clone())
+                            .request(request_id.0.clone())
+                            .metadata(serde_json::json!({ "attempts": attempts })),
+                    )
+                    .await;
+
                     return Err(err);
+                }
+
+                // Verification is enforced only after the password has been
+                // checked, so an attacker cannot enumerate unverified
+                // accounts by submitting addresses alone.
+                if let EmailVerification::Pending { .. } = account.verification {
+                    db.log_security_event(
+                        SecurityEvent::new("login.blocked_unverified", "blocked")
+                            .account(account.id.clone())
+                            .ip(client_ip.0.clone())
+                            .request(request_id.0.clone()),
+                    )
+                    .await;
+
+                    return Err(create_error!(UnverifiedAccount));
                 }
 
                 // Check whether an MFA step is required
@@ -78,14 +181,34 @@ pub async fn login(
                     }));
                 }
 
-                // No MFA, clear lockout information if present
+                // Successful login clears lockout state and transparently
+                // upgrades legacy Argon2i hashes to Argon2id.
+                let mut changed = false;
                 if account.lockout.is_some() {
                     account.lockout = None;
+                    changed = true;
+                }
+                if password_needs_rehash(&account.password) {
+                    account.password = hash_password(password.clone())?;
+                    changed = true;
+                }
+                if changed {
                     account.save(db).await?;
                 }
 
                 (account, friendly_name)
             } else {
+                db.log_security_event(
+                    SecurityEvent::new("login.failure", "failure")
+                        .ip(client_ip.0.clone())
+                        .request(request_id.0.clone())
+                        .metadata(serde_json::json!({
+                            "reason": "unknown_account",
+                            "email": crate::util::security::hash_identifier(&email_normalised)
+                        })),
+                )
+                .await;
+
                 return Err(create_error!(InvalidCredentials));
             }
         }
@@ -99,6 +222,13 @@ pub async fn login(
 
             // Find the corresponding account
             let mut account = db.fetch_account(&ticket.account_id).await?;
+
+            if let Some(lockout) = &account.lockout
+                && let Some(expiry) = lockout.expiry
+                && expiry > Timestamp::now_utc()
+            {
+                return Err(create_error!(LockedOut));
+            }
 
             // Verify the MFA response
             if let Some(mfa_response) = mfa_response {
@@ -123,7 +253,7 @@ pub async fn login(
     };
 
     // IP bans apply before account/session handling.
-    if let Ok(Some(ip_ban)) = db.fetch_ip_ban(&client_addr.to_string()).await {
+    if let Ok(Some(ip_ban)) = db.fetch_ip_ban(&client_ip.0).await {
         return Err(ip_ban.ban_error());
     }
 
@@ -145,9 +275,19 @@ pub async fn login(
     }
 
     // Create and return a new session
-    Ok(Json(v0::ResponseLogin::Success(
-        account.create_session_with_ip(db, name, Some(client_addr.to_string())).await?.into(),
-    )))
+    let session = account
+        .create_session_with_ip(db, name, Some(client_ip.0.clone()))
+        .await?;
+
+    db.log_security_event(
+        SecurityEvent::new("login.success", "success")
+            .account(account.id.clone())
+            .ip(client_ip.0.clone())
+            .request(request_id.0.clone()),
+    )
+    .await;
+
+    Ok(Json(v0::ResponseLogin::Success(session.into())))
 }
 
 #[cfg(test)]
@@ -468,70 +608,34 @@ mod tests {
 
         account.save(&harness.db).await.unwrap();
 
-        // Attempt 1
-        let res = harness
-            .client
-            .post("/auth/session/login")
-            .header(ContentType::JSON)
-            .body(
-                json!({
-                    "email": "example@validemail.com",
-                    "password": "wrong_password"
-                })
-                .to_string(),
-            )
-            .dispatch()
-            .await;
+        // The default policy locks an account after 10 failed attempts.
+        for attempt in 1..=10 {
+            let res = harness
+                .client
+                .post("/auth/session/login")
+                .header(ContentType::JSON)
+                .body(
+                    json!({
+                        "email": "example@validemail.com",
+                        "password": "wrong_password"
+                    })
+                    .to_string(),
+                )
+                .dispatch()
+                .await;
 
-        assert_eq!(res.status(), Status::Unauthorized);
-        assert!(matches!(
-            res.into_json::<Error>().await.unwrap().error_type,
-            ErrorType::InvalidCredentials,
-        ));
+            assert_eq!(
+                res.status(),
+                Status::Unauthorized,
+                "attempt {attempt} should be rejected"
+            );
+            assert!(matches!(
+                res.into_json::<Error>().await.unwrap().error_type,
+                ErrorType::InvalidCredentials,
+            ));
+        }
 
-        // Attempt 2
-        let res = harness
-            .client
-            .post("/auth/session/login")
-            .header(ContentType::JSON)
-            .body(
-                json!({
-                    "email": "example@validemail.com",
-                    "password": "wrong_password"
-                })
-                .to_string(),
-            )
-            .dispatch()
-            .await;
-
-        assert_eq!(res.status(), Status::Unauthorized);
-        assert!(matches!(
-            res.into_json::<Error>().await.unwrap().error_type,
-            ErrorType::InvalidCredentials,
-        ));
-
-        // Attempt 3
-        let res = harness
-            .client
-            .post("/auth/session/login")
-            .header(ContentType::JSON)
-            .body(
-                json!({
-                    "email": "example@validemail.com",
-                    "password": "wrong_password"
-                })
-                .to_string(),
-            )
-            .dispatch()
-            .await;
-
-        assert_eq!(res.status(), Status::Unauthorized);
-        assert!(matches!(
-            res.into_json::<Error>().await.unwrap().error_type,
-            ErrorType::InvalidCredentials,
-        ));
-
-        // Attempt 4: Locked Out
+        // Correct credentials are refused while the lockout is active.
         let res = harness
             .client
             .post("/auth/session/login")
@@ -551,6 +655,7 @@ mod tests {
             res.into_json::<Error>().await.unwrap().error_type,
             ErrorType::LockedOut,
         ));
+
         // Pretend it expired
         account.lockout = Some(Lockout {
             attempts: 9001,

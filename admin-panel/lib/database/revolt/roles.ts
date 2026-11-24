@@ -2,7 +2,7 @@ import { Document } from "mongodb";
 
 import { createCollectionFn } from "..";
 
-export const OWNER_ID = "01M5KCFRPDZZHPADH5BKJT19VG";
+export const OWNER_ID = process.env.PLATFORM_OWNER_ID ?? "";
 
 export const BADGE = {
   Developer: 1,
@@ -27,7 +27,7 @@ export const BADGE = {
 } as const;
 
 /** The one login that is always the platform owner. */
-export const OWNER_EMAIL = "nnewburg@canyonlakelabs.com";
+export const OWNER_EMAIL = process.env.PLATFORM_OWNER_EMAIL ?? "";
 
 export const BADGE_LABELS: { bit: number; label: string }[] = [
   { bit: BADGE.Owner, label: "Owner" },

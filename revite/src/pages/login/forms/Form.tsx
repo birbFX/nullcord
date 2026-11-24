@@ -209,6 +209,20 @@ export const Form = observer(({ page, callback }: Props) => {
                         )}
                     </p>
                 )}
+                {error === "UnverifiedAccount" && (
+                    <p style={{ fontSize: "0.85em" }}>
+                        <Link to="/login/resend">
+                            <Text id="login.resend" />
+                        </Link>
+                    </p>
+                )}
+                {error === "LockedOut" && (
+                    <p style={{ fontSize: "0.85em" }}>
+                        <Link to="/login/reset">
+                            <Text id="login.reset" />
+                        </Link>
+                    </p>
+                )}
                 <Button>
                     <Text
                         id={
