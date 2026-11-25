@@ -10,6 +10,7 @@ mod channels;
 mod customisation;
 mod invites;
 mod onboard;
+pub(crate) mod owner_guard;
 mod policy;
 mod push;
 mod root;

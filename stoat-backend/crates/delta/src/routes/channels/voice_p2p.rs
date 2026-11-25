@@ -4,8 +4,8 @@ use revolt_database::{
     util::{permissions::perms, reference::Reference},
     voice::{
         create_voice_state, delete_voice_state, get_user_voice_channels, get_voice_channel_members,
-        get_voice_peers, refresh_voice_alive, refresh_voice_peer, remove_voice_peer,
-        set_voice_peer, UserVoiceChannel,
+        get_voice_peers, get_voice_state, refresh_voice_alive, refresh_voice_peer,
+        remove_voice_peer, set_voice_peer, UserVoiceChannel,
     },
     Channel, Database, User,
 };
@@ -47,23 +47,36 @@ fn call_recipients(channel: &Channel, user_id: &str) -> Option<Vec<String>> {
 }
 
 async fn peers_response(channel: &UserVoiceChannel) -> Result<v0::VoicePeersResponse> {
-    let members = get_voice_channel_members(channel)
-        .await?
-        .unwrap_or_default();
+    let mut peers = Vec::new();
 
-    let peers: Vec<v0::VoicePeer> = get_voice_peers(&channel.id)
-        .await?
-        .into_iter()
-        .map(|(user_id, peer_id)| v0::VoicePeer { user_id, peer_id })
-        .collect();
+    for (user_id, peer_id) in get_voice_peers(&channel.id).await? {
+        let joined_at = get_voice_state(channel, &user_id)
+            .await?
+            .map(|state| state.joined_at);
 
-    // Ignore legacy LiveKit members that have no PeerJS registration.
-    let members = members
-        .into_iter()
-        .filter(|user_id| peers.iter().any(|peer| &peer.user_id == user_id))
-        .collect();
+        peers.push(v0::VoicePeer {
+            user_id,
+            peer_id,
+            joined_at,
+        });
+    }
 
-    Ok(v0::VoicePeersResponse { members, peers })
+    // Host = first participant. Joining order is server-side (joined_at),
+    // with a stable tie-break on user id.
+    peers.sort_by(|left, right| {
+        left.joined_at
+            .cmp(&right.joined_at)
+            .then_with(|| left.user_id.cmp(&right.user_id))
+    });
+
+    let master = peers.first().map(|peer| peer.user_id.clone());
+    let members = peers.iter().map(|peer| peer.user_id.clone()).collect();
+
+    Ok(v0::VoicePeersResponse {
+        members,
+        peers,
+        master,
+    })
 }
 
 /// # Join Peer-to-Peer Voice
@@ -207,6 +220,57 @@ pub async fn heartbeat(
     let voice_channel = UserVoiceChannel::from_channel(&channel);
     refresh_voice_alive(&voice_channel.id, &user.id).await?;
     refresh_voice_peer(&voice_channel.id, &user.id).await?;
+
+    Ok(EmptyResponse)
+}
+
+/// # Relay WebRTC Signalling
+///
+/// Delivers an SDP offer/answer or ICE candidate to another participant in
+/// the same call. Only call members can be targeted, and payloads are
+/// size-limited.
+#[openapi(tag = "Voice")]
+#[post("/<target>/voice/signal", data = "<data>")]
+pub async fn signal(
+    db: &State<Database>,
+    user: User,
+    target: Reference<'_>,
+    data: Json<v0::DataVoiceSignal>,
+) -> Result<EmptyResponse> {
+    let channel = target.as_channel(db).await?;
+    let Some(_voice) = channel.voice() else {
+        return Err(create_error!(NotAVoiceChannel));
+    };
+
+    let mut permissions = perms(db, &user).channel(&channel);
+    let current_permissions = calculate_channel_permissions(&mut permissions).await;
+    current_permissions.throw_if_lacking_channel_permission(ChannelPermission::Connect)?;
+
+    let data = data.into_inner();
+    if data.to == user.id {
+        return Err(create_error!(InvalidOperation));
+    }
+
+    let voice_channel = UserVoiceChannel::from_channel(&channel);
+    let peers = get_voice_peers(&voice_channel.id).await?;
+    if !peers.iter().any(|(user_id, _)| user_id == &data.to) {
+        return Err(create_error!(UnknownUser));
+    }
+
+    let payload = serde_json::to_string(&data.data)
+        .map_err(|_| create_error!(InvalidOperation))?;
+    if payload.len() > 64 * 1024 {
+        return Err(create_error!(PayloadTooLarge));
+    }
+
+    EventV1::VoiceSignal {
+        channel_id: voice_channel.id.clone(),
+        from: user.id.clone(),
+        to: data.to.clone(),
+        data: data.data,
+    }
+    .p(data.to)
+    .await;
 
     Ok(EmptyResponse)
 }

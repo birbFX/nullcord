@@ -1,5 +1,6 @@
 #![allow(deprecated)]
 use super::{File, UserVoiceState};
+use iso8601_timestamp::Timestamp;
 
 use revolt_permissions::{Override, OverrideField};
 use std::collections::{HashMap, HashSet};
@@ -306,22 +307,36 @@ auto_derived!(
     pub struct VoicePeer {
         /// User this peer belongs to
         pub user_id: String,
-        /// PeerJS peer id
+        /// Browser peer id
         pub peer_id: String,
+        /// When this participant joined, used to elect the host
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub joined_at: Option<Timestamp>,
     }
 
     /// Peer-to-peer voice room state
     pub struct VoicePeersResponse {
-        /// Users currently in the call
+        /// Users currently in the call, ordered by join time
         pub members: Vec<String>,
-        /// Registered PeerJS peers
+        /// Registered browser peers
         pub peers: Vec<VoicePeer>,
+        /// First participant (the host role; moves on disconnect)
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub master: Option<String>,
     }
 
     /// Join a peer-to-peer voice call
     pub struct DataVoicePeer {
-        /// PeerJS peer id for this browser
+        /// Browser peer id
         pub peer_id: String,
+    }
+
+    /// WebRTC signalling payload between two call participants
+    pub struct DataVoiceSignal {
+        /// Recipient user id
+        pub to: String,
+        /// SDP offer/answer or ICE candidate
+        pub data: serde_json::Value,
     }
 
     /// Join a voice channel

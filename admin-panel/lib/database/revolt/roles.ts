@@ -139,6 +139,8 @@ export async function setAdminAs(
   if (!actor) throw new Error("Your panel login is not linked to a platform account");
   if (rankOf(actor as U) !== "owner")
     throw new Error("Only owners can grant or revoke admin");
+  if (targetId === OWNER_ID && !privileged)
+    throw new Error("The platform owner cannot be demoted");
   const target = await fetchUser(targetId);
   assertCanTouch(actor as U, target as U);
   const badges = target.badges ?? 0;

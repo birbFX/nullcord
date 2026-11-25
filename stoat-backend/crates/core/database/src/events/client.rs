@@ -403,6 +403,15 @@ pub enum EventV1 {
         started_at: Option<Timestamp>,
         ended: bool,
     },
+    /// WebRTC signalling between two call participants.
+    ///
+    /// Delivered only to the recipient's user channel.
+    VoiceSignal {
+        channel_id: String,
+        from: String,
+        to: String,
+        data: serde_json::Value,
+    },
 }
 
 impl EventV1 {

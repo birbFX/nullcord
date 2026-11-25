@@ -88,6 +88,8 @@ const ENV_ALIASES: &[(&str, &str)] = &[
     ("PUBLIC_API_URL", "REVOLT__HOSTS__API"),
     ("PUBLIC_EVENTS_URL", "REVOLT__HOSTS__EVENTS"),
     ("EMAIL_VERIFICATION_SECRET", "REVOLT__API__SECURITY__TOKEN_PEPPER"),
+    ("TENOR_API_KEY", "REVOLT__API__SECURITY__TENOR_KEY"),
+    ("GIFBOX_API_KEY", "REVOLT__API__SECURITY__TENOR_KEY"),
     ("NULLCORD_REQUIRE_HTTPS", "REVOLT__API__SECURITY__REQUIRE_HTTPS"),
     (
         "NULLCORD_INTERNAL_REGISTRATION_KEY",
@@ -449,6 +451,11 @@ pub struct LiveKitNode {
 pub struct ApiUsers {
     pub early_adopter_cutoff: Option<u64>,
     pub min_username_length: usize,
+    /// Platform owner account id. When set, the API periodically restores
+    /// this account's owner badge, admin flag and login eligibility if they
+    /// are removed by another administrator or a direct database change.
+    #[serde(default)]
+    pub owner_id: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -692,6 +699,13 @@ impl Settings {
 
         if self.api.security.captcha.hcaptcha_key.is_empty() {
             log::warn!("No Captcha key specified! Remember to add hCaptcha key.");
+        }
+
+        if self.api.security.tenor_key.is_empty() {
+            log::warn!(
+                "No GIF provider key configured; the GIF picker will return errors. \
+                 Set GIFBOX_API_KEY (or TENOR_API_KEY) in the gifbox service environment."
+            );
         }
 
         if self.api.security.token_pepper.is_empty() {

@@ -75,12 +75,24 @@ impl Tenor {
             })
             .map_err(|_| TenorError::HttpError)?;
 
+        let status = response.status();
         let text = response.text().await.map_err(|e| {
             revolt_config::capture_error(&e);
             TenorError::HttpError
         })?;
 
-        Ok(Arc::new(serde_json::from_str(&text).unwrap()))
+        if !status.is_success() {
+            tracing::error!(
+                "Tenor request failed with {status}: {}",
+                text.chars().take(300).collect::<String>()
+            );
+            return Err(TenorError::HttpError);
+        }
+
+        serde_json::from_str(&text).map(Arc::new).map_err(|error| {
+            tracing::error!("Tenor returned an unparseable response: {error}");
+            TenorError::HttpError
+        })
     }
 
     pub async fn search(

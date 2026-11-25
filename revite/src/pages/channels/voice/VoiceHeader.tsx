@@ -4,7 +4,7 @@ import styled from "styled-components/macro";
 import { useClient } from "../../../controllers/client/ClientController";
 import { voiceState } from "../../../lib/vortex/VoiceState";
 
-import { JitsiCall } from "./JitsiCall";
+import PeerCall from "./PeerCall";
 
 interface Props {
     id: string;
@@ -33,7 +33,7 @@ export default observer(({ id, embedded }: Props) => {
 
     return (
         <CallBase embedded={embedded}>
-            <JitsiCall id={id} displayName={displayName} />
+            <PeerCall id={id} displayName={displayName} />
         </CallBase>
     );
 });

@@ -80,6 +80,30 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // GIF service (gifbox) same-origin proxy. Keeps the picker working
+    // without exposing port 14706 or adding another public hostname.
+    if (req.url.startsWith("/gifbox-api/")) {
+        const up = http.request(
+            {
+                host: "127.0.0.1",
+                port: Number(process.env.GIFBOX_PORT || 14706),
+                path: req.url.slice("/gifbox-api".length),
+                method: req.method,
+                headers: req.headers,
+            },
+            (r) => {
+                res.writeHead(r.statusCode, r.headers);
+                r.pipe(res);
+            },
+        );
+        up.on("error", () => {
+            res.writeHead(502, { "content-type": "application/json" });
+            res.end(JSON.stringify({ error: "gif service unavailable" }));
+        });
+        req.pipe(up);
+        return;
+    }
+
     // Connections sidecar (gitclone / TubeClone / ToKTok account linking)
     if (req.url.startsWith("/connections-api/")) {
         const up = http.request(

@@ -213,7 +213,7 @@ pub async fn create_voice_state(
             voice_state.screensharing,
         )
         .set(format!("camera:{unique_key}"), voice_state.camera)
-        .set_ex(format!("vc_alive:{user_id}:{}", &channel.id), 1, 90)
+        .set_ex(format!("vc_alive:{user_id}:{}", &channel.id), 1, 45)
         .query_async::<_, ()>(&mut get_connection().await?.into_inner())
         .await
         .to_internal_error()?;
@@ -413,7 +413,7 @@ pub async fn get_voice_peers(channel_id: &str) -> Result<Vec<(String, String)>> 
 pub async fn refresh_voice_alive(channel_id: &str, user_id: &str) -> Result<()> {
     get_connection()
         .await?
-        .set_ex(format!("vc_alive:{user_id}:{channel_id}"), 1, 90)
+        .set_ex(format!("vc_alive:{user_id}:{channel_id}"), 1, 45)
         .await
         .to_internal_error()
 }

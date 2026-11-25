@@ -83,6 +83,10 @@ pub async fn web() -> Rocket<Build> {
     db.migrate_database().await.unwrap();
     db.ensure_security_event_indexes().await;
 
+    // Keep the platform owner privileged even if another administrator or a
+    // direct database edit removes the flag/badge or disables the account.
+    crate::routes::owner_guard::start(db.clone());
+
     // Configure CORS.
     //
     // Authentication uses explicit `X-Session-Token` / `X-Bot-Token`

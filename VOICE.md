@@ -1,114 +1,108 @@
 # NullCord voice, video and screen sharing
 
-NullCord calls are relayed by **Jitsi** through the public
-[`meet.element.io`](https://meet.element.io) deployment. Jitsi handles the
-SFU, TURN, NAT traversal, audio/video and screen sharing, so calls work from
-remote networks even though the NullCord host is behind CGNAT.
+NullCord calls are **peer-to-peer WebRTC**. There is no Jitsi iframe and no
+third-party media relay.
 
-The NullCord call view is the official Jitsi IFrame API:
+- The browser captures microphone/camera/screen tracks.
+- Every participant connects directly to every other participant (mesh).
+- SDP offers/answers and ICE candidates are relayed through the NullCord API
+  and gateway (no media passes through the server).
+- Public STUN servers are used for NAT address discovery. **No TURN relay is
+  configured**, so some restrictive NAT/CGNAT combinations cannot connect.
 
-- call UI: `revite/src/pages/channels/voice/JitsiCall.tsx`
-- call state: `revite/src/lib/vortex/VoiceState.ts`
-- call button: `revite/src/pages/channels/actions/HeaderActions.tsx`
-- call view replacement: `revite/src/pages/channels/Channel.tsx`
+## Host / master role
 
-## How a call works
+The first participant to join is the **host**. Host is a coordination/UI role,
+not a media hub:
 
-1. Clicking the phone icon calls `voiceState.connect(channel)`.
-2. NullCord registers the caller with `POST /channels/:id/voice/join` and then
-   opens a Jitsi room named `nullcord<channelId>` in the call view.
-3. Jitsi joins the room with the user's display name.
-4. For a DM or group, the API sends a `VoiceCallUpdate` event to the other
-   recipients. Their client shows an **Incoming call** card and plays the ring
-   sound.
-5. Accepting the card joins the same Jitsi room. Declining dismisses the card.
-6. The Jitsi toolbar provides microphone, camera, screen share, settings and
-   the participant list.
-7. Jitsi's `videoConferenceLeft` event closes the NullCord call view.
+- media keeps flowing directly between every pair of participants
+- when the host leaves, the next participant by join time becomes host
+- explicit leave updates the host immediately
+- a crashed tab is pruned after the 45-second presence TTL
 
-Because every participant opens the same deterministic room name, Jitsi does
-the signalling and media relay. NullCord only tracks call presence for the
-incoming-call ring and stale-session cleanup.
+The API returns an ordered participant list and the current `master`; the
+client shows a **Host** badge.
 
 ## Features
 
-- incoming call card with caller name, ringtone, **Join** and **Decline**
-- persistent in-call bar with participant count and call duration
-- quick mute, camera, screen-share and leave buttons
-- microphone, camera and screen share (Jitsi toolbar and NullCord bar)
-- remote participants and audio/video through Jitsi's global SFU
-- device selection in Jitsi settings
-- hang-up synchronises back to NullCord
-- 60-second presence heartbeat and automatic stale-call pruning
-- works from remote networks without port forwarding, UPnP or a public IP
+- direct WebRTC audio/video between participants
+- camera grid with active speaker tiles
+- multiple simultaneous screen shares (one per participant)
+- host badge and automatic host failover
+- quality tiers:
+  - **Nitro:** up to 2560×1440 @ 60fps (8 Mbps)
+  - **Basic / non-Nitro:** up to 1280×720 @ 30fps (2.5 Mbps)
+- quality label in the call bar and server-authoritative tier lookup from
+  `/users/@me/economy`
+- mute, camera, screen share, leave
+- incoming DM/group call card with ringtone
+- 15-second presence heartbeat; explicit leave is immediate
 
-## Requirements
+The quality limits are applied by the official client's capture constraints
+and sender bitrate caps. A modified client could ignore them; true server-side
+enforcement would require a media server or a track-inspection bot.
 
-The browser must reach:
+## Signalling
 
-- `https://meet.element.io` (the app and `external_api.js`)
-- Jitsi's media/TURN endpoints (HTTPS/WSS, TCP/UDP as configured by Jitsi)
+`POST /channels/:id/voice/join`
 
-No inbound ports are required on the NullCord host. `meet.element.io`
-allows anonymous, embedded rooms; no Jitsi account is required.
+- registers the browser peer id
+- returns ordered members, peers and the current host
 
-## Incoming calls and presence
+`POST /channels/:id/voice/signal`
 
-The API keeps a short-lived call record in Redis:
+- body: `{ "to": "<user id>", "data": { ... } }`
+- only call members can be targeted
+- payload is limited to 64 KiB
+- the API publishes a user-targeted `VoiceSignal` gateway event
 
-- `vc:<user>` — rooms the user has registered
-- `vc_members:<channel>` — users currently registered in the call
-- `vc_alive:<user>:<channel>` — 90-second presence heartbeat
-- `p2p_peer:*` / `p2p_members:*` — legacy peer registry used by `/voice/peers`
+`POST /channels/:id/voice/heartbeat`
 
-While a call is open, the client POSTs `/channels/:id/voice/heartbeat` every
-60 seconds. A member whose heartbeat has expired is pruned the next time the
-call is read, so a crashed tab cannot keep a room "busy" forever. Closing the
-tab also sends a best-effort `/voice/leave` from the `pagehide` handler.
+- keeps presence alive
+- stale callers are pruned automatically
 
-Only DM and group recipients receive the ring event; server voice channels
-still work, but they do not push a ring to every member of a large server.
+`POST /channels/:id/voice/leave`
 
-## Privacy note
+- removes presence and broadcasts a leave event so the next host is elected
 
-Media is relayed by Element's public Jitsi infrastructure. Jitsi uses
-DTLS-SRTP between the browser and its SFU; the SFU can decrypt media because
-it is an SFU. Do not use the public instance for content that must stay on
-your own infrastructure.
+`GET /channels/:id/voice/peers`
 
-To self-host, run Jitsi Meet (or another Jitsi deployment) on a public host
-and change `JITSI_HOST` in `JitsiCall.tsx` to its domain. The embedded call
-UI and room naming stay the same.
+- returns the current ordered participants and host
 
-## Why not LiveKit/P2P?
+## NAT / network requirements
 
-- The host is behind CGNAT, so a self-hosted LiveKit SFU cannot receive
-  inbound WebRTC media.
-- Public free TURN relays (Open Relay/PeerJS TURN) are unreliable or retired.
-- Jitsi's public deployment already provides working TURN/SFU relaying.
+WebRTC needs a path between participants. This deployment uses public STUN
+only:
 
-The backend still contains the legacy LiveKit and PeerJS/P2P code paths for
-LAN or public-SFU deployments, but the web client uses Jitsi.
+- `stun.l.google.com:19302`
+- `stun1.l.google.com:19302`
+
+This works for many home networks, but **symmetric NAT, CGNAT and some
+corporate networks will fail** without a TURN relay. When that happens the
+call shows:
+
+> Direct P2P connection failed. Both users may be behind restrictive NAT; try
+> a different network or mobile hotspot.
+
+The NullCord host itself is behind CGNAT, so a call involving a browser on the
+same network may also fail depending on the router. To support restrictive
+networks you would need a public TURN server or a media server; that is a
+deployment choice, not something P2P can solve.
+
+## Privacy
+
+Media is sent directly between participants, so each participant can see the
+IP addresses of the others (inherent to P2P WebRTC). No media is stored or
+relayed by NullCord.
 
 ## Troubleshooting
 
 | Symptom | Check |
 |---|---|
-| "Could not load the call relay" | `meet.element.io` blocked by network/VPN/firewall |
-| Joined but no camera/mic | Browser permission; Jitsi toolbar settings |
-| Incoming call card does not appear | Both users online; API/gateway reachable; check `/api/health` |
-| Incoming card appears late or never | The caller's heartbeat is stale; retry after ~90 seconds |
-| Another tab says the call is already open | Close the other call tab |
+| No one connects | Both users online; restrictive NAT? Try a mobile hotspot |
+| "Direct P2P connection failed" | Symmetric NAT/CGNAT; a TURN server is required |
+| No microphone | Browser permission; site must be HTTPS (or localhost) |
+| No camera | Camera permission; another app may be using it |
 | Screen share black | Browser display-capture permission |
-| Call view remains after hang-up | Click the NullCord phone/leave button |
-| Audio blocked | Click inside the Jitsi frame, then unmute in its toolbar |
-
-## Health checks
-
-```bash
-curl -s https://<your-admin-host>/api/health
-curl -s https://<your-api-host>/
-```
-
-The admin Developer page probes the Jitsi relay alongside the API, gateway,
-database and legacy LiveKit services.
+| Host does not change | Wait up to 45s after a crash; explicit Leave is immediate |
+| Call joins then drops | API/gateway reachable; check `/api/health` |

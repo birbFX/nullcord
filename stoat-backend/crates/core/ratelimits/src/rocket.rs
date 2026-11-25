@@ -78,6 +78,12 @@ impl Fairing for RatelimitFairing {
     }
 
     async fn on_request(&self, request: &mut Request<'_>, _: &mut Data<'_>) {
+        // CORS preflights must always succeed; rate-limiting them makes the
+        // browser treat the whole request as a CORS failure.
+        if request.method() == Method::Options {
+            return;
+        }
+
         use rocket::outcome::Outcome;
         if let Outcome::Error(_) = request.guard::<Ratelimiter>().await {
             info!(
@@ -92,6 +98,10 @@ impl Fairing for RatelimitFairing {
     }
 
     async fn on_response<'r>(&self, request: &'r Request<'_>, response: &mut Response<'r>) {
+        if request.method() == Method::Options {
+            return;
+        }
+
         let guard = request.guard::<Ratelimiter>().await;
         let (Outcome::Success(ratelimiter) | Outcome::Error((_, ratelimiter))) = guard else {
             unreachable!()

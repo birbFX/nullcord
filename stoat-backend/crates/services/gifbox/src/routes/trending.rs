@@ -9,10 +9,15 @@ use utoipa::IntoParams;
 
 use crate::{tenor, types};
 
+fn default_locale() -> String {
+    "en_US".to_string()
+}
+
 #[derive(Deserialize, IntoParams)]
 pub struct TrendingQueryParams {
     #[param(example = "en_US")]
     /// Users locale
+    #[serde(default = "default_locale")]
     pub locale: String,
     /// Amount of results to respond with
     pub limit: Option<u32>,

@@ -33,6 +33,10 @@ impl<'a> RatelimitResolver<Request<'a>> for DeltaRatelimits {
                         }
                     }
 
+                    if extra == Some("voice") {
+                        return ("voice_signal", Some(id));
+                    }
+
                     ("channels", Some(id))
                 }
                 ("servers", Some(id), _) => ("servers", Some(id)),
@@ -67,6 +71,7 @@ impl<'a> RatelimitResolver<Request<'a>> for DeltaRatelimits {
             "swagger" => 100,
             "safety" => 15,
             "safety_report" => 3,
+            "voice_signal" => 300,
             _ => 20,
         }
     }
