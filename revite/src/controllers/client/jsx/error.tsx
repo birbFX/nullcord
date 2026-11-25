@@ -1,3 +1,44 @@
+
+export interface BanViolation {
+    reason: string;
+    created_at?: string | null;
+}
+
+export interface BanInfo {
+    type: "AccountBanned" | "IpBanned";
+    message?: string | null;
+    expiresAt?: string | null;
+    violations?: BanViolation[];
+}
+
+/**
+ * Pull structured ban information out of an API error so the login screen
+ * can render the full account-standing page instead of a one-line error.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function extractBanInfo(error: any): BanInfo | undefined {
+    const data = error?.response?.data;
+    if (data?.type !== "AccountBanned" && data?.type !== "IpBanned") {
+        return undefined;
+    }
+
+    const violations = Array.isArray(data.violations)
+        ? data.violations
+              .filter((entry: any) => entry && typeof entry.reason === "string")
+              .map((entry: any) => ({
+                  reason: entry.reason,
+                  created_at: entry.created_at ?? null,
+              }))
+        : undefined;
+
+    return {
+        type: data.type,
+        message: data.message || undefined,
+        expiresAt: data.expires_at ?? null,
+        violations,
+    };
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function takeError(error: any): string {
     if (error.response) {

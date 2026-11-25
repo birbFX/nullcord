@@ -13,7 +13,12 @@ import { I18nError } from "../../../context/Locale";
 import WaveSVG from "../../settings/assets/wave.svg";
 
 import { clientController } from "../../../controllers/client/ClientController";
-import { takeError } from "../../../controllers/client/jsx/error";
+import {
+    extractBanInfo,
+    takeError,
+} from "../../../controllers/client/jsx/error";
+import type { BanInfo } from "../../../controllers/client/jsx/error";
+import AccountStanding from "../AccountStanding";
 import { IS_REVOLT } from "../../../version";
 import FormField from "../FormField";
 import { CaptchaBlock, CaptchaProps } from "./CaptchaBlock";
@@ -49,6 +54,7 @@ export const Form = observer(({ page, callback }: Props) => {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState<string | undefined>(undefined);
     const [error, setGlobalError] = useState<string | undefined>(undefined);
+    const [ban, setBan] = useState<BanInfo | undefined>(undefined);
     const [captcha, setCaptcha] = useState<CaptchaProps | undefined>(undefined);
 
     const { handleSubmit, register, errors, setError } = useForm<FormInputs>({
@@ -61,10 +67,17 @@ export const Form = observer(({ page, callback }: Props) => {
 
     async function onSubmit(data: FormInputs) {
         setGlobalError(undefined);
+        setBan(undefined);
         setLoading(true);
 
         function onError(err: unknown) {
             setLoading(false);
+
+            const banInfo = extractBanInfo(err);
+            if (banInfo) {
+                setBan(banInfo);
+                return;
+            }
 
             const error = takeError(err);
             switch (error) {
@@ -147,6 +160,7 @@ export const Form = observer(({ page, callback }: Props) => {
         );
     }
 
+    if (ban) return <AccountStanding info={ban} />;
     if (captcha) return <CaptchaBlock {...captcha} />;
     if (loading) return <Preloader type="spinner" />;
 
