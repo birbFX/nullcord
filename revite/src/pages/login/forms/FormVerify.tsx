@@ -1,12 +1,15 @@
 import { useHistory, useParams, Link } from "react-router-dom";
+import { useForm } from "react-hook-form";
 
 import { useEffect, useState } from "preact/hooks";
 import { Text } from "preact-i18n";
 
-import { Category, Preloader } from "@revoltchat/ui";
+import { Button, Category, Preloader } from "@revoltchat/ui";
 
 import { useApi } from "../../../controllers/client/ClientController";
 import { takeError } from "../../../controllers/client/jsx/error";
+import styles from "../Login.module.scss";
+import FormField from "../FormField";
 import { Form } from "./Form";
 
 export function FormResend() {
@@ -23,28 +26,46 @@ export function FormResend() {
 }
 
 export function FormVerify() {
-    const [error, setError] = useState<undefined | string>(undefined);
-    const [verifying, setVerifying] = useState(true);
-    const { token } = useParams<{ token: string }>();
+    const { token } = useParams<{ token?: string }>();
     const history = useHistory();
     const api = useApi();
 
+    const [error, setError] = useState<string | undefined>(undefined);
+    const [loading, setLoading] = useState(!!token);
+    const [verified, setVerified] = useState(false);
+
+    const { register, handleSubmit, errors } = useForm<{ code: string }>({
+        defaultValues: { code: "" },
+    });
+
+    async function submitCode(code: string) {
+        setError(undefined);
+        setLoading(true);
+
+        try {
+            await api.post(
+                `/auth/account/verify/${encodeURIComponent(code.trim())}`,
+            );
+            setVerified(true);
+            setTimeout(() => history.push("/login"), 1500);
+        } catch (err) {
+            setError(takeError(err));
+            setLoading(false);
+        }
+    }
+
     useEffect(() => {
-        api.post(`/auth/account/verify/${token as ""}`)
-            .then(() => {
-                setVerifying(false);
-                history.push("/login");
-            })
-            .catch((err) => {
-                setError(takeError(err));
-                setVerifying(false);
-            });
-        // eslint-disable-next-line
+        // Legacy email links contain a long token in the URL; verify it
+        // automatically. New emails contain a short code and use the form.
+        if (token) {
+            submitCode(token);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    if (verifying) return <Preloader type="ring" />;
+    if (loading) return <Preloader type="ring" />;
 
-    if (!error) {
+    if (verified) {
         return (
             <Category>
                 <Text id="login.verified_account" />
@@ -53,20 +74,52 @@ export function FormVerify() {
     }
 
     return (
-        <Category>
-            <p style={{ fontSize: "0.9em", marginBottom: "1em" }}>
-                <Text id={`error.${error}`} children={error} />
-            </p>
-            <p style={{ fontSize: "0.85em" }}>
+        <div className={styles.formModal}>
+            <div className={styles.welcome}>
+                <div className={styles.title}>
+                    <Text id="login.verify_title" />
+                </div>
+                <div className={styles.subtitle}>
+                    <Text id="login.verify_subtitle" />
+                </div>
+            </div>
+
+            <form
+                onSubmit={
+                    handleSubmit(
+                        (data) => submitCode(data.code),
+                    ) as unknown as JSX.GenericEventHandler<HTMLFormElement>
+                }>
+                <FormField
+                    type="code"
+                    register={register}
+                    showOverline
+                    error={errors.code?.message}
+                    autoComplete="one-time-code"
+                    autoFocus
+                />
+
+                {error && (
+                    <p style={{ fontSize: "0.8em", color: "var(--error)" }}>
+                        <Text id={`error.${error}`} children={error} />
+                    </p>
+                )}
+
+                <Button>
+                    <Text id="login.verify" />
+                </Button>
+            </form>
+
+            <span className={styles.create}>
                 <Link to="/login/resend">
-                    <Text id="login.resend" />
+                    <Text id="login.missing_verification" />
                 </Link>
-            </p>
-            <p style={{ fontSize: "0.85em" }}>
+            </span>
+            <span className={styles.create}>
                 <Link to="/login">
                     <Text id="login.remembered" />
                 </Link>
-            </p>
-        </Category>
+            </span>
+        </div>
     );
 }

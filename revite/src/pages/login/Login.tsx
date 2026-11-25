@@ -84,6 +84,9 @@ export default observer(() => {
                             <Route path="/login/resend">
                                 <FormResend />
                             </Route>
+                            <Route path="/login/verify" exact>
+                                <FormVerify />
+                            </Route>
                             <Route path="/login/verify/:token">
                                 <FormVerify />
                             </Route>

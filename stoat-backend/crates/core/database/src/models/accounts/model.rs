@@ -8,7 +8,10 @@ use serde_json::json;
 use crate::{
     events::client::EventV1,
     util::{
-        email::{email_templates, hash_token, normalise_email, send_email},
+        email::{
+            email_templates, format_verification_code, generate_verification_code, hash_token,
+            normalise_email, normalise_verification_code, send_email,
+        },
         password::hash_password,
     },
     Database, MFATicket, Session,
@@ -392,8 +395,9 @@ impl Account {
         if !config.api.smtp.host.is_empty() {
             let templates = email_templates().await;
 
-            let token = nanoid!(32);
-            let url = format!("{}{}", templates.verify.url, token);
+            let code = generate_verification_code();
+            let display_code = format_verification_code(&code);
+            let expires_in_minutes = (config.api.smtp.expiry.expire_verification / 60).max(1);
 
             send_email(
                 &config.api.smtp,
@@ -401,12 +405,17 @@ impl Account {
                 &templates.verify,
                 json!({
                     "email": self.email.clone(),
-                    "url": url
+                    "url": templates.verify.url.clone(),
+                    "code": display_code,
+                    "expires_in_minutes": expires_in_minutes
                 }),
             )?;
 
             self.verification = EmailVerification::Pending {
-                token: hash_token(&token, &config.api.security.token_pepper),
+                token: hash_token(
+                    &normalise_verification_code(&code),
+                    &config.api.security.token_pepper,
+                ),
                 expiry: Timestamp::now_utc()
                     .checked_add(Duration::seconds(
                         config.api.smtp.expiry.expire_verification,
@@ -441,8 +450,9 @@ impl Account {
         if !config.api.smtp.host.is_empty() {
             let templates = email_templates().await;
 
-            let token = nanoid!(32);
-            let url = format!("{}{}", templates.verify.url, token);
+            let code = generate_verification_code();
+            let display_code = format_verification_code(&code);
+            let expires_in_minutes = (config.api.smtp.expiry.expire_verification / 60).max(1);
 
             send_email(
                 &config.api.smtp,
@@ -450,13 +460,18 @@ impl Account {
                 &templates.verify,
                 json!({
                     "email": new_email.clone(),
-                    "url": url
+                    "url": templates.verify.url.clone(),
+                    "code": display_code,
+                    "expires_in_minutes": expires_in_minutes
                 }),
             )?;
 
             self.verification = EmailVerification::Moving {
                 new_email,
-                token: hash_token(&token, &config.api.security.token_pepper),
+                token: hash_token(
+                    &normalise_verification_code(&code),
+                    &config.api.security.token_pepper,
+                ),
                 expiry: Timestamp::now_utc()
                     .checked_add(Duration::seconds(
                         config.api.smtp.expiry.expire_verification,

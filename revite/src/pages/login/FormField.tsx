@@ -11,6 +11,7 @@ type FieldType =
     | "username"
     | "password"
     | "invite"
+    | "code"
     | "current_password";
 
 type Props = Omit<JSX.HTMLAttributes<HTMLInputElement>, "children" | "as"> & {
@@ -49,7 +50,9 @@ export default function FormField({
                         type === "current_password" ? "password" : name ?? type
                     }
                     type={
-                        type === "invite" || type === "username"
+                        type === "invite" ||
+                        type === "username" ||
+                        type === "code"
                             ? "text"
                             : type === "current_password"
                             ? "password"
@@ -92,10 +95,24 @@ export default function FormField({
                                           ? "InvalidUsername"
                                           : undefined,
                               }
+                            : type === "code"
+                            ? {
+                                  required: "RequiredField",
+                                  pattern: {
+                                      value: /^[A-Za-z0-9 -]{6,12}$/,
+                                      message: "InvalidToken",
+                                  },
+                              }
                             : { required: "RequiredField" },
                     )}
                     {...props}
-                    maxLength={type === "username" ? 35 : props.maxLength}
+                    maxLength={
+                        type === "username"
+                            ? 35
+                            : type === "code"
+                            ? 9
+                            : props.maxLength
+                    }
                 />
             </Localizer>
         </>

@@ -39,6 +39,35 @@ pub fn normalise_email(original: String) -> String {
     clean.to_lowercase()
 }
 
+/// Characters for human-entered verification codes. Ambiguous characters
+/// (`0`, `1`, `I`, `L`, `O`) are excluded so users can read them reliably.
+const VERIFICATION_ALPHABET: [char; 31] = [
+    '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K',
+    'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+];
+
+/// Generate an 8-character verification code (about 39 bits of entropy).
+pub fn generate_verification_code() -> String {
+    nanoid::nanoid!(8, &VERIFICATION_ALPHABET)
+}
+
+/// Normalise a code typed by a user: uppercase and strip spaces/dashes.
+pub fn normalise_verification_code(code: &str) -> String {
+    code.chars()
+        .filter(|character| character.is_ascii_alphanumeric())
+        .map(|character| character.to_ascii_uppercase())
+        .collect()
+}
+
+/// Format a code for display in email (`ABCD-EFGH`).
+pub fn format_verification_code(code: &str) -> String {
+    if code.is_ascii() && code.len() == 8 {
+        format!("{}-{}", &code[..4], &code[4..])
+    } else {
+        code.to_string()
+    }
+}
+
 /// Derive the value stored in the database for a single-use token.
 ///
 /// Raw verification, password-reset and deletion tokens are only ever sent
@@ -108,7 +137,7 @@ pub async fn email_templates() -> Templates {
         Templates {
             verify: Template {
                 title: "verify".into(),
-                text: "[[{{url}}]]".into(),
+                text: "[[{{code}}]]".into(),
                 url: "".into(),
                 html: None,
             },
@@ -140,10 +169,10 @@ pub async fn email_templates() -> Templates {
     } else if config.production {
         Templates {
             verify: Template {
-                title: "Verify your Stoat account.".into(),
-                text: include_str!("../../templates/verify.txt").into(),
-                url: format!("{}/login/verify/", config.hosts.app),
-                html: Some(include_str!("../../templates/verify.html").into()),
+                title: "Verify your NullCord account.".into(),
+                text: include_str!("../../templates/verify.nullcord.txt").into(),
+                url: format!("{}/login/verify", config.hosts.app),
+                html: Some(include_str!("../../templates/verify.nullcord.html").into()),
             },
             reset: Template {
                 title: "Reset your Stoat password.".into(),
@@ -173,10 +202,10 @@ pub async fn email_templates() -> Templates {
     } else {
         Templates {
             verify: Template {
-                title: "Verify your account.".into(),
-                text: include_str!("../../templates/verify.whitelabel.txt").into(),
-                url: format!("{}/login/verify/", config.hosts.app),
-                html: None,
+                title: "Verify your NullCord account.".into(),
+                text: include_str!("../../templates/verify.nullcord.txt").into(),
+                url: format!("{}/login/verify", config.hosts.app),
+                html: Some(include_str!("../../templates/verify.nullcord.html").into()),
             },
             reset: Template {
                 title: "Reset your password.".into(),
@@ -328,5 +357,29 @@ mod security_tests {
         assert!(is_token_digest(&a));
         assert!(!is_token_digest("abc"));
         assert_ne!(hash_token("abc", ""), hash_token("abd", ""));
+    }
+}
+
+#[cfg(test)]
+mod verification_code_tests {
+    use super::*;
+
+    #[test]
+    fn codes_are_eight_unambiguous_characters() {
+        for _ in 0..100 {
+            let code = generate_verification_code();
+            assert_eq!(code.len(), 8);
+            assert!(
+                code.chars().all(|c| VERIFICATION_ALPHABET.contains(&c)),
+                "unexpected character in {code}"
+            );
+        }
+    }
+
+    #[test]
+    fn codes_are_normalised_and_formatted() {
+        assert_eq!(normalise_verification_code("abcd-efgh"), "ABCDEFGH");
+        assert_eq!(normalise_verification_code(" AB CD EFGH "), "ABCDEFGH");
+        assert_eq!(format_verification_code("ABCDEFGH"), "ABCD-EFGH");
     }
 }

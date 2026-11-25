@@ -131,6 +131,13 @@ export const Form = observer(({ page, callback }: Props) => {
                         </div>
                     </>
                 )}
+                {configuration?.features.email && (
+                    <Link to="/login/verify">
+                        <a>
+                            <Text id="login.enter_verification_code" />
+                        </a>
+                    </Link>
+                )}
                 <Link to="/login">
                     <a>
                         <Text id="login.remembered" />

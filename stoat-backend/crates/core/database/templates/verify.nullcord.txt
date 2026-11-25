@@ -1,0 +1,16 @@
+Verify your NullCord account
+
+Hi,
+
+Thanks for joining NullCord. Enter this verification code to finish creating your account:
+
+    {{code}}
+
+Enter it at: {{url}}
+
+This code expires in {{expires_in_minutes}} minutes.
+
+If you did not create a NullCord account, you can safely ignore this email. Someone may have entered your address by mistake.
+
+— NullCord
+Canyon Lake Labs

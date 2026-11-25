@@ -2,7 +2,8 @@
 //! POST /verify/<code>
 use rocket::{serde::json::Json, State};
 use revolt_database::{
-    Database, EmailVerification, MFATicket, SecurityEvent, util::email::normalise_email,
+    Database, EmailVerification, MFATicket, SecurityEvent,
+    util::email::{normalise_email, normalise_verification_code},
 };
 use revolt_result::Result;
 use revolt_models::v0;
@@ -25,6 +26,15 @@ pub async fn verify_email(
     }
 
     enforce_rate_limit("verify_ip", &client_ip.0, 30, 60 * 60).await?;
+
+    // Short human-entered codes are normalised (uppercase, no spaces/dashes).
+    // Legacy 32-character link tokens are used verbatim so existing pending
+    // links keep working.
+    let code = if code.len() >= 20 {
+        code
+    } else {
+        normalise_verification_code(&code)
+    };
 
     // Find the account
     let mut account = match db.fetch_account_with_email_verification(&code).await {
@@ -92,19 +102,19 @@ mod tests {
         let (mut account, _, _) = harness.new_user().await;
 
         account.verification = EmailVerification::Pending {
-            token: "token".into(),
+            token: "TOKEN".into(),
             expiry: Timestamp::now_utc() + Duration::seconds(100),
         };
 
         account.save(&harness.db).await.unwrap();
 
-        let res = harness.client.post("/auth/account/verify/token").dispatch().await;
+        let res = harness.client.post("/auth/account/verify/TOKEN").dispatch().await;
 
         assert_eq!(res.status(), Status::Ok);
 
         // Make sure it was used and can't be used again
         assert!(harness.db
-            .fetch_account_with_email_verification("token")
+            .fetch_account_with_email_verification("TOKEN")
             .await
             .is_err());
 
@@ -131,7 +141,7 @@ mod tests {
     async fn fail_invalid_token() {
         let harness = TestHarness::new().await;
 
-        let res = harness.client.post("/auth/account/verify/token").dispatch().await;
+        let res = harness.client.post("/auth/account/verify/TOKEN").dispatch().await;
 
         assert_eq!(res.status(), Status::Unauthorized);
         assert!(matches!(

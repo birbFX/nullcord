@@ -36,7 +36,8 @@
             "password": "Enter your password.",
             "new_password": "Enter a new password.",
             "invite": "Enter your invite code.",
-            "current_password": "Enter your current password."
+            "current_password": "Enter your current password.",
+            "code": "Enter the 8-character code from your email."
         },
         "forgot": "Forgot your password?",
         "reset": "Reset password",
@@ -45,11 +46,11 @@
         "new": "New to NullCord?",
         "existing": "Already have an account?",
         "create": "Create a new account",
-        "missing_verification": "Didn't receive an email?",
+        "missing_verification": "Didn't receive the code?",
         "resend": "Resend verification",
         "cancel": "Cancel request",
         "check_mail": "Check your mail!",
-        "email_delay": "We've sent you a verification email. Please allow up to 10 minutes for it to arrive.",
+        "email_delay": "We've sent you a verification code. It expires in 5 minutes. Check your spam folder if it doesn't arrive.",
         "check_spam": "Please check your spam folder if you can't find it",
         "open_mail_provider": "Open {{provider}}",
         "successful_registration": "Successfully registered!",
@@ -63,7 +64,12 @@
             "resend": "Failed to resend!",
             "verify": "Failed to verify!"
         },
-        "unofficial_instance": "Third-party instance."
+        "unofficial_instance": "Third-party instance.",
+        "code": "Verification Code",
+        "verify_title": "Verify your account",
+        "verify_subtitle": "Enter the 8-character code from your email. It expires in 5 minutes.",
+        "verify": "Verify",
+        "enter_verification_code": "Enter verification code"
     },
     "app": {
         "status": {
