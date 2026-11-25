@@ -1,133 +1,77 @@
-# NullCord
+# NullCord (working tree)
 
-Self-hostable Discord-style chat for Canyon Lake Labs, built on the
-Stoat (formerly Revolt) stack.
+Source for https://github.com/birbFX/nullcord.
 
-> [!IMPORTANT]
-> **This is AI vibe coding.**
-> NullCord is a **passion project by Canyon Lake Labs**, built for fun and made
-> almost entirely with AI assistance. It is a hobby project, not a polished
-> commercial product. **If you don't like AI made software then don't use it.**
+## Publishing
 
-This repository contains the source for everything we run:
+After any change, publish it:
 
-| Path | What it is |
-|---|---|
-| `revite/` | NullCord web client (Preact + Vite), including our UI changes |
-| `revite/external/` | Our forks of `revolt.js`, `@revoltchat/components` and locales |
-| `stoat-backend/` | Stoat API / events / file services (Rust) |
-| `bot/` | NullCord bot: moderation, logging, prefix commands, tickets/appeals, music queue |
-| `admin-panel/` | Stoat admin panel (Next.js), modified to run against this stack |
+```bash
+./publish.sh "what changed"
+```
 
-No credentials, private endpoints, tunnel configs or deployment secrets are
-included. All instance-specific values are supplied through environment
-variables.
+`publish.sh` syncs `revite/`, `stoat-backend/`, `bot/` and `admin-panel/`
+into `/mnt/cll-storage/nullcord-publish`, strips secrets/instance endpoints,
+and pushes to GitHub. See `AGENTS.md` for details.
 
-## Self-hosting (outline)
-
-1. **Backend** (`stoat-backend/`)
-   - MongoDB (replica set), Redis/KeyDB, RabbitMQ, S3-compatible storage, LiveKit.
-   - Copy `Revolt.overrides.example.toml` to `Revolt.overrides.toml` and set
-     your public hosts.
-   - Build the Rust services (`cargo build`) or use the included Dockerfiles.
-2. **Client** (`revite/`)
-   ```bash
-   cd revite
-   cp .env.example .env      # set VITE_API_URL (and VITE_ADMIN_URL if used)
-   yarn install
-   yarn dev
-   ```
-   Production: `yarn build`, then serve `dist/`.
-3. **Bot** (`bot/`)
-   ```bash
-   cd bot
-   printf '%s' 'YOUR_BOT_TOKEN' > .token && chmod 600 .token
-   ./run.sh start
-   ```
-4. **Admin panel** (`admin-panel/`)
-   ```bash
-   cd admin-panel
-   cp .env.local.example .env.local   # set MONGODB, REDIS, auth, PLATFORM_ACCOUNT_ID
-   bun install && bun run build && node server/.build/server/index.js
-   ```
+Never commit `.env`, `.env.local`, `bot/.token`, `Revolt.overrides.toml`,
+`public-urls.env` or tunnel configs.
 
 ## Calls, video and screen sharing
 
-Voice channels and DM/group calls are embedded through the Jitsi IFrame API
-on the public `meet.element.io` relay. Jitsi provides the SFU/TURN path for
-remote participants, microphone, camera and screen sharing. DM/group
-recipients get an incoming-call card with a ringtone and Join/Decline actions;
-the in-call bar shows participant count, call duration and quick
-mute/camera/screen/leave controls, and syncs hang-up back to the call view.
-
-This relay exists because the reference host is behind CGNAT and cannot accept
-inbound WebRTC media. See [`VOICE.md`](./VOICE.md) for the architecture,
-privacy notes, self-hosting instructions and troubleshooting. The backend
-still contains the legacy LiveKit path for LAN/public-SFU deployments.
-
-## Blocking
-
-Users can block others from the context menu or their profile. Blocking
-automatically removes the friendship and prevents direct messages in both
-directions. The blocked account can still see the other user's username and
-profile picture, but profile details and message delivery return
-`403 Forbidden`.
-
-When a blocked user tries to send a DM, their client shows a local, dismissible
-Clyde-style notice. The notice is visible only to the sender and links to the
-help article at
-[`support.canyonlakelabs.com/topics/nullcord`](https://support.canyonlakelabs.com/topics/nullcord).
+Voice channels and DM/group calls use **direct peer-to-peer WebRTC** with
+NullCord’s API/gateway for signalling. The first participant is the host; the
+host role moves to the next participant when the host leaves. Multiple
+participants can share their screen at once. Nitro accounts can publish up to
+1440p60; basic/non-Nitro accounts are capped at 720p30. No Jitsi or media
+relay is used. See [`VOICE.md`](./VOICE.md) for the architecture, NAT
+requirements and privacy notes.
 
 ## Orbs, Nitro and quests
 
-Orbs, Nitro tiers and daily quest progress are server-authoritative. They are
-stored in MongoDB through the API, never in browser storage, and the client
-cannot set a balance or tier directly.
+Orbs, Nitro tiers and daily quest progress are **server-authoritative**. They
+are stored in MongoDB through the API, not in localStorage, and the client
+cannot write balances or tiers directly.
 
-- `GET /users/@me/economy` — current balance, tier and daily quests
-- `POST /users/@me/economy/quests/:id/claim` — server-verified quest claim
-- `POST /users/@me/economy/nitro/redeem` — server-side Orb deduction
-- `/sync/settings/set` rejects the protected `nullcord:economy` key
+- `GET /users/@me/economy` returns the current balance, tier and daily quests.
+- `POST /users/@me/economy/quests/:id/claim` verifies server-recorded activity.
+- `POST /users/@me/economy/nitro/redeem` deducts Orbs server-side.
+- The legacy `nullcord:economy` sync key is rejected by `/sync/settings/set`.
 
-Server hooks validate messages, images, reactions, invites, invite joins,
-voice presence, profile changes, themes, server creation and friend requests.
-Unverifiable quests are excluded from the daily pool.
+Server hooks record eligible activity for messages, images, reactions,
+invites, invitations accepted, voice presence, profile changes, themes, server
+creation and friend requests. Quests that cannot be verified by the server are
+not included in the daily pool.
 
-Theme, appearance, notifications, locale and ordering continue to use server
-sync settings. Device-specific settings such as audio devices and drafts remain
-local.
+Account preferences such as theme, appearance, notifications, locale and
+ordering continue to use the existing server sync settings. Device-specific
+settings such as audio devices and drafts stay local.
 
 ## Usernames
 
 Usernames are 2–35 characters and may contain Unicode letters, numbers,
 spaces, dots, dashes and underscores. Spaces must be single and cannot be at
-the start or end. The API, onboarding form, username-change form and bot names
-all enforce the same rule.
+the start or end. The API and client enforce the same rule.
+
+## Blocking
+
+Blocking is available from a user's context menu and profile. Blocking removes
+the friendship automatically and stops both accounts from sending direct
+messages to each other. The blocked account can still see the other user's
+username and profile picture, but profile details and message sends return
+`403 Forbidden`.
+
+When a blocked user tries to send a DM, the client shows a local Clyde-style
+notice. The notice is only visible to the sender and links to the help article at
+[`support.canyonlakelabs.com/topics/nullcord`](https://support.canyonlakelabs.com/topics/nullcord).
 
 ## Admin panel
 
-The Next.js admin panel includes:
-
-- user search by username, display name, email or ID
-- server, channel and recent-message browsers
-- raw object inspection for users, servers, channels, messages, reports and cases
-- account enable/disable, email verification, MFA reset, recovery-code clearing
-- username and display-name editing, admin grants and session revocation
-- strikes, temporary suspensions, permanent/temporary bans and unsuspension
-- IP bans and per-user session IP history
-- bot verification
-- platform announcements
-- service logs, LiveKit/voice health and `/api/health`
-
-## Licence
-
-NullCord is distributed under the **GNU Affero General Public License v3.0**
-(see `LICENSE`). The client, backend and admin panel are derivative works of
-the Stoat/Revolt projects; their notices and licences are kept in place.
-If you run a modified version as a network service, you must offer its
-corresponding source — that is exactly what this repository is for.
-
-Source: <https://github.com/birbFX/nullcord>
+The Next.js admin panel includes user search, server and message browsers,
+raw object inspection, account/MFA/email management, username/display-name
+editing, admin grants, session revocation, strikes/suspensions/bans with
+temporary expiry, IP bans, bot verification, announcements, service logs and
+LiveKit/voice health checks. `/api/health` is an unauthenticated JSON probe.
 
 ## UI attribution
 
@@ -158,8 +102,39 @@ It can inspect the local session and storage, and change local-only plugins
 and UI mode. Orbs, Nitro tiers and quest claims are server-authoritative and
 cannot be changed by this overlay. It does not call admin APIs.
 
+## Demo account seeding
+
+`seed-accounts.mjs` populates a fresh instance with accounts that join the
+configured invite. It uses a local Ollama model (default `qwen2.5:3b`) plus a
+local fallback, and stores learned style patterns in `seed/username-memory.json`.
+
+```bash
+node seed-accounts.mjs 100 --dry-run       # preview only
+node seed-accounts.mjs 100 --confirm       # create + join CLL
+node seed-accounts.mjs 500 --confirm       # larger run
+```
+
+Credentials are written to `seed/accounts.jsonl` with mode `0600`; the whole
+`seed/` directory is gitignored. Use `--api` to point at another API and
+`--invite` to change the destination server.
+
 ## NullCord Desktop
 
 The Electron desktop source is bundled in `for-desktop/`, based on
-`stoatchat/for-desktop` (AGPL-3.0), with NullCord RPC branding. Set
-`NULLCORD_DISCORD_CLIENT_ID` and `NULLCORD_PUBLIC_URL` before starting it.
+`stoatchat/for-desktop` (AGPL-3.0). Discord RPC has been removed, so NullCord
+does not require Discord. Set `NULLCORD_PUBLIC_URL` before starting it.
+
+## Python bot client
+
+`nullcord.py` is a single-file, discord.py-shaped bot client for the NullCord
+REST API and gateway. It includes `Client`, `Bot`, `Embed`, uploads, messages,
+servers, roles, members, invites, emoji, and the bot-safe endpoint helpers.
+
+```bash
+NULLCORD_API=https://your-nullcord-api.example \
+NULLCORD_BOT_TOKEN=... \
+python3 your_bot.py
+```
+
+See `NULLCORD_BOT_API.md` for every bot-capable call, the bot-blocked routes,
+embeds, uploads, gateway packets, and examples.
