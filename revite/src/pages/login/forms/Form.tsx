@@ -17,8 +17,7 @@ import {
     extractBanInfo,
     takeError,
 } from "../../../controllers/client/jsx/error";
-import type { BanInfo } from "../../../controllers/client/jsx/error";
-import AccountStanding from "../AccountStanding";
+import { accountStanding } from "../../../lib/accountStanding";
 import { IS_REVOLT } from "../../../version";
 import FormField from "../FormField";
 import { CaptchaBlock, CaptchaProps } from "./CaptchaBlock";
@@ -54,7 +53,6 @@ export const Form = observer(({ page, callback }: Props) => {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState<string | undefined>(undefined);
     const [error, setGlobalError] = useState<string | undefined>(undefined);
-    const [ban, setBan] = useState<BanInfo | undefined>(undefined);
     const [captcha, setCaptcha] = useState<CaptchaProps | undefined>(undefined);
 
     const { handleSubmit, register, errors, setError } = useForm<FormInputs>({
@@ -67,7 +65,6 @@ export const Form = observer(({ page, callback }: Props) => {
 
     async function onSubmit(data: FormInputs) {
         setGlobalError(undefined);
-        setBan(undefined);
         setLoading(true);
 
         function onError(err: unknown) {
@@ -75,7 +72,7 @@ export const Form = observer(({ page, callback }: Props) => {
 
             const banInfo = extractBanInfo(err);
             if (banInfo) {
-                setBan(banInfo);
+                accountStanding.show(banInfo);
                 return;
             }
 
@@ -103,6 +100,7 @@ export const Form = observer(({ page, callback }: Props) => {
                         setCaptcha(undefined);
                         try {
                             await callback({ ...data, captcha });
+                            accountStanding.clear();
                             setSuccess(data.email);
                         } catch (err) {
                             onError(err);
@@ -115,6 +113,7 @@ export const Form = observer(({ page, callback }: Props) => {
                 });
             } else {
                 await callback(data);
+                accountStanding.clear();
                 setSuccess(data.email);
             }
         } catch (err) {
@@ -160,7 +159,6 @@ export const Form = observer(({ page, callback }: Props) => {
         );
     }
 
-    if (ban) return <AccountStanding info={ban} />;
     if (captcha) return <CaptchaBlock {...captcha} />;
     if (loading) return <Preloader type="spinner" />;
 

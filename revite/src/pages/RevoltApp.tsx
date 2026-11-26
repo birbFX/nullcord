@@ -4,6 +4,7 @@ import styled, { css } from "styled-components/macro";
 
 import { useEffect, useState } from "preact/hooks";
 
+import AccountStandingWatcher from "../components/account/AccountStandingWatcher";
 import QuestTracker from "../components/QuestTracker";
 import { IncomingCall } from "../components/navigation/IncomingCall";
 import ContextMenus from "../lib/ContextMenus";
@@ -247,6 +248,7 @@ export default function App() {
                 </OverlappingPanels>
             </AppContainer>
             <IncomingCall />
+            <AccountStandingWatcher />
         </>
     );
 }

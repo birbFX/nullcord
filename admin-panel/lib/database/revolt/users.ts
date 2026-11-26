@@ -4,6 +4,7 @@ import Revolt from "revolt-nodejs-bindings";
 import { API } from "revolt.js";
 
 import { callProcedure, createCollectionFn } from "..";
+import { publishPrivate } from "@/lib/events";
 
 export type IpBan = {
   _id: string;
@@ -83,18 +84,35 @@ export async function banUser(
 ) {
   const existing = await userCol().findOne({ _id: userId });
   const flags = Number((existing as { flags?: number } | null)?.flags ?? 0);
+  const banMessage = message || "Your account has been banned.";
   await userCol().updateOne(
     { _id: userId },
     {
       $set: {
         // Clear suspension, set banned, preserve unrelated flags.
         flags: (flags & ~1) | 4,
-        ban_message: message || "Your account has been banned.",
+        ban_message: banMessage,
         ...(until ? { banned_until: until.getTime() } : {}),
       },
       ...(until ? {} : { $unset: { banned_until: "" } }),
     } as never,
   );
+
+  // Push the account-standing screen immediately. Publish before revoking
+  // sessions so an open client receives the event while its socket is alive.
+  try {
+    await publishPrivate(userId, {
+      type: "AccountStanding",
+      info: {
+        type: "AccountBanned",
+        message: banMessage,
+        expires_at: until ? until.toISOString() : null,
+      },
+    } as never);
+  } catch (error) {
+    console.error("Could not publish ban event", error);
+  }
+
   await sessionCol().deleteMany({ user_id: userId });
 }
 

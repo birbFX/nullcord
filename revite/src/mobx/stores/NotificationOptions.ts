@@ -261,6 +261,9 @@ export default class NotificationOptions
      * @param message Message
      */
     async onMessage(message: Message) {
+        // Sending a message must never notify you about your own message.
+        if (message.author_id === message.client.user?._id) return;
+
         // Ignore if we are currently looking and focused on the channel.
         if (
             message.channel_id === routeInformation.getChannel() &&

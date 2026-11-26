@@ -19,6 +19,7 @@ import {
     Plug,
     Bot,
     Trash,
+    Shield,
 } from "@styled-icons/boxicons-solid";
 import { observer } from "mobx-react-lite";
 import { Route, Switch, useHistory } from "react-router-dom";
@@ -53,6 +54,7 @@ import { Notifications } from "./panes/Notifications";
 import { PluginsPage } from "./panes/Plugins";
 import { Profile } from "./panes/Profile";
 import { ServerTags } from "./panes/ServerTags";
+import { Safety } from "./panes/Safety";
 import { CustomBadges } from "./panes/CustomBadges";
 import { isOwner } from "../../lib/owner";
 import { Connections } from "./panes/Connections";
@@ -167,6 +169,11 @@ export default observer(() => {
                     title: <Text id="app.settings.pages.sessions.title" />,
                 },
                 {
+                    id: "safety",
+                    icon: <Shield size={20} />,
+                    title: "Safety standing",
+                },
+                {
                     id: "connections",
                     icon: <Link size={20} />,
                     title: "Connections",
@@ -231,6 +238,11 @@ export default observer(() => {
                     <Route path="/settings/sessions">
                         <RequiresOnline>
                             <Sessions />
+                        </RequiresOnline>
+                    </Route>
+                    <Route path="/settings/safety">
+                        <RequiresOnline>
+                            <Safety />
                         </RequiresOnline>
                     </Route>
                     <Route path="/settings/connections">

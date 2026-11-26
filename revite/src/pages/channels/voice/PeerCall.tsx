@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 
 import {
     BarChartAlt2,
+    Chat,
     Microphone,
     MicrophoneOff,
     PhoneOff,
@@ -24,7 +25,9 @@ const Wrap = styled.div`
     min-height: 0;
     display: flex;
     flex-direction: column;
-    background: #05060a;
+    background:
+        radial-gradient(circle at 50% 0%, rgba(88, 101, 242, 0.09), transparent 46%),
+        #08090d;
     color: #fff;
 `;
 
@@ -32,10 +35,10 @@ const Grid = styled.div<{ empty?: boolean }>`
     flex: 1;
     min-height: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
     align-content: center;
-    padding: 8px;
+    padding: 18px 18px 104px;
     overflow: auto;
 
     &.empty {
@@ -48,17 +51,20 @@ const Grid = styled.div<{ empty?: boolean }>`
 
 const Tile = styled.div<{ screen?: boolean }>`
     position: relative;
-    min-height: 170px;
+    min-height: 190px;
     overflow: hidden;
-    border-radius: 10px;
-    border: 1px solid #1c2230;
-    background: #0b0d13;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background:
+        radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.06), transparent 62%),
+        #101116;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.24);
 
     ${(props) =>
         props.screen &&
         `
         grid-column: span 2;
-        min-height: 240px;
+        min-height: 260px;
     `}
 
     video {
@@ -91,14 +97,62 @@ const Tile = styled.div<{ screen?: boolean }>`
 
     .screenTag {
         position: absolute;
-        top: 8px;
-        left: 8px;
-        padding: 3px 6px;
-        border-radius: 4px;
-        background: rgba(0, 0, 0, 0.62);
+        top: 10px;
+        left: 10px;
+        padding: 4px 7px;
+        border-radius: 5px;
+        background: rgba(0, 0, 0, 0.66);
         font-size: 10px;
         text-transform: uppercase;
         letter-spacing: 0.06em;
+    }
+
+    .fs {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 30px;
+        height: 30px;
+        display: grid;
+        place-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 7px;
+        cursor: pointer;
+        color: #fff;
+        background: rgba(0, 0, 0, 0.58);
+        opacity: 0;
+        transition:
+            opacity 0.15s ease,
+            background 0.15s ease;
+    }
+
+    &:hover .fs,
+    .fs:focus-visible {
+        opacity: 1;
+    }
+
+    .fs:hover {
+        background: rgba(0, 0, 0, 0.82);
+    }
+
+    .screenAudio {
+        position: absolute;
+        top: 10px;
+        right: 48px;
+        padding: 4px 7px;
+        border-radius: 5px;
+        background: rgba(0, 0, 0, 0.66);
+        color: #b7f5c4;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+    }
+
+    @media (hover: none) {
+        .fs {
+            opacity: 1;
+        }
     }
 `;
 
@@ -141,65 +195,120 @@ const Status = styled.div`
 `;
 
 const Controls = styled.div`
+    position: absolute;
+    left: 50%;
+    bottom: 18px;
+    z-index: 4;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 10px;
-    background: rgba(8, 10, 16, 0.95);
-    border-top: 1px solid #171c27;
+    gap: 6px;
+    padding: 7px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    background: rgba(24, 25, 30, 0.94);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+    transform: translateX(-50%);
+    backdrop-filter: blur(12px);
 
     button {
         width: 40px;
-        height: 36px;
+        height: 40px;
         display: grid;
         place-items: center;
-        border: 1px solid #252d3d;
-        border-radius: 9px;
+        border: 0;
+        border-radius: 50%;
         cursor: pointer;
         color: #e7ecf7;
-        background: #121722;
+        background: #2b2d33;
         transition:
             background 0.15s ease,
-            border-color 0.15s ease;
+            color 0.15s ease,
+            transform 0.12s ease;
     }
 
     button:hover {
-        background: #1a2231;
+        background: #3a3d45;
+    }
+
+    button:active {
+        transform: scale(0.95);
     }
 
     button.active {
-        border-color: #e05252;
         color: #ffb4b4;
-        background: #2a1417;
+        background: #4a2427;
     }
 
     button.leave {
         width: auto;
-        padding: 0 14px;
-        gap: 6px;
-        border-color: #e05252;
-        background: #b33838;
+        min-width: 48px;
+        padding: 0 16px;
+        gap: 7px;
+        border-radius: 10px;
+        background: #da373c;
         color: #fff;
         font-size: 12px;
         font-weight: 700;
+    }
+
+    button.leave:hover {
+        background: #ec4248;
+    }
+
+    @media (max-width: 480px) {
+        bottom: 10px;
+
+        button {
+            width: 36px;
+            height: 36px;
+        }
+
+        button.leave {
+            width: auto;
+            padding: 0 12px;
+        }
     }
 `;
 
 const ErrorBox = styled.div`
     position: absolute;
-    inset: 12px;
+    inset: 0;
     z-index: 5;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 24px;
-    border-radius: 12px;
-    background: rgba(10, 12, 18, 0.94);
-    border: 1px solid #3a2024;
-    color: #ffd5d5;
-    text-align: center;
-    font-size: 13px;
-    line-height: 20px;
+    background: rgba(5, 6, 10, 0.72);
+    backdrop-filter: blur(8px);
+
+    .card {
+        width: min(480px, 100%);
+        padding: 24px;
+        border: 1px solid #3a2024;
+        border-radius: 14px;
+        background: #151218;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        color: #ffd5d5;
+        text-align: center;
+        font-size: 13px;
+        line-height: 20px;
+    }
+
+    .title {
+        margin-bottom: 6px;
+        color: #fff;
+        font-size: 17px;
+        font-weight: 700;
+    }
+
+    .actions {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 16px;
+        flex-wrap: wrap;
+    }
 `;
 
 function StreamVideo({
@@ -223,6 +332,61 @@ function StreamVideo({
             muted
             className={screen ? "screen" : undefined}
         />
+    );
+}
+
+function ScreenTile({
+    stream,
+    label,
+}: {
+    stream: MediaStream;
+    label: string;
+}) {
+    const tileRef = useRef<HTMLDivElement>(null);
+    const hasAudio = stream
+        .getAudioTracks()
+        .some((track) => track.readyState === "live");
+
+    async function toggleFullscreen() {
+        try {
+            if (document.fullscreenElement) {
+                await document.exitFullscreen();
+            } else {
+                await tileRef.current?.requestFullscreen();
+            }
+        } catch (error) {
+            console.warn("Fullscreen failed", error);
+        }
+    }
+
+    return (
+        <Tile ref={tileRef} screen>
+            <StreamVideo stream={stream} screen />
+            <div className="screenTag">Screen</div>
+            {hasAudio && <div className="screenAudio">Audio</div>}
+            <button
+                type="button"
+                className="fs"
+                title="Fullscreen screen"
+                aria-label="Fullscreen screen"
+                onClick={toggleFullscreen}>
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true">
+                    <path
+                        d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    />
+                </svg>
+            </button>
+            <div className="label">{label}</div>
+        </Tile>
     );
 }
 
@@ -288,9 +452,11 @@ export default observer(function PeerCall({
             <Status>
                 <div className="count">
                     <BarChartAlt2 size={14} />
+                    Voice connected
+                    {" · "}
                     {voiceState.participantCount <= 1
-                        ? "Waiting for others"
-                        : `${voiceState.participantCount} connected`}
+                        ? "waiting"
+                        : `${voiceState.participantCount} people`}
                     {" · "}
                     {formatDuration(seconds)}
                 </div>
@@ -303,25 +469,29 @@ export default observer(function PeerCall({
                     ? "Waiting for someone to join the call…"
                     : null}
 
-                {remote.map((entry) => (
-                    <Tile key={`${entry.userId}-${entry.screen}`} screen={entry.screen}>
-                        <StreamVideo stream={entry.stream} screen={entry.screen} />
-                        {entry.screen && <div className="screenTag">Screen</div>}
-                        <div className="label">
-                            {nameOf(entry.userId)}
-                            {voiceState.masterId === entry.userId
-                                ? " · Host"
-                                : ""}
-                        </div>
-                    </Tile>
-                ))}
+                {remote.map((entry) => {
+                    const label = `${nameOf(entry.userId)}${
+                        voiceState.masterId === entry.userId ? " · Host" : ""
+                    }`;
+                    return entry.screen ? (
+                        <ScreenTile
+                            key={`${entry.userId}-screen`}
+                            stream={entry.stream}
+                            label={label}
+                        />
+                    ) : (
+                        <Tile key={`${entry.userId}-camera`}>
+                            <StreamVideo stream={entry.stream} screen={false} />
+                            <div className="label">{label}</div>
+                        </Tile>
+                    );
+                })}
 
                 {localScreen && (
-                    <Tile screen>
-                        <StreamVideo stream={localScreen} screen />
-                        <div className="screenTag">Screen</div>
-                        <div className="label">{displayName} · You</div>
-                    </Tile>
+                    <ScreenTile
+                        stream={localScreen}
+                        label={`${displayName} · You`}
+                    />
                 )}
 
                 {localStream && (
@@ -337,14 +507,25 @@ export default observer(function PeerCall({
 
             {voiceState.error && (
                 <ErrorBox>
-                    <div>
-                        {voiceState.error}
-                        <br />
-                        <Button
-                            palette="secondary"
-                            onClick={voiceState.disconnect}>
-                            Leave call
-                        </Button>
+                    <div className="card">
+                        <div className="title">Call connection lost</div>
+                        <div>{voiceState.error}</div>
+                        <div className="actions">
+                            <Button
+                                palette="secondary"
+                                onClick={async () => {
+                                    const channel = client.channels.get(id);
+                                    voiceState.disconnect();
+                                    if (channel) await voiceState.connect(channel);
+                                }}>
+                                Retry
+                            </Button>
+                            <Button
+                                palette="secondary"
+                                onClick={voiceState.disconnect}>
+                                Leave call
+                            </Button>
+                        </div>
                     </div>
                 </ErrorBox>
             )}
@@ -396,6 +577,14 @@ export default observer(function PeerCall({
                             : voiceState.startProducing("screen"))
                     }>
                     <Desktop size={17} />
+                </button>
+
+                <button
+                    type="button"
+                    className={voiceState.chatOpen ? "" : "active"}
+                    title={voiceState.chatOpen ? "Hide chat" : "Show chat"}
+                    onClick={() => voiceState.toggleChat()}>
+                    <Chat size={17} />
                 </button>
 
                 <button

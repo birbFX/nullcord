@@ -15,6 +15,7 @@ mod find_mutual;
 mod get_default_avatar;
 mod open_dm;
 mod remove_friend;
+mod safety;
 mod send_friend_request;
 mod unblock_user;
 
@@ -37,6 +38,7 @@ pub fn routes() -> (Vec<Route>, OpenApi) {
         crate::routes::servers::extras::fetch_discord_template,
         // User Information
         fetch_self::fetch,
+        safety::fetch,
         fetch_user::fetch,
         fetch_user_flags::fetch_user_flags,
         edit_user::edit,

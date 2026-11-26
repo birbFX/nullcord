@@ -304,6 +304,42 @@ auto_derived_partial!(
     "PartialUserVoiceState"
 );
 
+auto_derived!(
+    /// A platform safety record visible to the affected user
+    pub struct SafetyStrike {
+        /// Strike id (ULID; the timestamp is encoded in the id)
+        #[cfg_attr(feature = "serde", serde(rename = "_id"))]
+        pub id: String,
+        /// Human-readable reason
+        pub reason: String,
+        /// strike, suspension or ban
+        #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+        pub kind: Option<String>,
+        /// When the record was created
+        #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+        pub created_at: Option<String>,
+        /// When a ban expires, if applicable
+        #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+        pub expires_at: Option<String>,
+    }
+
+    /// Current account safety standing
+    pub struct SafetyStanding {
+        /// Current platform ban
+        pub banned: bool,
+        /// Current platform suspension
+        pub suspended: bool,
+        /// Expiry of the current ban, if temporary
+        #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+        pub banned_until: Option<String>,
+        /// Expiry of the current suspension, if temporary
+        #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+        pub suspended_until: Option<String>,
+        /// Safety records, newest first
+        pub strikes: Vec<SafetyStrike>,
+    }
+);
+
 pub trait CheckRelationship {
     fn with(&self, user: &str) -> RelationshipStatus;
 }

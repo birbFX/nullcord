@@ -412,6 +412,13 @@ pub enum EventV1 {
         to: String,
         data: serde_json::Value,
     },
+    /// Platform safety standing update delivered to the affected user.
+    ///
+    /// The admin panel publishes this before revoking sessions so an open
+    /// client can show the account-standing screen immediately.
+    AccountStanding {
+        info: serde_json::Value,
+    },
 }
 
 impl EventV1 {

@@ -30,6 +30,7 @@ import { MessageArea } from "./messaging/MessageArea";
 import ForumView from "./ForumView";
 import { useThreads } from "../../lib/forums";
 import VoiceHeader from "./voice/VoiceHeader";
+import { CallChat } from "./voice/CallChat";
 import { voiceState } from "../../lib/vortex/VoiceState";
 import { isVoiceChannel } from "../../lib/voiceChannels";
 
@@ -335,7 +336,12 @@ const VoiceChannel = observer(({ channel }: { channel: ChannelI }) => {
         <>
             <ChannelHeader channel={channel} />
             {connected ? (
-                <VoiceHeader id={channel._id} embedded />
+                <ChannelMain>
+                    <ChannelContent>
+                        <VoiceHeader id={channel._id} embedded />
+                    </ChannelContent>
+                    {voiceState.chatOpen && <CallChat channel={channel} />}
+                </ChannelMain>
             ) : (
                 <VoiceLobby>
                     <div className="card">

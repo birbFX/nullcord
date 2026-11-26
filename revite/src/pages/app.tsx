@@ -8,6 +8,7 @@ import ErrorBoundary from "../lib/ErrorBoundary";
 
 import Context from "../context";
 
+import AccountStandingOverlay from "../components/account/AccountStandingOverlay";
 import { CheckAuth } from "../controllers/client/jsx/CheckAuth";
 import Invite from "./invite/Invite";
 
@@ -26,6 +27,7 @@ export function App() {
         <ErrorBoundary section="client">
             <Context>
                 <Masks />
+                <AccountStandingOverlay />
                 <Switch>
                     <Route path="/terms">
                         <LoadSuspense>

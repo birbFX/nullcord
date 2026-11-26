@@ -19,13 +19,14 @@ Never commit `.env`, `.env.local`, `bot/.token`, `Revolt.overrides.toml`,
 
 ## Calls, video and screen sharing
 
-Voice channels and DM/group calls use **direct peer-to-peer WebRTC** with
-NullCord’s API/gateway for signalling. The first participant is the host; the
-host role moves to the next participant when the host leaves. Multiple
-participants can share their screen at once. Nitro accounts can publish up to
-1440p60; basic/non-Nitro accounts are capped at 720p30. No Jitsi or media
-relay is used. See [`VOICE.md`](./VOICE.md) for the architecture, NAT
-requirements and privacy notes.
+Voice channels and DM/group calls use **WebRTC** with NullCord’s API/gateway
+for signalling. Direct peer-to-peer paths are preferred; when both peers are
+behind restrictive NAT, public TURN relays are used as a fallback. The first
+participant is the host, and the host role moves to the next participant when
+the host leaves. Multiple participants can share their screen and its audio at
+once. Nitro accounts can publish up to 1440p60; basic/non-Nitro accounts are
+capped at 720p30. Jitsi is not used. See [`VOICE.md`](./VOICE.md) for the
+architecture, NAT requirements and privacy notes.
 
 ## Orbs, Nitro and quests
 

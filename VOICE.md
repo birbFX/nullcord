@@ -7,8 +7,9 @@ third-party media relay.
 - Every participant connects directly to every other participant (mesh).
 - SDP offers/answers and ICE candidates are relayed through the NullCord API
   and gateway (no media passes through the server).
-- Public STUN servers are used for NAT address discovery. **No TURN relay is
-  configured**, so some restrictive NAT/CGNAT combinations cannot connect.
+- Public STUN servers are used for NAT address discovery.
+- Public TURN relays are configured as a fallback for symmetric NAT/CGNAT.
+  Media uses a relay only when a direct path cannot be established.
 
 ## Host / master role
 
@@ -77,30 +78,31 @@ only:
 - `stun.l.google.com:19302`
 - `stun1.l.google.com:19302`
 
-This works for many home networks, but **symmetric NAT, CGNAT and some
-corporate networks will fail** without a TURN relay. When that happens the
-call shows:
+STUN handles many home networks. Symmetric NAT, CGNAT and some corporate
+networks require TURN; NullCord ships with public TURN fallbacks. If those
+public relays are blocked or rate-limited, the call shows:
 
 > Direct P2P connection failed. Both users may be behind restrictive NAT; try
 > a different network or mobile hotspot.
 
 The NullCord host itself is behind CGNAT, so a call involving a browser on the
-same network may also fail depending on the router. To support restrictive
-networks you would need a public TURN server or a media server; that is a
-deployment choice, not something P2P can solve.
+same network may also need the TURN fallback. Public relays are best-effort;
+for dependable production relay capacity, add a dedicated Cloudflare Realtime
+TURN, Metered, Twilio NTS or self-hosted coturn credential endpoint.
 
 ## Privacy
 
-Media is sent directly between participants, so each participant can see the
-IP addresses of the others (inherent to P2P WebRTC). No media is stored or
-relayed by NullCord.
+Direct media is sent between participants, so each participant can see the IP
+addresses of the others (inherent to peer-to-peer WebRTC). When a TURN fallback
+is used, the encrypted media is relayed by that TURN provider; the provider
+cannot decrypt DTLS-SRTP. NullCord does not record or store calls.
 
 ## Troubleshooting
 
 | Symptom | Check |
 |---|---|
 | No one connects | Both users online; restrictive NAT? Try a mobile hotspot |
-| "Direct P2P connection failed" | Symmetric NAT/CGNAT; a TURN server is required |
+| "Direct P2P connection failed" | TURN relays blocked/unreachable; check firewall UDP/TCP 3478, 80, 443 |
 | No microphone | Browser permission; site must be HTTPS (or localhost) |
 | No camera | Camera permission; another app may be using it |
 | Screen share black | Browser display-capture permission |

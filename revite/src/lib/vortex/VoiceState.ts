@@ -55,6 +55,27 @@ interface PeerState {
 const STUN_SERVERS: RTCIceServer[] = [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
+    // TURN fallback for symmetric NAT / CGNAT. This is an external relay, but
+    // without it a large share of real-world peer pairs cannot connect.
+    {
+        urls: [
+            "turn:openrelay.metered.ca:80",
+            "turn:openrelay.metered.ca:443",
+            "turn:openrelay.metered.ca:443?transport=tcp",
+        ],
+        username: "openrelayproject",
+        credential: "openrelayproject",
+    },
+    // PeerJS maintains a shared public TURN relay. It is rate-limited, but it
+    // gives restrictive NATs a second path when Open Relay is unavailable.
+    {
+        urls: [
+            "turn:eu-0.turn.peerjs.com:3478",
+            "turn:us-0.turn.peerjs.com:3478",
+        ],
+        username: "peerjs",
+        credential: "peerjsp",
+    },
 ];
 
 function randomPeerId() {
@@ -95,6 +116,7 @@ class VoiceStateReference {
     cameraEnabled = false;
     sharing = false;
     deafened = false;
+    chatOpen = true;
     tier: Tier = "none";
 
     private selfId?: string;
@@ -104,6 +126,7 @@ class VoiceStateReference {
     private refreshTimer?: number;
     private packetHandler?: (packet: any) => void;
     private unloadHandler?: () => void;
+    private audioUnlockHandler?: () => void;
 
     constructor() {
         this.roomId = null;
@@ -122,6 +145,7 @@ class VoiceStateReference {
             refreshTimer: false,
             packetHandler: false,
             unloadHandler: false,
+            audioUnlockHandler: false,
             peerConnections: false,
             remoteStreams: false,
             remoteScreens: false,
@@ -259,6 +283,13 @@ class VoiceStateReference {
             this.bindGateway(channel);
             this.startHeartbeat(channel);
             this.startRefresh();
+
+            // Browsers can require a gesture before playing a newly attached
+            // screen-share audio track. Any click while in the call unlocks it.
+            this.audioUnlockHandler = () => {
+                void this.startAudioPlayback();
+            };
+            window.addEventListener("pointerdown", this.audioUnlockHandler);
             await this.reconcilePeers(response);
 
             // Start with the microphone if the browser allows it; the call
@@ -388,7 +419,10 @@ class VoiceStateReference {
         if (this.peerConnections.has(peer.user_id)) return;
         if (typeof RTCPeerConnection === "undefined") return;
 
-        const pc = new RTCPeerConnection({ iceServers: STUN_SERVERS });
+        const pc = new RTCPeerConnection({
+            iceServers: STUN_SERVERS,
+            iceCandidatePoolSize: 4,
+        });
         const audioEl = document.createElement("audio");
         const screenAudioEl = document.createElement("audio");
 
@@ -439,6 +473,20 @@ class VoiceStateReference {
             });
 
             this.attachAudio(state, stream, isScreen);
+
+            event.track.onended = () => {
+                if (!isScreen) return;
+                runInAction(() => {
+                    const live = stream
+                        .getTracks()
+                        .some((track) => track.readyState === "live");
+                    if (!live) {
+                        this.remoteScreens.delete(peer.user_id);
+                        state.screenAudioEl.srcObject = null;
+                        this.mediaVersion += 1;
+                    }
+                });
+            };
         };
 
         pc.onnegotiationneeded = async () => {
@@ -576,6 +624,13 @@ class VoiceStateReference {
         if (data.type === "media") {
             if (data.kind === "screen") {
                 state.expectScreen = !!data.active;
+                if (!data.active) {
+                    runInAction(() => {
+                        this.remoteScreens.delete(from);
+                        state.screenAudioEl.srcObject = null;
+                        this.mediaVersion += 1;
+                    });
+                }
             }
             return;
         }
@@ -687,7 +742,11 @@ class VoiceStateReference {
                 if (this.isProducing("screen")) return;
                 const stream = await navigator.mediaDevices.getDisplayMedia({
                     video: this.videoConstraints(),
-                    audio: true,
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false,
+                    },
                 });
 
                 this.localScreen = stream;
@@ -789,6 +848,10 @@ class VoiceStateReference {
 
     isDeaf() {
         return this.deafened;
+    }
+
+    toggleChat() {
+        this.chatOpen = !this.chatOpen;
     }
 
     async startAudioPlayback() {
@@ -927,6 +990,11 @@ class VoiceStateReference {
         this.stopHeartbeat();
         this.stopRefresh();
         this.removePacketHandler();
+
+        if (this.audioUnlockHandler) {
+            window.removeEventListener("pointerdown", this.audioUnlockHandler);
+            this.audioUnlockHandler = undefined;
+        }
 
         const roomId = this.roomId;
         const channel = this.clientChannel;

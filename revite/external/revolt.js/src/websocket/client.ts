@@ -279,6 +279,21 @@ export class WebSocketClient {
 
                                     channel.last_message_id = message._id;
 
+                                    // Your own messages must never create an
+                                    // unread state. This matters when sending
+                                    // from another tab/device or while the
+                                    // channel is not focused.
+                                    if (
+                                        this.client.unreads &&
+                                        packet.author === this.client.user?._id
+                                    ) {
+                                        this.client.unreads.markRead(
+                                            message.channel_id,
+                                            message._id,
+                                            true,
+                                        );
+                                    }
+
                                     if (
                                         this.client.unreads &&
                                         (message.mention_ids?.includes(
