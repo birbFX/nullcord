@@ -33,3 +33,12 @@ Keyboard shortcuts
 
 Calls use peer-to-peer WebRTC with STUN and TURN fallback. Screen sharing
 supports tab/system audio where the operating system/browser provides it.
+
+Game presence
+-------------
+
+While the desktop app is open it detects Portal RTX and Garry's Mod. It shows
+"Playing Portal RTX" or "Playing Garry's Mod" in place of your custom status,
+then restores your previous status when the game closes. If NullCord is quit
+while a game is running, the saved status is restored the next time the app
+opens.

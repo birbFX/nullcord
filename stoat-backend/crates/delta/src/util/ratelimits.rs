@@ -59,7 +59,7 @@ impl<'a> RatelimitResolver<Request<'a>> for DeltaRatelimits {
 
     fn resolve_bucket_limit(&self, bucket: &str) -> u32 {
         match bucket {
-            "user_edit" => 2,
+            "user_edit" => 10,
             "users" => 20,
             "bots" => 10,
             "messaging" => 10,

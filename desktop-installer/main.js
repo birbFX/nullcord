@@ -3,11 +3,14 @@ const {
     BrowserWindow,
     Menu,
     dialog,
+    ipcMain,
     shell,
     session,
     desktopCapturer,
 } = require("electron");
 const { autoUpdater } = require("electron-updater");
+const { execFile } = require("node:child_process");
+const path = require("node:path");
 
 const APP_URL = "https://nullcord.canyonlakelabs.com/";
 const ALLOWED_ORIGIN = new URL(APP_URL).origin;
@@ -24,6 +27,141 @@ if (!gotLock) {
 
 let mainWindow = null;
 let updateTimer = null;
+
+// ---------------------------------------------------------------------------
+// Game presence (desktop only)
+// ---------------------------------------------------------------------------
+
+const GAME_RULES = [
+    {
+        id: "portalrtx",
+        label: "Portal RTX",
+        names: [/^portal\.exe$/i, /^portalrtx\.exe$/i, /^portal rtx\.exe$/i],
+    },
+    {
+        id: "gmod",
+        label: "Garry's Mod",
+        names: [/^gmod\.exe$/i, /^garrysmod\.exe$/i],
+    },
+    {
+        id: "gmod",
+        label: "Garry's Mod",
+        names: [/^hl2\.exe$/i],
+        command: /garrysmod|gmod|garry'?s mod/i,
+    },
+];
+
+let currentGame = null;
+let gameTimer = null;
+let gamePolling = false;
+
+function matchGame(processes) {
+    for (const process of processes) {
+        const name = String(process.Name || process.name || "").trim();
+        const command = String(
+            process.CommandLine || process.commandLine || "",
+        ).toLowerCase();
+
+        for (const rule of GAME_RULES) {
+            if (!rule.names.some((pattern) => pattern.test(name))) continue;
+            if (rule.command && !rule.command.test(command)) continue;
+            return { id: rule.id, label: rule.label };
+        }
+    }
+
+    return null;
+}
+
+function detectWindowsGame() {
+    return new Promise((resolve) => {
+        const script =
+            "Get-CimInstance Win32_Process | Select-Object Name,CommandLine | ConvertTo-Json -Compress";
+
+        execFile(
+            "powershell.exe",
+            [
+                "-NoProfile",
+                "-NonInteractive",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                script,
+            ],
+            {
+                windowsHide: true,
+                timeout: 8000,
+                maxBuffer: 8 * 1024 * 1024,
+            },
+            (error, stdout) => {
+                if (!error && stdout?.trim()) {
+                    try {
+                        const parsed = JSON.parse(stdout);
+                        const list = Array.isArray(parsed) ? parsed : [parsed];
+                        resolve(matchGame(list));
+                        return;
+                    } catch {
+                        // fall through to tasklist
+                    }
+                }
+
+                execFile(
+                    "tasklist.exe",
+                    ["/FO", "CSV", "/NH"],
+                    { windowsHide: true, timeout: 5000 },
+                    (taskError, taskOutput) => {
+                        if (taskError || !taskOutput) {
+                            resolve(null);
+                            return;
+                        }
+
+                        const processes = taskOutput
+                            .split(/\r?\n/)
+                            .map((line) => {
+                                const match = line.match(/^"([^"]+)"/);
+                                return { Name: match?.[1] || "" };
+                            });
+                        resolve(matchGame(processes));
+                    },
+                );
+            },
+        );
+    });
+}
+
+function publishGame(game) {
+    const previous = currentGame?.id ?? null;
+    const next = game?.id ?? null;
+    currentGame = game;
+    if (previous === next) return;
+
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send("nullcord:game", game);
+    }
+}
+
+async function pollGame() {
+    if (gamePolling) return;
+    gamePolling = true;
+    try {
+        publishGame(process.platform === "win32" ? await detectWindowsGame() : null);
+    } finally {
+        gamePolling = false;
+    }
+}
+
+function startGameDetection() {
+    ipcMain.handle("nullcord:get-game", () => currentGame);
+
+    if (process.platform !== "win32") {
+        publishGame(null);
+        return;
+    }
+
+    void pollGame();
+    gameTimer = setInterval(() => {
+        void pollGame();
+    }, 10_000);
+}
 
 function setupUpdates() {
     if (!app.isPackaged) return;
@@ -101,6 +239,7 @@ function createWindow() {
             nodeIntegration: false,
             sandbox: true,
             spellcheck: true,
+            preload: path.join(__dirname, "preload.js"),
         },
     });
 
@@ -147,6 +286,12 @@ function createWindow() {
 
     mainWindow.on("closed", () => {
         mainWindow = null;
+    });
+
+    mainWindow.webContents.on("did-finish-load", () => {
+        if (!mainWindow.isDestroyed()) {
+            mainWindow.webContents.send("nullcord:game", currentGame);
+        }
     });
 
     mainWindow.loadURL(APP_URL).catch((error) => {
@@ -207,6 +352,7 @@ app.whenReady().then(() => {
     );
 
     Menu.setApplicationMenu(null);
+    startGameDetection();
     createWindow();
     setupUpdates();
 
@@ -225,5 +371,6 @@ app.on("second-instance", () => {
 
 app.on("window-all-closed", () => {
     if (updateTimer) clearInterval(updateTimer);
+    if (gameTimer) clearInterval(gameTimer);
     app.quit();
 });

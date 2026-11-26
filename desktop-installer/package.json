@@ -1,7 +1,7 @@
 {
   "name": "nullcord-desktop",
   "productName": "NullCord",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "NullCord desktop client with automatic updates",
   "main": "main.js",
   "author": {
@@ -28,6 +28,7 @@
     },
     "files": [
       "main.js",
+      "preload.js",
       "package.json",
       "README.txt"
     ],

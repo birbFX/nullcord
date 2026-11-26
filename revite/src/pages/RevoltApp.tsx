@@ -6,6 +6,7 @@ import { useEffect, useState } from "preact/hooks";
 
 import AccountStandingWatcher from "../components/account/AccountStandingWatcher";
 import StrikeWatcher from "../components/account/StrikeWatcher";
+import DesktopRPC from "../components/desktop/DesktopRPC";
 import QuestTracker from "../components/QuestTracker";
 import { IncomingCall } from "../components/navigation/IncomingCall";
 import ContextMenus from "../lib/ContextMenus";
@@ -251,6 +252,7 @@ export default function App() {
             <IncomingCall />
             <AccountStandingWatcher />
             <StrikeWatcher />
+            <DesktopRPC />
         </>
     );
 }
