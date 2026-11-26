@@ -1,0 +1,74 @@
+{
+  "name": "nullcord-desktop",
+  "productName": "NullCord",
+  "version": "1.1.0",
+  "description": "NullCord desktop client with automatic updates",
+  "main": "main.js",
+  "author": {
+    "name": "NullCord",
+    "email": "support@example.com"
+  },
+  "license": "AGPL-3.0-or-later",
+  "scripts": {
+    "dist": "electron-builder --win nsis portable --x64"
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
+  },
+  "devDependencies": {
+    "electron": "45.5.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.nullcord.desktop",
+    "productName": "NullCord",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "package.json",
+      "README.txt"
+    ],
+    "win": {
+      "icon": "icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "NullCord",
+      "artifactName": "NullCord-Setup-${version}.${ext}",
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "NullCord-${version}-portable.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "birbFX",
+        "repo": "nullcord",
+        "releaseType": "release"
+      }
+    ]
+  }
+}
