@@ -58,6 +58,10 @@ export type Modal = {
           error: string;
       }
     | {
+          type: "strike_notice";
+          strikes: Array<{ reason: string }>;
+      }
+    | {
           type: "clipboard";
           text: string;
       }

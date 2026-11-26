@@ -15,6 +15,7 @@ import Invite from "./invite/Invite";
 const Login = lazy(() => import("./login/Login"));
 const ConfirmDelete = lazy(() => import("./login/ConfirmDelete"));
 const Terms = lazy(() => import("./legal/Terms"));
+const Support = lazy(() => import("./support/Support"));
 const RevoltApp = lazy(() => import("./RevoltApp"));
 
 const LoadSuspense: React.FC = ({ children }) => (
@@ -32,6 +33,11 @@ export function App() {
                     <Route path="/terms">
                         <LoadSuspense>
                             <Terms />
+                        </LoadSuspense>
+                    </Route>
+                    <Route path="/support">
+                        <LoadSuspense>
+                            <Support />
                         </LoadSuspense>
                     </Route>
                     <Route path="/login/verify/:token">

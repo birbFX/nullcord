@@ -92,7 +92,7 @@ export async function banUser(
         // Clear suspension, set banned, preserve unrelated flags.
         flags: (flags & ~1) | 4,
         ban_message: banMessage,
-        ...(until ? { banned_until: until.getTime() } : {}),
+        ...(until ? { banned_until: until } : {}),
       },
       ...(until ? {} : { $unset: { banned_until: "" } }),
     } as never,

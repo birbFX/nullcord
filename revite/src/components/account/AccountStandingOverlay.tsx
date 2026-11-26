@@ -22,5 +22,8 @@ export default function AccountStandingOverlay() {
 
     if (!info || typeof document === "undefined") return null;
 
-    return createPortal(<AccountStanding info={info} />, document.body);
+    return createPortal(
+        <AccountStanding info={info} onDismiss={() => { accountStanding.clear(); }} />,
+        document.body,
+    );
 }

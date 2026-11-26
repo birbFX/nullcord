@@ -50,6 +50,7 @@ import ServerInfo from "./components/ServerInfo";
 import ShowToken from "./components/ShowToken";
 import SignOutSessions from "./components/SignOutSessions";
 import SignedOut from "./components/SignedOut";
+import StrikeNotice from "./components/StrikeNotice";
 import UserPicker from "./components/UserPicker";
 import { OnboardingModal } from "./components/legacy/Onboarding";
 import { UserProfile } from "./components/legacy/UserProfile";
@@ -72,6 +73,7 @@ class ModalController<T extends Modal> {
             push: action,
             pop: action,
             remove: action,
+            clear: action,
             rendered: computed,
             isVisible: computed,
         });
@@ -118,6 +120,13 @@ class ModalController<T extends Modal> {
      */
     remove(key: string) {
         this.stack = this.stack.filter((x) => x.key !== key);
+    }
+
+    /**
+     * Clear every modal, used when a session is revoked.
+     */
+    clear() {
+        this.stack = [];
     }
 
     /**
@@ -290,6 +299,7 @@ export const modalController = new ModalControllerExtended({
     server_info: ServerInfo,
     show_token: ShowToken,
     signed_out: SignedOut,
+    strike_notice: StrikeNotice,
     sign_out_sessions: SignOutSessions,
     user_picker: UserPicker,
     user_profile: UserProfile,

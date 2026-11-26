@@ -1,6 +1,6 @@
 import styled from "styled-components/macro";
 
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 
 import type { BanInfo } from "../../controllers/client/jsx/error";
 
@@ -362,6 +362,19 @@ const Support = styled.p`
     a:hover {
         text-decoration: underline;
     }
+
+    button {
+        padding: 0;
+        border: 0;
+        color: #00a8fc;
+        background: transparent;
+        font: inherit;
+        cursor: pointer;
+    }
+
+    button:hover {
+        text-decoration: underline;
+    }
 `;
 
 function Chevron({ open }: { open: boolean }) {
@@ -457,9 +470,39 @@ function isExpired(info: BanInfo) {
     return !Number.isNaN(date.getTime()) && date.getTime() <= Date.now();
 }
 
-export default function AccountStanding({ info }: { info: BanInfo }) {
+export default function AccountStanding({
+    info,
+    onDismiss,
+}: {
+    info: BanInfo;
+    onDismiss?: () => void;
+}) {
     const [activeOpen, setActiveOpen] = useState(false);
     const [expiredOpen, setExpiredOpen] = useState(false);
+
+    useEffect(() => {
+        if (!info.expiresAt) return;
+
+        const expiry = new Date(info.expiresAt).getTime();
+        if (Number.isNaN(expiry)) return;
+
+        let timer: number | undefined;
+        const schedule = () => {
+            const remaining = expiry + 1500 - Date.now();
+            if (remaining <= 0) {
+                window.location.assign("/login");
+                return;
+            }
+
+            // setTimeout overflows above ~24 days; re-arm hourly instead.
+            timer = window.setTimeout(schedule, Math.min(remaining, 60 * 60 * 1000));
+        };
+
+        schedule();
+        return () => {
+            if (timer !== undefined) window.clearTimeout(timer);
+        };
+    }, [info.expiresAt]);
 
     const active = info.violations?.length
         ? info.violations.length
@@ -484,7 +527,7 @@ export default function AccountStanding({ info }: { info: BanInfo }) {
                 </span>
                 <a
                     className="learn"
-                    href="https://support.canyonlakelabs.com/topics/nullcord"
+                    href="/support"
                     target="_blank"
                     rel="noreferrer">
                     Learn More
@@ -613,12 +656,20 @@ export default function AccountStanding({ info }: { info: BanInfo }) {
                 <Support>
                     Think this is a mistake?{" "}
                     <a
-                        href="https://support.canyonlakelabs.com/topics/nullcord"
+                        href="/support"
                         target="_blank"
                         rel="noreferrer">
                         Contact NullCord support
                     </a>
                     .
+                    {onDismiss && (
+                        <>
+                            {" "}
+                            <button type="button" onClick={onDismiss}>
+                                Back to sign in
+                            </button>
+                        </>
+                    )}
                 </Support>
             </Content>
         </Overlay>

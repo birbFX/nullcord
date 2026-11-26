@@ -178,7 +178,7 @@ class ClientController {
                 this.current = null;
                 this.pickNextSession();
                 state.auth.removeSession(user_id);
-                modalController.push({ type: "signed_out" });
+                modalController.clear();
                 session.destroy();
             } else if (this.sessions.get(user_id) === session) {
                 setTimeout(() => this.retryLogin(session, entry), 3000);
@@ -216,7 +216,7 @@ class ClientController {
                     this.current = null;
                     this.pickNextSession();
                     state.auth.removeSession(user_id);
-                    modalController.push({ type: "signed_out" });
+                    modalController.clear();
                     session.destroy();
                 } else if (
                     knowledge === "existing" &&
