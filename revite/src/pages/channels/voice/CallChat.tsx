@@ -101,7 +101,7 @@ export const CallChat = observer(({ channel }: { channel: Channel }) => {
 
         addEventListener("focus", onFocus);
         return () => removeEventListener("focus", onFocus);
-    }, [channel]);
+    }, [channel, channel.last_message_id]);
 
     return (
         <Pane>
